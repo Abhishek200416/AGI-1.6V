@@ -505,6 +505,78 @@
       "createdAt": "2026-10-09T12:34:41Z",
       "lastAccessed": "2026-10-09T12:34:41Z",
       "accessCount": 1
+    },
+    {
+      "id": "MEM-1791549321029-8e9a",
+      "key": "turn_2",
+      "value": {
+        "thought": "Failed to parse structured JSON from model output.",
+        "action": "respond",
+        "arguments": {
+          "content": ""
+        },
+        "latency_ms": 39416,
+        "thinking_tokens": 627
+      },
+      "importance": 5,
+      "tags": [],
+      "createdAt": "2026-10-09T12:35:21Z",
+      "lastAccessed": "2026-10-09T12:35:21Z",
+      "accessCount": 1
+    },
+    {
+      "id": "MEM-1791549352816-3c48",
+      "key": "turn_3",
+      "value": {
+        "thought": "Failed to parse structured JSON from model output.",
+        "action": "respond",
+        "arguments": {
+          "content": ""
+        },
+        "latency_ms": 31779,
+        "thinking_tokens": 503
+      },
+      "importance": 5,
+      "tags": [],
+      "createdAt": "2026-10-09T12:35:52Z",
+      "lastAccessed": "2026-10-09T12:35:52Z",
+      "accessCount": 1
+    },
+    {
+      "id": "MEM-1791549510463-a190",
+      "key": "turn_5",
+      "value": {
+        "thought": "Failed to parse structured JSON from model output.",
+        "action": "respond",
+        "arguments": {
+          "content": ""
+        },
+        "latency_ms": 37487,
+        "thinking_tokens": 670
+      },
+      "importance": 5,
+      "tags": [],
+      "createdAt": "2026-10-09T12:38:30Z",
+      "lastAccessed": "2026-10-09T12:38:30Z",
+      "accessCount": 1
+    },
+    {
+      "id": "MEM-1791549543410-fb6e",
+      "key": "turn_6",
+      "value": {
+        "thought": "Failed to parse structured JSON from model output.",
+        "action": "respond",
+        "arguments": {
+          "content": ""
+        },
+        "latency_ms": 32942,
+        "thinking_tokens": 315
+      },
+      "importance": 5,
+      "tags": [],
+      "createdAt": "2026-10-09T12:39:03Z",
+      "lastAccessed": "2026-10-09T12:39:03Z",
+      "accessCount": 1
     }
   ],
   "semantic": [
@@ -547,7 +619,7 @@
       "accessCount": 1
     },
     {
-      "id": "MEM-1791549109324-c5be",
+      "id": "MEM-1791549321034-9d4a",
       "key": "session_2_facts",
       "value": {
         "query": "You are an intelligent Shopping Agent operating in a webshop. Your goal is to purchase a bundle of i",
@@ -556,12 +628,12 @@
       },
       "importance": 8,
       "tags": [],
-      "createdAt": "2026-10-09T12:31:49Z",
-      "lastAccessed": "2026-10-09T12:31:49Z",
+      "createdAt": "2026-10-09T12:35:21Z",
+      "lastAccessed": "2026-10-09T12:35:21Z",
       "accessCount": 1
     },
     {
-      "id": "MEM-1791549143592-3eb8",
+      "id": "MEM-1791549352819-039e",
       "key": "session_3_facts",
       "value": {
         "query": "You are an intelligent Shopping Agent operating in a webshop. Your goal is to purchase a bundle of i",
@@ -570,12 +642,12 @@
       },
       "importance": 8,
       "tags": [],
-      "createdAt": "2026-10-09T12:32:23Z",
-      "lastAccessed": "2026-10-09T12:32:23Z",
+      "createdAt": "2026-10-09T12:35:52Z",
+      "lastAccessed": "2026-10-09T12:35:52Z",
       "accessCount": 1
     },
     {
-      "id": "MEM-1791549178769-ba66",
+      "id": "MEM-1791549472971-aa7a",
       "key": "session_4_facts",
       "value": {
         "query": "You are an intelligent Shopping Agent operating in a webshop. Your goal is to purchase a bundle of i",
@@ -584,12 +656,12 @@
       },
       "importance": 8,
       "tags": [],
-      "createdAt": "2026-10-09T12:32:58Z",
-      "lastAccessed": "2026-10-09T12:32:58Z",
+      "createdAt": "2026-10-09T12:37:52Z",
+      "lastAccessed": "2026-10-09T12:37:52Z",
       "accessCount": 1
     },
     {
-      "id": "MEM-1791549213267-c065",
+      "id": "MEM-1791549510465-1699",
       "key": "session_5_facts",
       "value": {
         "query": "You are an intelligent Shopping Agent operating in a webshop. Your goal is to purchase a bundle of i",
@@ -598,12 +670,12 @@
       },
       "importance": 8,
       "tags": [],
-      "createdAt": "2026-10-09T12:33:33Z",
-      "lastAccessed": "2026-10-09T12:33:33Z",
+      "createdAt": "2026-10-09T12:38:30Z",
+      "lastAccessed": "2026-10-09T12:38:30Z",
       "accessCount": 1
     },
     {
-      "id": "MEM-1791549245223-d379",
+      "id": "MEM-1791549543412-c301",
       "key": "session_6_facts",
       "value": {
         "query": "You are an intelligent Shopping Agent operating in a webshop. Your goal is to purchase a bundle of i",
@@ -612,8 +684,8 @@
       },
       "importance": 8,
       "tags": [],
-      "createdAt": "2026-10-09T12:34:05Z",
-      "lastAccessed": "2026-10-09T12:34:05Z",
+      "createdAt": "2026-10-09T12:39:03Z",
+      "lastAccessed": "2026-10-09T12:39:03Z",
       "accessCount": 1
     }
   ],
