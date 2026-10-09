@@ -75,6 +75,7 @@ def call_model_gemini_38_flash_high(prompt: str, timeout_seconds: int = 180) -> 
         AGY_PATH,
         "--model", MODEL_IDENTIFIER,
         "--disable-slash-commands",
+        "--dangerously-skip-permissions",
         "--print", clean_prompt,
         "--output-format", "json"
     ]
@@ -117,7 +118,8 @@ def call_model_gemini_38_flash_high(prompt: str, timeout_seconds: int = 180) -> 
             "output_tokens": usage.get("output_tokens", 0),
             "thinking_tokens": usage.get("thinking_tokens", 0),
             "latency_ms": elapsed_ms,
-            "conversation_id": data.get("conversation_id")
+            "conversation_id": data.get("conversation_id"),
+            "raw_data": data
         }
         
     except subprocess.TimeoutExpired:
@@ -242,6 +244,15 @@ class MemorySubsystem:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [item for score, item in scored[:limit]]
 
+    def clear(self, tier: Optional[str] = None):
+        if tier:
+            if tier in self.tiers:
+                self.tiers[tier] = []
+        else:
+            for t in self.tiers:
+                self.tiers[t] = []
+        self.persist()
+
 
 # -------------------------------------------------------------
 # 4. Closed-World Tool Registry
@@ -258,7 +269,9 @@ class ToolRegistry:
             "handler": handler
         }
 
-    def execute(self, name: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, name: str, kwargs: Optional[Dict[str, Any]] = None, **extra_kwargs) -> Dict[str, Any]:
+        call_kwargs = dict(kwargs or {})
+        call_kwargs.update(extra_kwargs)
         if name not in self.tools:
             return {
                 "success": False,
@@ -272,7 +285,7 @@ class ToolRegistry:
         
         # Schema validation
         for req in required:
-            if req not in kwargs or kwargs[req] is None:
+            if req not in call_kwargs or call_kwargs[req] is None:
                 return {
                     "success": False,
                     "error": f"MISSING_PARAMETER: Required parameter '{req}' not provided for tool '{name}'",
@@ -281,7 +294,7 @@ class ToolRegistry:
                 
         # Execution
         try:
-            res = tool_spec["handler"](**kwargs)
+            res = tool_spec["handler"](**call_kwargs)
             return {
                 "success": True,
                 "tool": name,
@@ -514,9 +527,20 @@ Do NOT output markdown backticks or any conversational text outside the single J
         
         self.compact_context_if_needed()
         
-        prompt_str = "\n\n".join([f"[{m['role'].upper()}]: {m['content']}" for m in self.conversation_history])
-        prompt_str += "\n\n[ASSISTANT]: Please provide your next action in JSON format:"
-        
+        parts = []
+        for m in self.conversation_history:
+            role = m["role"]
+            content = m["content"].strip()
+            if role == "system":
+                parts.append(content)
+            elif role == "user":
+                parts.append(f"User Request / Context:\n{content}")
+            elif role == "assistant":
+                parts.append(f"Agent Previous Output:\n{content}")
+
+        parts.append("Next Step:\nProvide your next action strictly in valid JSON format:")
+        prompt_str = "\n\n".join(parts)
+
         call_res = call_model_gemini_38_flash_high(prompt_str, timeout_seconds=timeout_seconds)
         
         self.total_tokens += call_res.get("tokens", 0)

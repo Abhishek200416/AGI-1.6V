@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALEX RIVERA // 3D Frontier AI & Systems Architect</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Inline SVG Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  
+  <!-- Three.js (r128) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- WebGL 3D Background Canvas -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- Interactive Custom Glow Cursor -->
+  <div class="cursor-dot"></div>
+  <div class="cursor-ring"></div>
+
+  <!-- Top Scroll Progress Tracker -->
+  <div class="scroll-progress-bar"></div>
+
+  <!-- Top HUD Header Navigation -->
+  <header class="hud-nav">
+    <div class="hud-brand">
+      <div class="brand-glyph">AR</div>
+      <div>
+        <span class="brand-text">ALEX RIVERA</span>
+        <span class="brand-status">● VERIFIED ONLINE</span>
+      </div>
+    </div>
+
+    <ul class="nav-links">
+      <li><a href="#hero" class="nav-link">ORIGIN</a></li>
+      <li><a href="#about" class="nav-link">ARCHITECTURE</a></li>
+      <li><a href="#projects" class="nav-link">ARTIFACTS</a></li>
+      <li><a href="#capabilities" class="nav-link">CAPABILITIES</a></li>
+      <li><a href="#terminal" class="nav-link">NEURAL_REPL</a></li>
+      <li><a href="#contact" class="nav-link">LINK</a></li>
+    </ul>
+
+    <div class="hud-controls">
+      <button id="sound-toggle-btn" class="hud-btn" title="Toggle Procedural Audio Synthesizer">
+        🔇 AUDIO: OFF
+      </button>
+      <a href="#terminal" class="hud-btn" style="text-decoration: none;">
+        <span>_&gt;</span> TERMINAL
+      </a>
+    </div>
+  </header>
+
+  <!-- Right Floating Waypoints Navigation -->
+  <aside class="waypoint-nav" aria-label="Section Waypoints">
+    <div class="waypoint-dot active" data-target="hero" title="Origin"></div>
+    <div class="waypoint-dot" data-target="about" title="Architecture"></div>
+    <div class="waypoint-dot" data-target="projects" title="Artifacts"></div>
+    <div class="waypoint-dot" data-target="capabilities" title="Capabilities"></div>
+    <div class="waypoint-dot" data-target="terminal" title="Neural REPL"></div>
+    <div class="waypoint-dot" data-target="contact" title="Transmission Link"></div>
+  </aside>
+
+  <!-- Main Scrollable Content Container -->
+  <main class="content-wrapper">
+
+    <!-- 1. HERO SECTION -->
+    <section id="hero" class="portfolio-section">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="pulse-indicator"></span>
+          <span>FRONTIER 3D COMPUTER-USE &amp; AUTONOMOUS SYSTEMS</span>
+        </div>
+        
+        <h1 class="hero-title">
+          ARCHITECTING <br>
+          <span class="glow-word">SYNTHETIC MINDS</span> &amp; <br>
+          <span class="purple-word">SPATIAL COMPUTE</span>
+        </h1>
+
+        <p class="section-subtitle">
+          Creative technologist and AI systems engineer engineering autonomous multi-agent runtimes, real-time WebGL/WebGPU graphics shaders, and verified zero-hallucination execution loops.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#projects" class="btn-primary">
+            <span>EXPLORE ARTIFACTS</span>
+            <span>▹</span>
+          </a>
+          <a href="#terminal" class="btn-outline">
+            <span>RUN TERMINAL REPL</span>
+          </a>
+        </div>
+
+        <div class="hero-stats-row">
+          <div class="glass-panel stat-card">
+            <div class="stat-val">42<span>ms</span></div>
+            <div class="stat-lbl">Inference Latency</div>
+          </div>
+          <div class="glass-panel stat-card">
+            <div class="stat-val">99.98<span>%</span></div>
+            <div class="stat-lbl">Model Alignment</div>
+          </div>
+          <div class="glass-panel stat-card">
+            <div class="stat-val">10<span>/10</span></div>
+            <div class="stat-lbl">Regression Guards</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. ABOUT / ARCHITECTURE SECTION -->
+    <section id="about" class="portfolio-section">
+      <div class="section-tag">SYSTEMS_PHILOSOPHY</div>
+      <h2 class="section-title">ENGINEERED FOR THE UNKNOWN</h2>
+      <p class="section-subtitle">
+        Bridging the divide between high-dimensional machine intelligence and real-time spatial interaction through rigorous computer science fundamentals.
+      </p>
+
+      <div class="about-grid">
+        <div class="arch-card-list">
+          <div class="glass-panel arch-card">
+            <div class="arch-icon">◈</div>
+            <div>
+              <h3 class="arch-title">Closed-World Multi-Agent Orchestration</h3>
+              <p class="arch-desc">
+                Designing finite-state machine controllers with deadlock watchdog interrupts, cryptographic Merkle audit logs, and deterministic rollback fail-safes.
+              </p>
+            </div>
+          </div>
+
+          <div class="glass-panel arch-card">
+            <div class="arch-icon">⬡</div>
+            <div>
+              <h3 class="arch-title">Real-Time WebGL &amp; Shader Engineering</h3>
+              <p class="arch-desc">
+                Crafting GPU-accelerated spatial compute pipelines, volumetric raymarching shaders, and responsive 3D interfaces delivering fluid 60 FPS performance.
+              </p>
+            </div>
+          </div>
+
+          <div class="glass-panel arch-card">
+            <div class="arch-icon">⌬</div>
+            <div>
+              <h3 class="arch-title">OWASP MCP &amp; Sandbox Containment</h3>
+              <p class="arch-desc">
+                Enforcing strict path canonicalization, command injection shields, and SSRF boundary guards across computer-use tool gateways.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel" style="padding: 2.5rem; border-color: var(--border-purple-glow);">
+          <div style="font-family: var(--font-mono); color: var(--accent-purple); font-size: 0.8rem; margin-bottom: 1rem;">
+            [CORE PRINCIPLE // PONYTAIL PROTOCOL]
+          </div>
+          <blockquote style="font-size: 1.15rem; line-height: 1.7; color: #fff; font-style: italic; margin-bottom: 1.5rem;">
+            "The best code is the code never written. Deletion over addition. Boring over clever. Fewest moving pieces possible, backed by non-verbal verification proof."
+          </blockquote>
+          <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim);">
+            — ALEX RIVERA // Senior Systems Architect
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. PROJECTS SHOWCASE SECTION (WITH PROCEDURAL VIDEO REELS) -->
+    <section id="projects" class="portfolio-section">
+      <div class="section-tag">DEPLOYED_ARTIFACTS</div>
+      <h2 class="section-title">FLAGSHIP 3D &amp; NEURAL SYSTEMS</h2>
+      <p class="section-subtitle">
+        Explore interactive production prototypes with live simulated procedural video feeds and architectural breakdowns.
+      </p>
+
+      <div class="projects-grid">
+        
+        <!-- Project 1: Chronos -->
+        <div class="glass-panel project-card">
+          <div class="project-media-container">
+            <canvas id="canvas-swarm" class="mock-video-canvas" width="380" height="220"></canvas>
+            <div class="media-overlay-badge">
+              <span class="rec-dot"></span>
+              <span>LIVE_SIMULATION // AGENT_SWARM</span>
+            </div>
+          </div>
+
+          <div class="project-tag-row">
+            <span class="proj-tag">Agent Orchestrator</span>
+            <span class="proj-tag">FSM DAG</span>
+            <span class="proj-tag">tau-bench 100%</span>
+          </div>
+
+          <h3 class="project-name">Project Chronos</h3>
+          <p class="project-desc">
+            Autonomous multi-agent orchestration runtime with persistent task queues, cryptographic Merkle audit logs, and deadlock watchdog timers.
+          </p>
+
+          <div class="project-footer">
+            <button class="project-link-btn inspect-proj-btn" data-project="chronos">
+              <span>INSPECT ARCHITECTURE</span>
+              <span>▹</span>
+            </button>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-emerald);">● VERIFIED</span>
+          </div>
+        </div>
+
+        <!-- Project 2: HyperDrive -->
+        <div class="glass-panel project-card">
+          <div class="project-media-container">
+            <canvas id="canvas-raymarch" class="mock-video-canvas" width="380" height="220"></canvas>
+            <div class="media-overlay-badge">
+              <span class="rec-dot"></span>
+              <span>GLSL_RAYMARCH // 60_FPS</span>
+            </div>
+          </div>
+
+          <div class="project-tag-row">
+            <span class="proj-tag">Three.js</span>
+            <span class="proj-tag">WebGPU</span>
+            <span class="proj-tag">Volumetric Shaders</span>
+          </div>
+
+          <h3 class="project-name">HyperDrive 3D Engine</h3>
+          <p class="project-desc">
+            In-browser volumetric raymarching engine rendering procedural celestial nebulas, dynamic plasma waves, and lighting at silky 60 FPS.
+          </p>
+
+          <div class="project-footer">
+            <button class="project-link-btn inspect-proj-btn" data-project="hyperdrive">
+              <span>INSPECT ARCHITECTURE</span>
+              <span>▹</span>
+            </button>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-cyan);">● GPU ACCEL</span>
+          </div>
+        </div>
+
+        <!-- Project 3: OmniMind -->
+        <div class="glass-panel project-card">
+          <div class="project-media-container">
+            <canvas id="canvas-graph" class="mock-video-canvas" width="380" height="220"></canvas>
+            <div class="media-overlay-badge">
+              <span class="rec-dot"></span>
+              <span>10-TIER_MEMORY // RETENTION_99%</span>
+            </div>
+          </div>
+
+          <div class="project-tag-row">
+            <span class="proj-tag">Knowledge Graph</span>
+            <span class="proj-tag">Ebbinghaus Decay</span>
+            <span class="proj-tag">Semantic Vectors</span>
+          </div>
+
+          <h3 class="project-name">OmniMind Memory</h3>
+          <p class="project-desc">
+            10-Tier persistent memory architecture utilizing Ebbinghaus decay curves, triple-scored retrieval, and non-volatile disk hydration.
+          </p>
+
+          <div class="project-footer">
+            <button class="project-link-btn inspect-proj-btn" data-project="omnimind">
+              <span>INSPECT ARCHITECTURE</span>
+              <span>▹</span>
+            </button>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-purple);">● ACTIVE</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. CAPABILITIES & SKILLS MATRIX -->
+    <section id="capabilities" class="portfolio-section">
+      <div class="section-tag">VERIFIED_MATRIX</div>
+      <h2 class="section-title">CORE ENGINEERING STACK</h2>
+      <p class="section-subtitle">
+        Calibrated capabilities audited through rigorous synthetic testing and production deployments.
+      </p>
+
+      <div class="skills-container">
+        
+        <div class="glass-panel skill-card">
+          <div class="skill-header">
+            <span class="skill-domain">3D Graphics &amp; Compute</span>
+            <span class="skill-level">96%</span>
+          </div>
+          <div class="skill-meter-bg">
+            <div class="skill-meter-fill" style="width: 96%;"></div>
+          </div>
+          <ul class="skill-items-list">
+            <li>Three.js &amp; WebGL2 Pipelines</li>
+            <li>GLSL Volumetric Shaders</li>
+            <li>WebGPU Compute Kernels</li>
+            <li>Procedural 3D Mesh Generation</li>
+          </ul>
+        </div>
+
+        <div class="glass-panel skill-card">
+          <div class="skill-header">
+            <span class="skill-domain">Autonomous Agent Systems</span>
+            <span class="skill-level">98%</span>
+          </div>
+          <div class="skill-meter-bg">
+            <div class="skill-meter-fill" style="width: 98%;"></div>
+          </div>
+          <ul class="skill-items-list">
+            <li>Gemini 3.8 Flash High Integration</li>
+            <li>Multi-Agent State Machine DAGs</li>
+            <li>Structured Function / Tool Calling</li>
+            <li>Hierarchical Context Compaction</li>
+          </ul>
+        </div>
+
+        <div class="glass-panel skill-card">
+          <div class="skill-header">
+            <span class="skill-domain">Systems &amp; Security</span>
+            <span class="skill-level">94%</span>
+          </div>
+          <div class="skill-meter-bg">
+            <div class="skill-meter-fill" style="width: 94%;"></div>
+          </div>
+          <ul class="skill-items-list">
+            <li>OWASP MCP Path Sandboxing</li>
+            <li>SSRF &amp; Injection Defense Gates</li>
+            <li>HMAC-SHA256 Forward Audit Logs</li>
+            <li>Persistent Checkpoints &amp; Rollbacks</li>
+          </ul>
+        </div>
+
+        <div class="glass-panel skill-card">
+          <div class="skill-header">
+            <span class="skill-domain">Frontend &amp; Architecture</span>
+            <span class="skill-level">95%</span>
+          </div>
+          <div class="skill-meter-bg">
+            <div class="skill-meter-fill" style="width: 95%;"></div>
+          </div>
+          <ul class="skill-items-list">
+            <li>Modern JavaScript (ES2026+)</li>
+            <li>Web Audio API Synthesizers</li>
+            <li>Glassmorphism Cyber Aesthetics</li>
+            <li>Responsive 60 FPS Layouts</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 5. INTERACTIVE TERMINAL REPL -->
+    <section id="terminal" class="portfolio-section">
+      <div class="section-tag">INTERACTIVE_CONSOLE</div>
+      <h2 class="section-title">NEURAL REPL INTERFACE</h2>
+      <p class="section-subtitle">
+        Query the autonomous systems core directly via interactive shell commands.
+      </p>
+
+      <div class="terminal-wrapper">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="term-dot red"></span>
+            <span class="term-dot yellow"></span>
+            <span class="term-dot green"></span>
+          </div>
+          <span class="term-title">alex@neural-hub: ~/portfolio (sh)</span>
+          <span style="font-size: 0.7rem; color: var(--accent-emerald);">SECURE ENCLAVE</span>
+        </div>
+
+        <div id="terminal-output" class="terminal-body">
+          <div class="terminal-line sys">INITIALIZING NEURAL REPL SESSION [SESSION_ID: 0x7F2A]...</div>
+          <div class="terminal-line success">✓ 3D WebGL Scene: Active (60 FPS)</div>
+          <div class="terminal-line success">✓ Procedural Audio Synth: Ready</div>
+          <div class="terminal-line cyan">Type 'help' to view available system commands or 'projects' to inspect code.</div>
+        </div>
+
+        <div class="terminal-input-row" style="padding: 0 1.5rem 1.5rem;">
+          <span class="terminal-prompt">visitor@neural-hub:~$</span>
+          <input type="text" id="terminal-cmd-input" class="terminal-input" placeholder="type 'help', 'about', 'projects', 'skills', 'metrics'..." autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. CONTACT SECTION -->
+    <section id="contact" class="portfolio-section">
+      <div class="section-tag">COMMUNICATION_LINK</div>
+      <h2 class="section-title">INITIATE TRANSMISSION</h2>
+      <p class="section-subtitle">
+        Establish encrypted communication for engineering collaborations, research initiatives, or spatial 3D architecture contracts.
+      </p>
+
+      <div class="contact-container">
+        <div>
+          <div class="glass-panel" style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem;">Direct Coordinates</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.5rem;">
+              Always open to exploring boundary-pushing projects in frontier autonomous agents, real-time 3D simulation, and verified software architectures.
+            </p>
+
+            <div class="contact-info-list">
+              <div class="contact-item">
+                <div class="contact-icon">✉</div>
+                <div>
+                  <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);">SECURE TRANSMISSION</div>
+                  <div style="font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent-cyan);">alex.rivera@frontier-ai.local</div>
+                </div>
+              </div>
+
+              <div class="contact-item">
+                <div class="contact-icon">⌘</div>
+                <div>
+                  <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);">SOURCE REGISTRY</div>
+                  <div style="font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent-purple);">github.com/alex-rivera-3d</div>
+                </div>
+              </div>
+
+              <div class="contact-item">
+                <div class="contact-icon">◈</div>
+                <div>
+                  <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);">SPATIAL MATRIX</div>
+                  <div style="font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent-emerald);">San Francisco, CA // Worldwide Remote</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel">
+          <form id="contact-form">
+            <div class="form-group">
+              <label class="form-label">IDENTITY / NAME</label>
+              <input type="text" class="form-input" placeholder="e.g. Dr. Elena Vance" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">COMMUNICATION FREQUENCY (EMAIL)</label>
+              <input type="email" class="form-input" placeholder="e.g. elena@blackmesa.org" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">TRANSMISSION PAYLOAD</label>
+              <textarea class="form-textarea" placeholder="Detail the objective, mission requirements, or project scope..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+              <span>DISPATCH TRANSMISSION</span>
+              <span>⚡</span>
+            </button>
+
+            <div id="contact-status" style="margin-top: 1rem; display: none; font-family: var(--font-mono); font-size: 0.8rem;"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Project Details Inspection Modal Dialog -->
+  <div id="project-modal" class="modal-overlay">
+    <div class="glass-panel modal-card">
+      <button id="modal-close" class="modal-close-btn" aria-label="Close modal">✕</button>
+      
+      <div style="font-family: var(--font-mono); color: var(--accent-cyan); font-size: 0.75rem; margin-bottom: 0.5rem;">
+        // ARCHITECTURAL DEEP-DIVE
+      </div>
+      <h2 id="modal-title" style="font-size: 1.8rem; margin-bottom: 1rem; color: #fff;"></h2>
+      
+      <div id="modal-tags" class="project-tag-row" style="margin-bottom: 1.5rem;"></div>
+
+      <p id="modal-desc" style="font-size: 1rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 1.5rem;"></p>
+
+      <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem;">
+        CORE IMPLEMENTATION CONTRACT:
+      </div>
+      <pre style="background: #020408; padding: 1.2rem; border-radius: 8px; border: 1px solid var(--border-subtle); overflow-x: auto;"><code id="modal-code" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-cyan);"></code></pre>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div>
+      © 2026 ALEX RIVERA // ALL RIGHTS RESERVED
+    </div>
+    <div style="color: var(--accent-cyan);">
+      POWERED BY THREE.JS WEBGL // PROCEDURAL SYNTHESIZERS
+    </div>
+    <div>
+      STANDARDS: OWASP MCP // ZERO-HALLUCINATION
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="mock-media.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abhishek // AGI Systems & 3D Spatial Perception Engineer</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+
+  <!-- 3D Spatial WebGL / Canvas Space Warp Background -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- Interactive Custom Cyber Cursor -->
+  <div class="cursor-dot"></div>
+  <div class="cursor-ring"></div>
+
+  <!-- Scroll Progress Bar -->
+  <div class="scroll-progress-bar"></div>
+
+  <!-- Vertical Waypoint Indicators -->
+  <nav class="waypoint-nav" aria-label="Waypoint Navigation">
+    <div class="waypoint-dot active" data-target="hero" title="01. Origin // Hero"></div>
+    <div class="waypoint-dot" data-target="showreel" title="02. Video Showreel"></div>
+    <div class="waypoint-dot" data-target="about" title="03. Architecture"></div>
+    <div class="waypoint-dot" data-target="projects" title="04. Flagship Projects"></div>
+    <div class="waypoint-dot" data-target="skills" title="05. Competency Matrix"></div>
+    <div class="waypoint-dot" data-target="terminal" title="06. Interactive Terminal"></div>
+    <div class="waypoint-dot" data-target="contact" title="07. Encrypted Uplink"></div>
+  </nav>
+
+  <!-- Fixed HUD Navigation -->
+  <header class="hud-nav">
+    <div class="hud-brand">
+      <div class="brand-glyph">A</div>
+      <span class="brand-text">ABHISHEK.AGI</span>
+      <span class="brand-status">● SYS_READY</span>
+    </div>
+
+    <ul class="nav-links">
+      <li><a href="#hero" class="nav-link">ORIGIN</a></li>
+      <li><a href="#showreel" class="nav-link">SHOWREEL</a></li>
+      <li><a href="#about" class="nav-link">ARCHITECTURE</a></li>
+      <li><a href="#projects" class="nav-link">PROJECTS</a></li>
+      <li><a href="#skills" class="nav-link">CAPABILITIES</a></li>
+      <li><a href="#terminal" class="nav-link">TERMINAL</a></li>
+      <li><a href="#contact" class="nav-link">UPLINK</a></li>
+    </ul>
+
+    <div class="hud-controls">
+      <button id="hud-audio-toggle" class="hud-btn" type="button" title="Toggle Spatial Audio Feedback">
+        🔊 AUDIO: ON
+      </button>
+      <a href="#contact" class="hud-btn" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">
+        INITIALIZE COMM
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="content-wrapper">
+
+    <!-- ============================================== -->
+    <!-- SECTION 1: HERO (ORIGIN & 3D HOLOGRAPHIC AVATAR) -->
+    <!-- ============================================== -->
+    <section id="hero" class="portfolio-section">
+      <div class="hero-grid">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="pulse-indicator"></span>
+            <span>AGI 0.7 SYSTEMS ARCHITECTURE LABS // 2026.1</span>
+          </div>
+
+          <h1 class="hero-title">
+            ARCHITECTING <span class="glow-word">AUTONOMOUS</span> <span class="purple-word">INTELLIGENCE</span> & 3D SPATIAL SYSTEMS
+          </h1>
+
+          <p class="section-subtitle">
+            Senior AGI Systems & Spatial Perception Engineer specializing in deterministic multi-agent swarms,
+            real-time volumetric neural raymarching, and mathematically verified synthetic benchmark evaluation.
+            Pioneering resilient intelligence at the intersection of spatial computing and machine cognition.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#projects" class="btn-primary">
+              <span>EXPLORE SYSTEMS</span>
+              <span>▹</span>
+            </a>
+            <a href="#terminal" class="btn-outline">
+              <span>INITIALIZE CLI</span>
+            </a>
+          </div>
+
+          <div class="hero-stats-row">
+            <div class="stat-card glass-panel">
+              <div class="stat-val">99.98<span>%</span></div>
+              <div class="stat-lbl">BENCHMARK INTEGRITY</div>
+            </div>
+            <div class="stat-card glass-panel">
+              <div class="stat-val">&lt;14<span>ms</span></div>
+              <div class="stat-lbl">SWARM LATENCY MEDIAN</div>
+            </div>
+            <div class="stat-card glass-panel">
+              <div class="stat-val">60<span>FPS</span></div>
+              <div class="stat-lbl">SPATIAL RAYMARCHING</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3D Holographic Avatar Card -->
+        <div class="hero-avatar-card glass-panel">
+          <div class="avatar-corner-bracket avatar-corner-tl"></div>
+          <div class="avatar-corner-bracket avatar-corner-tr"></div>
+          <div class="avatar-corner-bracket avatar-corner-bl"></div>
+          <div class="avatar-corner-bracket avatar-corner-br"></div>
+
+          <div class="avatar-img-wrap">
+            <img src="assets/avatar.jpg" alt="Abhishek - AGI Systems Architect" class="avatar-img" />
+            <div class="avatar-scanlines"></div>
+          </div>
+
+          <div class="avatar-meta-bar">
+            <div class="avatar-badge-live">
+              <span class="pulse-indicator" style="background: var(--accent-emerald); box-shadow: 0 0 10px var(--accent-emerald);"></span>
+              <span>GRID: ONLINE</span>
+            </div>
+            <div class="avatar-telemetry-text">
+              LOC: NEW DELHI // UTC+05:30
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SECTION 2: 3D PROCEDURAL VIDEO SHOWREEL         -->
+    <!-- ============================================== -->
+    <section id="showreel" class="portfolio-section">
+      <div class="section-tag">MULTIMODAL TELEMETRY FEED</div>
+      <h2 class="section-title">Interactive 3D Video Showreel</h2>
+      <p class="section-subtitle">
+        Procedurally synthesized high-fidelity telemetry feeds streaming at 60 FPS.
+        Switch between neural attention weight tensors, LiDAR spatial SLAM point clouds,
+        quantum Bloch sphere rotations, and disassembled matrix streams in real-time.
+      </p>
+
+      <div class="showreel-frame">
+        <canvas id="showreel-canvas" class="showreel-canvas"></canvas>
+
+        <div class="showreel-hud">
+          <div class="hud-top-bar">
+            <div>
+              <span style="color: var(--accent-rose); font-weight: bold; margin-right: 6px;">●</span>
+              <span id="hud-timecode">REC 00:00:00:00</span>
+            </div>
+            <div id="hud-channel-name" style="letter-spacing: 1.5px; font-weight: 700;">
+              NEURAL CORE // ATTENTION WEIGHTS
+            </div>
+            <div style="color: var(--accent-emerald);">
+              60.0 FPS // LOSS: 0.0418
+            </div>
+          </div>
+
+          <div class="hud-bottom-bar">
+            <div class="audio-eq-visualizer">
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+              <div class="eq-bar-item"></div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim);">
+              BUFFER: 1080p60 STEREO // BITRATE: 48.2 MBPS
+            </div>
+          </div>
+        </div>
+
+        <div class="showreel-controls-panel">
+          <div class="channel-tabs">
+            <button class="channel-pill active" type="button">01. NEURAL CORE</button>
+            <button class="channel-pill" type="button">02. SPATIAL SLAM</button>
+            <button class="channel-pill" type="button">03. QUANTUM BLOCH</button>
+            <button class="channel-pill" type="button">04. MATRIX STREAM</button>
+          </div>
+
+          <div class="playback-btn-group">
+            <button id="btn-play-pause" class="playback-btn" type="button">❚❚ PAUSE</button>
+            <button id="btn-fullscreen" class="playback-btn" type="button">⛶ FULLSCREEN</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SECTION 3: SYSTEM ARCHITECTURE PILLARS         -->
+    <!-- ============================================== -->
+    <section id="about" class="portfolio-section">
+      <div class="section-tag">CORE ARCHITECTURAL PILLARS</div>
+      <h2 class="section-title">Engineered For Determinism & Scale</h2>
+      <p class="section-subtitle">
+        Designing next-generation autonomous systems requires eliminating non-deterministic hallucinations,
+        enforcing mathematically verifiable bounds, and rendering low-latency 3D spatial representations.
+      </p>
+
+      <div class="about-grid">
+        <div class="arch-card-list">
+          <div class="arch-card glass-panel">
+            <div class="arch-icon">⚡</div>
+            <div>
+              <h3 class="arch-title">Autonomous Swarm Consensus</h3>
+              <p class="arch-desc">
+                Decentralized multi-agent state machines with Byzantine fault tolerance,
+                atomic rollback ledgers, and zero-overhead task handoffs across distributed nodes.
+              </p>
+            </div>
+          </div>
+
+          <div class="arch-card glass-panel">
+            <div class="arch-icon">🌐</div>
+            <div>
+              <h3 class="arch-title">Real-Time Spatial SLAM & Raymarching</h3>
+              <p class="arch-desc">
+                High-performance 3D point cloud reconstruction and signed distance field (SDF) shaders
+                executing at 60 FPS to give AI agents spatial awareness of complex physical topographies.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-card-list">
+          <div class="arch-card glass-panel">
+            <div class="arch-icon">🧠</div>
+            <div>
+              <h3 class="arch-title">10-Tier Temporal Vector Persistence</h3>
+              <p class="arch-desc">
+                Hierarchical associative memory with human-like Ebbinghaus decay formulas,
+                preventing context pollution while maintaining persistent cross-session episodic recall.
+              </p>
+            </div>
+          </div>
+
+          <div class="arch-card glass-panel">
+            <div class="arch-icon">🛡️</div>
+            <div>
+              <h3 class="arch-title">Benchmark & Evaluation Integrity</h3>
+              <p class="arch-desc">
+                Rigorous synthetic test harnesses that separate internal regression tests from official evaluations,
+                quarantine contaminated datasets, and enforce exact task numerator/denominator grading.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SECTION 4: FLAGSHIP PROJECTS SHOWCASE          -->
+    <!-- ============================================== -->
+    <section id="projects" class="portfolio-section">
+      <div class="section-tag">DEPLOYED CODEBASES</div>
+      <h2 class="section-title">Verified Flagship Projects</h2>
+      <p class="section-subtitle">
+        Mission-critical AI runtimes, volumetric 3D spatial renderers, and quantum hardware accelerators.
+        Every project card features dynamic interactive media and full architecture specifications.
+      </p>
+
+      <div class="projects-grid">
+        <!-- Project 1: Swarm (Live Canvas Video) -->
+        <div class="project-card glass-panel">
+          <div class="project-media-container">
+            <canvas id="canvas-swarm" class="mock-video-canvas" width="400" height="220"></canvas>
+            <div class="media-overlay-badge">
+              <span class="rec-dot"></span>
+              <span>LIVE SWARM FEED</span>
+            </div>
+          </div>
+          <div class="project-tag-row">
+            <span class="proj-tag">RUST</span>
+            <span class="proj-tag">WEBSOCKETS</span>
+            <span class="proj-tag">RAFT PROTOCOL</span>
+          </div>
+          <h3 class="project-name">Autonomous Agent Swarm</h3>
+          <p class="project-desc">
+            Distributed multi-agent execution runtime with dynamic leadership election,
+            continuous heartbeat telemetry, and automatic task quarantine on deviation.
+          </p>
+          <div class="project-footer">
+            <button class="project-link-btn" data-inspect-project="swarm" type="button">
+              <span>INSPECT ARCHITECTURE</span>
+              <span>→</span>
+            </button>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-emerald);">● VERIFIED</span>
+          </div>
+        </div>
+
+        <!-- Project 2: Neural Raymarching (Live Canvas Video) -->
+        <div class="project-card glass-panel">
+          <div class="project-media-container">
+            <canvas id="canvas-raymarch" class="mock-video-canvas" width="400" height="220"></canvas>
+            <div class="media-overlay-badge">
+              <span class="rec-dot"></span>
+              <span>VOLUMETRIC SHADERS</span>
+            </div>
+          </div>
+          <div class="project-tag-row">
+            <span class="proj-tag">WEBGL</span>
+            <span class="proj-tag">GLSL</span>
+            <span class="proj-tag">SDF MATH</span>
+          </div>
+          <h3 class="project-name">Neural Raymarcher Engine</h3>
+          <p class="project-desc">
+            Analytical distance field and volumetric radiance field engine rendering complex 3D manifolds
+            and light reflections at locked 60 FPS directly in the browser.
+          </p>
+          <div class="project-footer">
+            <button class="project-link-btn" data-inspect-project="raymarch" type="button">
+              <span>INSPECT ARCHITECTURE</span>
+              <span>→</span>
+            </button>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-cyan);">● 60 FPS</span>
+          </div>
+        </div>
+
+        <!-- Project 3: 10-Tier Knowledge Graph (Live Canvas Video) -->
+        <div class="project-card glass-panel">
+          <div class="project-media-container">
+            <canvas id="canvas-graph" class="mock-video-canvas" width="400" height="220"></canvas>
+            <div class="media-overlay-badge">
+              <span class="rec-dot"></span>
+              <span>GRAPH TELEMETRY</span>
+            </div>
+          </div>
+          <div class="project-tag-row">
+            <span class="proj-tag">VECTOR HNSW</span>
+            <span class="proj-tag">EMBEDDINGS</span>
+            <span class="proj-tag">TEMPORAL KG</span>
+          </div>
+          <h3 class="project-name">10-Tier Vector Knowledge Graph</h3>
+          <p class="project-desc">
+            Biologically-inspired long-term agent memory system balancing episodic logs,
+            semantic embeddings, and procedural schemas with automated entropy culling.
+          </p>
+          <div class="project-footer">
+            <button class="project-link-btn" data-inspect-project="graph" type="button">
+              <span>INSPECT ARCHITECTURE</span>
+              <span>→</span>
+            </button>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-purple);">● 99.4% RETENTION</span>
+          </div>
+        </div>
+
+        <!-- Project 4: Quantum Neural Core (High-Res AI Asset) -->
+        <div class="project-card glass-panel">
+          <div class="project-media-container">
+            <img src="assets/project-quantum.jpg" alt="Quantum Neural Core" class="project-media-img" />
+            <div class="media-overlay-badge">
+              <span class="rec-dot" style="background: var(--accent-cyan);"></span>
+              <span>OPTICAL CORE</span>
+            </div>
+          </div>
+          <div class="project-tag-row">
+            <span class="proj-tag">QUANTUM GATES</span>
+            <span class="proj-tag">BLOCH SPHERE</span>
+            <span class="proj-tag">C++ / CUDA</span>
+          </div>
+          <h3 class="project-name">Quantum Photonic Neural Core</h3>
+          <p class="project-desc">
+            Hardware-aware quantum circuit simulation computing Bloch vector rotations
+            and density matrices for optical tensor processing architectures.
+          </p>
+          <div class="project-footer">
+            <button class="project-link-btn" data-inspect-project="quantum" type="button">
+              <span>INSPECT ARCHITECTURE</span>
+              <span>→</span>
+            </button>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-cyan);">● 36 QUBITS</span>
+          </div>
+        </div>
+
+        <!-- Project 5: Spatial Perception & Drone LiDAR (High-Res AI Asset) -->
+        <div class="project-card glass-panel">
+          <div class="project-media-container">
+            <img src="assets/project-spatial.jpg" alt="Spatial Perception" class="project-media-img" />
+            <div class="media-overlay-badge">
+              <span class="rec-dot" style="background: var(--accent-amber);"></span>
+              <span>LIDAR SLAM</span>
+            </div>
+          </div>
+          <div class="project-tag-row">
+            <span class="proj-tag">ROS 2</span>
+            <span class="proj-tag">POINT CLOUDS</span>
+            <span class="proj-tag">LOAM ALGORITHM</span>
+          </div>
+          <h3 class="project-name">Spatial Perception & Drone SLAM</h3>
+          <p class="project-desc">
+            Dense 3D point cloud feature extraction and real-time LiDAR Odometry and Mapping
+            for sub-centimeter autonomous spatial navigation in GPS-denied environments.
+          </p>
+          <div class="project-footer">
+            <button class="project-link-btn" data-inspect-project="spatial" type="button">
+              <span>INSPECT ARCHITECTURE</span>
+              <span>→</span>
+            </button>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-amber);">● &lt;0.05% DRIFT</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SECTION 5: SKILLS & COMPETENCY MATRIX          -->
+    <!-- ============================================== -->
+    <section id="skills" class="portfolio-section">
+      <div class="section-tag">CAPABILITY METRICS</div>
+      <h2 class="section-title">Technical Specialization Matrix</h2>
+      <p class="section-subtitle">
+        Deep multi-disciplinary engineering across machine cognition, 3D graphics pipelines,
+        distributed backend systems, and rigorous formal verification.
+      </p>
+
+      <div class="skills-container">
+        <!-- Skill 1 -->
+        <div class="skill-card glass-panel">
+          <div class="skill-header">
+            <span class="skill-domain">AGENTIC COGNITION</span>
+            <span class="skill-level">98%</span>
+          </div>
+          <div class="skill-meter-bg">
+            <div class="skill-meter-fill" style="width: 98%;"></div>
+          </div>
+          <ul class="skill-items-list">
+            <li>Autonomous Swarm Loops</li>
+            <li>Multi-Agent Tool Orchestration</li>
+            <li>Structured JSON/AST Enforcement</li>
+            <li>Self-Healing Error Correction</li>
+          </ul>
+        </div>
+
+        <!-- Skill 2 -->
+        <div class="skill-card glass-panel">
+          <div class="skill-header">
+            <span class="skill-domain">3D SPATIAL GRAPHICS</span>
+            <span class="skill-level">95%</span>
+          </div>
+          <div class="skill-meter-bg">
+            <div class="skill-meter-fill" style="width: 95%;"></div>
+          </div>
+          <ul class="skill-items-list">
+            <li>WebGL & 3D Canvas Math</li>
+            <li>GLSL Shaders & Raymarching</li>
+            <li>3D Perspective Projections</li>
+            <li>Point Clouds & LiDAR SLAM</li>
+          </ul>
+        </div>
+
+        <!-- Skill 3 -->
+        <div class="skill-card glass-panel">
+          <div class="skill-header">
+            <span class="skill-domain">DISTRIBUTED SYSTEMS</span>
+            <span class="skill-level">92%</span>
+          </div>
+          <div class="skill-meter-bg">
+            <div class="skill-meter-fill" style="width: 92%;"></div>
+          </div>
+          <ul class="skill-items-list">
+            <li>Rust / Go High-Throughput Engines</li>
+            <li>Vector DBs & HNSW Indexing</li>
+            <li>WebSocket Microservices</li>
+            <li>Raft & Byzantine Consensus</li>
+          </ul>
+        </div>
+
+        <!-- Skill 4 -->
+        <div class="skill-card glass-panel">
+          <div class="skill-header">
+            <span class="skill-domain">VERIFICATION & INTEGRITY</span>
+            <span class="skill-level">99%</span>
+          </div>
+          <div class="skill-meter-bg">
+            <div class="skill-meter-fill" style="width: 99%;"></div>
+          </div>
+          <ul class="skill-items-list">
+            <li>Deterministic Benchmark Harnesses</li>
+            <li>Contamination Isolation & Quarantine</li>
+            <li>Adversarial Robustness Testing</li>
+            <li>Strict Numerator/Denominator Grading</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SECTION 6: INTERACTIVE CYBER TERMINAL REPL     -->
+    <!-- ============================================== -->
+    <section id="terminal" class="portfolio-section">
+      <div class="section-tag">DIRECT AGENT INTERFACE</div>
+      <h2 class="section-title">Interactive Holographic CLI</h2>
+      <p class="section-subtitle">
+        Direct console interface to the local agent runtime. Type <span style="color: var(--accent-cyan); font-family: var(--font-mono);">help</span> for available commands,
+        <span style="color: var(--accent-purple); font-family: var(--font-mono);">eval</span> to run the benchmark verification suite, or
+        <span style="color: var(--accent-emerald); font-family: var(--font-mono);">matrix</span> to stream cyber glyphs.
+      </p>
+
+      <div class="terminal-wrapper">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+          </div>
+          <div class="term-title">AGI-TERMINAL-REPL // BASH 5.2.15 // ONLINE</div>
+          <div style="font-size: 0.7rem; color: var(--accent-emerald);">SESSION: ENCRYPTED</div>
+        </div>
+
+        <div id="terminal-body" class="terminal-body">
+          <div class="terminal-line sys">AGI 0.7 LOCAL AGENT RUNTIME INITIALIZED [KERNEL 6.4.12-AGI]</div>
+          <div class="terminal-line">Type <span style="color: var(--accent-cyan); font-weight: bold;">help</span> to inspect system commands, or <span style="color: var(--accent-emerald); font-weight: bold;">eval</span> to execute the synthetic benchmark audit.</div>
+        </div>
+
+        <div class="terminal-input-row" style="padding: 0 1.5rem 1.2rem;">
+          <span class="terminal-prompt">user@terminal:~$</span>
+          <input id="terminal-input" class="terminal-input" type="text" placeholder="Type command (e.g. help, projects, eval, matrix)..." autofocus autocomplete="off" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SECTION 7: ENCRYPTED TRANSMISSION / CONTACT    -->
+    <!-- ============================================== -->
+    <section id="contact" class="portfolio-section">
+      <div class="section-tag">SECURE UPLINK</div>
+      <h2 class="section-title">Initiate Transmission</h2>
+      <p class="section-subtitle">
+        Ready to collaborate on cutting-edge AGI agent architectures, 3D spatial platforms, or high-throughput systems?
+        Send a direct neural packet below.
+      </p>
+
+      <div class="contact-container">
+        <div>
+          <div class="contact-info-list">
+            <div class="contact-item">
+              <div class="contact-icon">✉</div>
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">PRIMARY ENDPOINT</div>
+                <div style="font-weight: 700; color: #fff;">contact@abhishek-agi.dev</div>
+              </div>
+            </div>
+
+            <div class="contact-item">
+              <div class="contact-icon">📍</div>
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">COORDINATES</div>
+                <div style="font-weight: 700; color: #fff;">New Delhi, India // UTC+05:30</div>
+              </div>
+            </div>
+
+            <div class="contact-item">
+              <div class="contact-icon">⚡</div>
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">SECURITY PROTOCOL</div>
+                <div style="font-weight: 700; color: var(--accent-emerald);">Ed25519 Verified // End-to-End Encrypted</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form id="contact-form" class="glass-panel" style="padding: 2.5rem;">
+          <div class="form-group">
+            <label class="form-label" for="contact-name">SENDER IDENTIFIER // NAME</label>
+            <input type="text" id="contact-name" class="form-input" placeholder="e.g. Elena Vance" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="contact-email">RETURN PROTOCOL // EMAIL</label>
+            <input type="email" id="contact-email" class="form-input" placeholder="e.g. elena@blackmesa.org" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="contact-msg">TRANSMISSION PACKET // MESSAGE</label>
+            <textarea id="contact-msg" class="form-textarea" placeholder="Detail your project requirements, architecture specifications, or inquiry..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+            <span>TRANSMIT PACKET</span>
+            <span>⚡</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Project Architecture Modal Overlay -->
+  <div id="project-modal" class="modal-overlay">
+    <div class="modal-card glass-panel">
+      <button id="modal-close" class="modal-close-btn" type="button" title="Close Modal">✕</button>
+      <div id="modal-dynamic-content"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div>
+      © 2026 ABHISHEK // AGI SYSTEMS & 3D SPATIAL ARCHITECTURE LABS. ALL RIGHTS RESERVED.
+    </div>
+    <div style="display: flex; gap: 1.5rem; align-items: center;">
+      <span>BUILD: v0.7.4-RELEASE</span>
+      <span style="color: var(--accent-emerald);">● UPTIME: 99.99%</span>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="mock-media.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

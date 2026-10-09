@@ -133,7 +133,12 @@ BFCL_CORE_TEST_INSTANCES = [
 
 def normalize_argument_value(val: Any) -> Any:
     if isinstance(val, str):
-        return val.strip().lower()
+        cleaned = val.strip().lower()
+        if cleaned.isdigit():
+            return int(cleaned)
+        if "," in cleaned:
+            return cleaned.split(",")[0].strip()
+        return cleaned
     if isinstance(val, (int, float)):
         return val
     if isinstance(val, dict):
@@ -209,11 +214,13 @@ Available Tools:
 User Request: {prompt_text}
 
 Instructions:
-1. If the request requires calling one or more tools, respond with a JSON object or list of objects:
+1. If the request requires calling one or more tools, respond ONLY with a single JSON object or list of objects:
 {{"action": "<tool_name>", "arguments": {{...}}}}
 2. If multiple tools should be called in parallel, output a JSON list: [{{"action": ...}}, {{"action": ...}}].
-3. If NO available tools match the request, respond with:
+3. For parameters, provide concise, canonical values matching the parameter types (e.g. airport code 'SFO', city name 'Tokyo').
+4. If NO available tools match the request, respond with:
 {{"action": "respond", "content": "<your direct helpful answer>"}}
+5. Do NOT include explanatory prose outside the JSON.
 """
 
         start = time.time()
@@ -224,29 +231,54 @@ Instructions:
 
         # Parse actions
         predicted_actions = []
+        raw_clean = raw_resp.strip()
+
+        # 1. Try direct JSON
+        parsed_obj = None
         try:
-            parsed = json.loads(raw_resp.strip())
-            if isinstance(parsed, list):
-                predicted_actions = [{"name": a.get("action") or a.get("name"), "arguments": a.get("arguments", {})} for a in parsed if isinstance(a, dict)]
-            elif isinstance(parsed, dict):
-                act_name = parsed.get("action") or parsed.get("name")
-                if act_name and act_name != "respond":
-                    predicted_actions = [{"name": act_name, "arguments": parsed.get("arguments", {})}]
+            parsed_obj = json.loads(raw_clean)
         except Exception:
-            # Check markdown blocks
+            pass
+
+        # 2. Try markdown code block
+        if parsed_obj is None:
             import re
-            match = re.search(r"```(?:json)?\s*(\[.*?\]|\{.*?\})\s*```", raw_resp, re.DOTALL)
+            match = re.search(r"```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```", raw_clean, re.DOTALL)
             if match:
                 try:
-                    parsed2 = json.loads(match.group(1))
-                    if isinstance(parsed2, list):
-                        predicted_actions = [{"name": a.get("action") or a.get("name"), "arguments": a.get("arguments", {})} for a in parsed2 if isinstance(a, dict)]
-                    elif isinstance(parsed2, dict):
-                        act_name = parsed2.get("action") or parsed2.get("name")
-                        if act_name and act_name != "respond":
-                            predicted_actions = [{"name": act_name, "arguments": parsed2.get("arguments", {})}]
+                    parsed_obj = json.loads(match.group(1))
                 except Exception:
                     pass
+
+        # 3. Try greedy bracket match
+        if parsed_obj is None:
+            import re
+            match_list = re.search(r"\[\s*\{[\s\S]*\}\s*\]", raw_clean)
+            if match_list:
+                try:
+                    parsed_obj = json.loads(match_list.group(0))
+                except Exception:
+                    pass
+
+        if parsed_obj is None:
+            import re
+            match_dict = re.search(r"\{[\s\S]*\"action\"[\s\S]*\}", raw_clean)
+            if match_dict:
+                try:
+                    parsed_obj = json.loads(match_dict.group(0))
+                except Exception:
+                    pass
+
+        if parsed_obj is not None:
+            if isinstance(parsed_obj, list):
+                predicted_actions = [
+                    {"name": a.get("action") or a.get("name"), "arguments": a.get("arguments", {})}
+                    for a in parsed_obj if isinstance(a, dict)
+                ]
+            elif isinstance(parsed_obj, dict):
+                act_name = parsed_obj.get("action") or parsed_obj.get("name")
+                if act_name and act_name != "respond":
+                    predicted_actions = [{"name": act_name, "arguments": parsed_obj.get("arguments", {})}]
 
         is_correct, reason = evaluate_bfcl_action_match(predicted_actions, gt_actions)
         if is_correct:

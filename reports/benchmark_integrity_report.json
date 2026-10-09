@@ -1,7 +1,7 @@
 {
   "agent_identity": "AGI 0.7",
   "git_commit": "c00a549",
-  "timestamp": "2026-10-09T15:20:37Z",
+  "timestamp": "2026-10-09T15:37:40Z",
   "environment": {
     "os": "Windows 11 (10.0.26220)",
     "python": "3.14.6",
@@ -1254,8 +1254,8 @@
       "timestamp": null,
       "blocker_reason": null,
       "integrity_flags": [
-        "UNSUPPORTED_CUSTOM_CLAIM",
-        "LATENCY_DECREASE_DUE_TO_EARLY_ABORT"
+        "LATENCY_DECREASE_DUE_TO_EARLY_ABORT",
+        "UNSUPPORTED_CUSTOM_CLAIM"
       ],
       "audit_notes": [
         "0/2 tasks passed. 0/12 sessions matched ASIN.",

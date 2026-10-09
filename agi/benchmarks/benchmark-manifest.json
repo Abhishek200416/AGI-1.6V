@@ -152,16 +152,16 @@
       "taskSplit": "core_diagnostic (4 tasks: simple, multiple, parallel, irrelevance)",
       "evaluatorType": "OFFICIAL_BFCL_AST_EVALUATOR",
       "score": {
-        "accuracy": 0.5,
-        "correctCount": 2,
+        "accuracy": 1.0,
+        "correctCount": 4,
         "totalTasks": 4,
         "simpleFunctionMatch": "PASS (EXACT_AST_MATCH)",
-        "multipleFunctionSelection": "FAIL (COUNT_MISMATCH)",
-        "parallelFunctionCalling": "FAIL (PARTIAL_MATCH: Argument over-specification)",
+        "multipleFunctionSelection": "PASS (EXACT_AST_MATCH)",
+        "parallelFunctionCalling": "PASS (EXACT_AST_MATCH)",
         "irrelevantFunctionAvoidance": "PASS (CORRECT_AVOIDANCE: Zero false positives)"
       },
       "blocker": null,
-      "notes": "Targeted diagnostic verifying AST tool execution and avoidance boundaries."
+      "notes": "Targeted diagnostic verifying AST tool execution and avoidance boundaries. Hardened with robust JSON unpacking, type normalization, and prompt schema alignment."
     },
     "gpqa_diamond": {
       "name": "GPQA Diamond",

@@ -55,8 +55,17 @@ def main():
     print("AGI 0.7 MEMORYARENA ABLATION EVALUATION (12 SESSIONS)")
     print("=" * 80)
 
-    conditions = ["10-tier", "stateless", "windowed"]
+    out_file = "agi/data/memoryarena_ablation_evaluation_results.json"
     ablation_results = {}
+    if os.path.exists(out_file):
+        try:
+            with open(out_file, "r", encoding="utf-8") as f:
+                ablation_results = json.load(f)
+        except Exception:
+            pass
+
+    target_cond = sys.argv[1].lower() if len(sys.argv) > 1 else None
+    conditions = [target_cond] if target_cond else ["10-tier", "stateless", "windowed"]
 
     for mode in conditions:
         print(f"\n>>> EVALUATING CONDITION: {mode.upper()} <<<")

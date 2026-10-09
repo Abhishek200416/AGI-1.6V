@@ -247,6 +247,9 @@ def run_memoryarena_session_task(
         print(f"User Query:    {q[:120]}...", flush=True)
         print(f"Target ASIN:   {ground_truth}", flush=True)
 
+        # Fresh conversation turn for each discrete shopping visit
+        agent.conversation_history = [{"role": "system", "content": agent.build_system_prompt(q)}]
+
         # Context setup based on memory mode
         if memory_mode == "stateless":
             agent.memory.clear("working")
@@ -270,11 +273,14 @@ def run_memoryarena_session_task(
 
 Instructions:
 1. If the request requires recommending or retrieving a product, use 'catalog_search' or 'catalog_get_item' to locate the product.
-2. In your response or arguments, you MUST specify the exact target ASIN (e.g., 'B07T48N6MN').
+2. In your response or arguments, you MUST specify the exact target ASIN (e.g., 'B07T48N6MN'). If referencing, confirming, or answering questions about a previously selected product, retrieve and state its exact ASIN from your memory.
 """
 
         # Step 1: Agent action formulation
         parsed_action, call_res = agent.step(session_prompt)
+        if not call_res.get("success"):
+            print("Transient CLI timeout on step 1, retrying once...", flush=True)
+            parsed_action, call_res = agent.step(session_prompt)
 
         # Handle tool call if requested
         if parsed_action and parsed_action.get("action") in ["catalog_search", "catalog_get_item"]:
@@ -284,6 +290,9 @@ Instructions:
             # Step 2: Feed tool observation back to finalize answer
             obs_prompt = f"Catalog observation: {json.dumps(t_res.get('result'))}\nPlease provide your final answer specifying the target ASIN."
             parsed_action, call_res = agent.step(obs_prompt)
+            if not call_res.get("success"):
+                print("Transient CLI timeout on step 2, retrying once...", flush=True)
+                parsed_action, call_res = agent.step(obs_prompt)
 
         raw_resp = call_res.get("response", "") if call_res.get("success") else ""
         gt_asin = str(ground_truth).strip().upper()
