@@ -63,7 +63,7 @@ def scrub_secrets(text: Any) -> Any:
 # -------------------------------------------------------------
 # 2. Sole Foundation Model Provider (gemini-3.8-flash-high)
 # -------------------------------------------------------------
-def call_model_gemini_38_flash_high(prompt: str, timeout_seconds: int = 120) -> Dict[str, Any]:
+def call_model_gemini_38_flash_high(prompt: str, timeout_seconds: int = 180) -> Dict[str, Any]:
     """
     Invokes gemini-3.8-flash-high strictly via agy.exe.
     Enforces Directive 0 with zero silent fallback.
@@ -83,7 +83,8 @@ def call_model_gemini_38_flash_high(prompt: str, timeout_seconds: int = 120) -> 
         proc = subprocess.run(
             args,
             capture_output=True,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout_seconds,
             shell=False
         )
@@ -507,7 +508,7 @@ Do NOT output markdown backticks or any conversational text outside the single J
                 "tokens_before": self.total_tokens
             }, importance=7)
 
-    def step(self, user_or_env_message: str) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+    def step(self, user_or_env_message: str, timeout_seconds: int = 180) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
         self.turn_count += 1
         self.conversation_history.append({"role": "user", "content": user_or_env_message})
         
@@ -516,7 +517,7 @@ Do NOT output markdown backticks or any conversational text outside the single J
         prompt_str = "\n\n".join([f"[{m['role'].upper()}]: {m['content']}" for m in self.conversation_history])
         prompt_str += "\n\n[ASSISTANT]: Please provide your next action in JSON format:"
         
-        call_res = call_model_gemini_38_flash_high(prompt_str, timeout_seconds=120)
+        call_res = call_model_gemini_38_flash_high(prompt_str, timeout_seconds=timeout_seconds)
         
         self.total_tokens += call_res.get("tokens", 0)
         self.thinking_tokens += call_res.get("thinking_tokens", 0)
