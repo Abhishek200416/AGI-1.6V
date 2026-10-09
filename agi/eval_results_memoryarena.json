@@ -1,0 +1,98 @@
+[
+  {
+    "task_id": 0,
+    "agent": "agi_0_7",
+    "total_sessions": 6,
+    "correct_count": 0,
+    "accuracy": 0.0,
+    "tokens": 23344,
+    "thinking_tokens": 3333,
+    "latency_ms": 200506,
+    "sessions": [
+      {
+        "session": 1,
+        "matched": false,
+        "latency_ms": 33401,
+        "tokens": 2733
+      },
+      {
+        "session": 2,
+        "matched": false,
+        "latency_ms": 31227,
+        "tokens": 3289
+      },
+      {
+        "session": 3,
+        "matched": false,
+        "latency_ms": 34264,
+        "tokens": 3959
+      },
+      {
+        "session": 4,
+        "matched": false,
+        "latency_ms": 35171,
+        "tokens": 4332
+      },
+      {
+        "session": 5,
+        "matched": false,
+        "latency_ms": 34493,
+        "tokens": 4427
+      },
+      {
+        "session": 6,
+        "matched": false,
+        "latency_ms": 31950,
+        "tokens": 4604
+      }
+    ]
+  },
+  {
+    "task_id": 1,
+    "agent": "agi_0_7",
+    "total_sessions": 6,
+    "correct_count": 0,
+    "accuracy": 0.0,
+    "tokens": 25341,
+    "thinking_tokens": 2528,
+    "latency_ms": 296132,
+    "sessions": [
+      {
+        "session": 1,
+        "matched": false,
+        "latency_ms": 34359,
+        "tokens": 2698
+      },
+      {
+        "session": 2,
+        "matched": false,
+        "latency_ms": 39416,
+        "tokens": 9697
+      },
+      {
+        "session": 3,
+        "matched": false,
+        "latency_ms": 31779,
+        "tokens": 3649
+      },
+      {
+        "session": 4,
+        "matched": null,
+        "latency_ms": 120149,
+        "tokens": 0
+      },
+      {
+        "session": 5,
+        "matched": false,
+        "latency_ms": 37487,
+        "tokens": 4629
+      },
+      {
+        "session": 6,
+        "matched": false,
+        "latency_ms": 32942,
+        "tokens": 4668
+      }
+    ]
+  }
+]

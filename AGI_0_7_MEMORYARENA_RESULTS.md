@@ -31,8 +31,12 @@ MemoryArena evaluates whether an agent can accumulate knowledge across multiple 
 | **5** | Bundle Item 5 (Cake Topper) | `B09CNVBP13` (Gold glitter, wedding party) | Stored `session_5_facts` in semantic tier | `MISS` (ASIN mismatch) |
 | **6** | Bundle Item 6 (Final Tools) | Multi-attribute compatibility check | Recalled prior 5 sessions from memory | `MISS` (ASIN mismatch) |
 
-**Overall Task 0 Accuracy:** **0 / 6 (0.0% Exact ASIN Match)**  
-**Memory Persistence Integrity:** **6 / 6 (100% of sessions persisted to disk)**
+### Task 1 (6 Sessions — Carrot Cake Bundle)
+- Target ASINs: `B00T6NA7PA` (Gluten-free carrot cake), `B00EJRV4V4` (Duncan Hines cream cheese frosting), `B01G7ECUTG` (AmeriColor red airbrush), `B09PH2LY6T` (rose gold sprinkles), `B08KZX1K6F` (Christmas berry picks), `B08ZN7S4GY` (24pc birthday candles).
+- Outcome: 0 / 6 (0.0% exact ASIN match), 25,341 tokens, 2,528 thinking tokens, latency: 296,132ms.
+
+**Overall MemoryArena Pilot (2 Tasks / 12 Sessions):** **0 / 12 (0.0% Exact ASIN Match)**  
+**Memory Persistence Integrity:** **12 / 12 (100% of sessions persisted to disk without loss)**
 
 ---
 
