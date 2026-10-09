@@ -201,7 +201,15 @@ class AntigravityCliProvider {
         try {
           const parsed = JSON.parse(stdout.trim());
           const isSuccess = parsed.status === 'SUCCESS';
-          const rawResponse = parsed.response || '';
+          let rawResponse = parsed.response || '';
+          if (!rawResponse.trim()) {
+            if (parsed.denied_actions && parsed.denied_actions.length > 0) {
+              const actions = parsed.denied_actions.map(a => a.display_name || a.action).join(', ');
+              rawResponse = `[Action executed/denied: ${actions}]`;
+            } else if (parsed.usage?.output_tokens > 0) {
+              rawResponse = `[Model response completed (${parsed.usage.output_tokens} tokens)]`;
+            }
+          }
           const scrubbedResponse = securityKernel.scrubSecrets(rawResponse.trim());
           const inputTokens = parsed.usage?.input_tokens || Math.round(prompt.length / 4);
           const outputTokens = parsed.usage?.output_tokens || Math.round(scrubbedResponse.length / 4);
