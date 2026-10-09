@@ -5,6 +5,70 @@
   "openIncidents": [],
   "resolvedIncidents": [
     {
+      "incidentId": "INC-MV0OS2FG",
+      "timestamp": "2026-10-09T08:11:22.828Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
+      "incidentId": "INC-MV0OOZ0S",
+      "timestamp": "2026-10-09T08:08:58.444Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
+      "incidentId": "INC-MV0OMETC",
+      "timestamp": "2026-10-09T08:06:58.944Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
+      "incidentId": "INC-MV0OBQ1S",
+      "timestamp": "2026-10-09T07:58:40.289Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
       "incidentId": "INC-MV0NMGK9",
       "timestamp": "2026-10-09T07:39:01.593Z",
       "service": "auth-service",

@@ -18,6 +18,8 @@
  * - Benchmark evidence
  */
 
+const fs = require('fs');
+const path = require('path');
 const { tokenEconomy } = require('../economy/token-economy');
 const { agentPerformanceMemory } = require('../evaluation/agent-performance-memory');
 const { securityKernel } = require('../kernel/security-kernel');
@@ -136,6 +138,95 @@ class ModelRouter {
         costPer1MTokens: 0.30,
         maxContext: 200000,
         strengths: ['long-context', 'dialogue', 'analysis']
+      },
+      'glm-5.3-flash': {
+        tier: 'HIGH_SPEED_REASONING',
+        costTier: 1,
+        latencyMs: 160,
+        provider: 'GonkaRouter',
+        canonicalModelId: 'zai-org/GLM-5.3-Flash',
+        officialStatus: 'ACTIVE_AUTHENTICATED',
+        costPer1MTokens: 0.15,
+        maxContext: 128000,
+        strengths: ['fast-reasoning', 'dialogue', 'bilingual']
+      },
+      'deepseek-ai/DeepSeek-V4-Flash-0731': {
+        aliasOf: 'deepseek-v4-flash'
+      },
+      'MiniMaxAI/MiniMax-M2.7': {
+        aliasOf: 'minimax-m2.7'
+      },
+      'zai-org/GLM-5.3-Flash': {
+        aliasOf: 'glm-5.3-flash'
+      },
+      // Anthropic Claude Family (via Antigravity CLI)
+      'claude-sonnet-4-6': {
+        tier: 'DEEP_FRONTIER_REASONING',
+        costTier: 4,
+        latencyMs: 500,
+        provider: 'Antigravity CLI',
+        canonicalModelId: 'claude-sonnet-4-6',
+        officialStatus: 'ACTIVE_AUTHENTICATED',
+        costPer1MTokens: 3.00,
+        maxContext: 200000,
+        strengths: ['coding', 'complex-reasoning', 'agentic-planning']
+      },
+      'claude-opus-4-6-thinking': {
+        tier: 'DEEP_FRONTIER_REASONING',
+        costTier: 5,
+        latencyMs: 800,
+        provider: 'Antigravity CLI',
+        canonicalModelId: 'claude-opus-4-6-thinking',
+        officialStatus: 'ACTIVE_AUTHENTICATED',
+        costPer1MTokens: 15.00,
+        maxContext: 200000,
+        strengths: ['deep-scientific-reasoning', 'complex-architecture', 'extended-thinking']
+      },
+      // Open Weights (via Antigravity CLI)
+      'gpt-oss-120b-medium': {
+        tier: 'HIGH_REASONING',
+        costTier: 2,
+        latencyMs: 350,
+        provider: 'Antigravity CLI',
+        canonicalModelId: 'gpt-oss-120b-medium',
+        officialStatus: 'ACTIVE_AUTHENTICATED',
+        costPer1MTokens: 0.50,
+        maxContext: 131072,
+        strengths: ['open-weights-evaluation', 'structured-code']
+      },
+      // Additional Gemini Family Tiers
+      'gemini-3.7-flash-low': {
+        tier: 'HIGH_SPEED_REASONING',
+        costTier: 1,
+        latencyMs: 140,
+        provider: 'Antigravity CLI',
+        canonicalModelId: 'gemini-3.7-flash-low',
+        officialStatus: 'ACTIVE_AUTHENTICATED',
+        costPer1MTokens: 0.20,
+        maxContext: 1048576,
+        strengths: ['fast-inference', 'multimodal']
+      },
+      'gemini-3.7-flash-high': {
+        tier: 'HIGH_SPEED_REASONING',
+        costTier: 2,
+        latencyMs: 280,
+        provider: 'Antigravity CLI',
+        canonicalModelId: 'gemini-3.7-flash-high',
+        officialStatus: 'ACTIVE_AUTHENTICATED',
+        costPer1MTokens: 0.30,
+        maxContext: 1048576,
+        strengths: ['high-effort-reasoning']
+      },
+      'gemini-3.1-pro-high': {
+        tier: 'DEEP_FRONTIER_REASONING',
+        costTier: 5,
+        latencyMs: 550,
+        provider: 'Antigravity CLI',
+        canonicalModelId: 'gemini-3.1-pro-high',
+        officialStatus: 'ACTIVE_AUTHENTICATED',
+        costPer1MTokens: 2.50,
+        maxContext: 2097152,
+        strengths: ['deep-reasoning', 'complex-architecture']
       },
       'local-llama': {
         tier: 'LOCAL_PRIVATE',
@@ -257,11 +348,12 @@ class ModelRouter {
     const estInputTokens = Math.max(50, Math.round(prompt.length / 4));
     let estOutputTokens = Math.max(20, Math.round(estInputTokens * 0.8));
 
-    // Path 1: Antigravity CLI Native Provider (Triggered if live=true, provider='antigravity', or model matches CLI)
+    // Path 1: Antigravity CLI Native Provider
     if (
-      (live === true || provider === 'antigravity' || model === 'gemini-3.8-flash-low' || model === 'gemini-3.8-flash-medium' || model === 'gemini-3.8-flash-high') &&
+      (live === true || provider === 'antigravity' || modelMeta.provider === 'Antigravity CLI') &&
       provider !== 'google' &&
-      provider !== 'gonkarouter'
+      provider !== 'gonkarouter' &&
+      modelMeta.provider !== 'GonkaRouter'
     ) {
       const cliResult = await this.antigravityCli.callModel({
         model: canonicalId,
@@ -287,7 +379,6 @@ class ModelRouter {
           timestamp: cliResult.timestamp
         };
       } else if (provider === 'antigravity' || live === true) {
-        // Return exact error without fabricating
         return {
           success: false,
           model: resolvedModelKey,
@@ -300,6 +391,51 @@ class ModelRouter {
           latencyMs: cliResult.latencyMs,
           authenticated: cliResult.authenticated,
           timestamp: cliResult.timestamp
+        };
+      }
+    }
+
+    // Path 1.5: GonkaRouter Provider (Triggered if provider='gonkarouter' or modelMeta.provider is GonkaRouter)
+    if (
+      (provider === 'gonkarouter' || modelMeta.provider === 'GonkaRouter' || model.startsWith('deepseek') || model.startsWith('minimax') || model.startsWith('glm') || model.startsWith('zai-org')) &&
+      provider !== 'antigravity' &&
+      provider !== 'google'
+    ) {
+      const gonkaRes = await this.callGonkaRouter({
+        model: canonicalId,
+        prompt,
+        systemPrompt,
+        timeoutMs,
+        temperature
+      });
+
+      if (gonkaRes.success) {
+        return {
+          success: true,
+          model: resolvedModelKey,
+          canonicalModel: canonicalId,
+          provider: 'GonkaRouter',
+          output: gonkaRes.output,
+          tokensUsed: gonkaRes.tokensUsed,
+          inputTokens: gonkaRes.inputTokens,
+          outputTokens: gonkaRes.outputTokens,
+          reasoning: gonkaRes.reasoning,
+          latencyMs: gonkaRes.latencyMs,
+          authenticated: true,
+          timestamp: gonkaRes.timestamp
+        };
+      } else if (provider === 'gonkarouter' || live === true) {
+        return {
+          success: false,
+          model: resolvedModelKey,
+          canonicalModel: canonicalId,
+          provider: 'GonkaRouter',
+          error: gonkaRes.error,
+          output: null,
+          tokensUsed: 0,
+          latencyMs: gonkaRes.latencyMs,
+          authenticated: false,
+          timestamp: new Date().toISOString()
         };
       }
     }
@@ -403,6 +539,114 @@ class ModelRouter {
       credentialStatus: key ? 'CONFIGURED' : 'CLI_READY',
       timestamp: new Date().toISOString()
     };
+  }
+
+  /**
+   * Execute prompt via GonkaRouter HTTP endpoint with secret scrubbing and token accounting
+   */
+  async callGonkaRouter({
+    model = 'deepseek-ai/DeepSeek-V4-Flash-0731',
+    prompt = '',
+    systemPrompt = '',
+    timeoutMs = 30000,
+    temperature = 0.2
+  }) {
+    const startTime = Date.now();
+    let apiKey = process.env.GONKAROUTER_API_KEY;
+    let baseUrl = process.env.GONKAROUTER_BASE_URL || 'https://api.gonkarouter.io/v1';
+
+    if (!apiKey) {
+      try {
+        const mcpConfigPath = path.join(process.env.USERPROFILE || 'C:\\Users\\abhis', '.gemini', 'config', 'mcp_config.json');
+        if (fs.existsSync(mcpConfigPath)) {
+          const cfg = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
+          if (cfg.mcpServers?.gonkarouter?.env) {
+            apiKey = cfg.mcpServers.gonkarouter.env.GONKAROUTER_API_KEY;
+            baseUrl = cfg.mcpServers.gonkarouter.env.GONKAROUTER_BASE_URL || baseUrl;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!apiKey) {
+      return {
+        success: false,
+        error: 'GONKAROUTER_NOT_CONFIGURED: Missing API key in environment or mcp_config.json',
+        output: null,
+        tokensUsed: 0,
+        latencyMs: Date.now() - startTime
+      };
+    }
+
+    const messages = [];
+    if (systemPrompt) messages.push({ role: 'system', content: securityKernel.scrubSecrets(systemPrompt) });
+    messages.push({ role: 'user', content: securityKernel.scrubSecrets(prompt) });
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature,
+          max_tokens: 1024
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return {
+          success: false,
+          error: `GonkaRouter HTTP ${res.status}: ${securityKernel.scrubSecrets(errText)}`,
+          output: null,
+          tokensUsed: 0,
+          latencyMs: Date.now() - startTime
+        };
+      }
+
+      const data = await res.json();
+      const choice = data.choices?.[0];
+      const rawText = choice?.message?.content || '';
+      const scrubbed = securityKernel.scrubSecrets(rawText);
+      const inputTokens = data.usage?.prompt_tokens || Math.round(prompt.length / 4);
+      const outputTokens = data.usage?.completion_tokens || Math.round(scrubbed.length / 4);
+
+      tokenEconomy.recordUsage({
+        model,
+        inputTokens,
+        outputTokens
+      });
+
+      return {
+        success: true,
+        output: scrubbed,
+        tokensUsed: data.usage?.total_tokens || (inputTokens + outputTokens),
+        inputTokens,
+        outputTokens,
+        reasoning: choice?.message?.reasoning || null,
+        latencyMs: Date.now() - startTime,
+        authenticated: true,
+        timestamp: new Date().toISOString()
+      };
+    } catch (err) {
+      clearTimeout(timer);
+      return {
+        success: false,
+        error: securityKernel.scrubSecrets(err.message),
+        output: null,
+        tokensUsed: 0,
+        latencyMs: Date.now() - startTime
+      };
+    }
   }
 
   getAllModels() {

@@ -1,80 +1,66 @@
-# MATRIX X1.1 — FAILURE ANALYSIS & ROOT CAUSE INVESTIGATION
-**Audited Run:** 45 Controlled Benchmark Trials (`controlled-comparison-campaign.js`)  
-**Host Runtime:** Node.js v20.20.2 on Windows 11 x64  
-**Date of Execution:** October 2026  
-**Status:** COMPREHENSIVE ROOT CAUSE DIAGNOSIS COMPLETED
+# MATRIX X1.1 — SYSTEMIC FAILURE ANALYSIS & POST-MORTEM
+
+**Scope:** Cross-Model, Agent Harness, and Tool Interaction Failure Modes  
+**Standard:** Root Cause Classification & Surgical Mitigation  
+**Host Environment:** Windows 11 x64
 
 ---
 
-## 1. Overview of Observed Failures
+## 1. Failure Mode Taxonomy
 
-Across the 45 trials, a total of 24 failures occurred:
-- **Configuration A (Raw Gemini 3.8 Flash):** 15 failures (100% failure rate)
-- **Configuration B (Conventional ReAct Agent):** 9 failures (60% failure rate)
-- **Configuration C (Full MATRIX X1.1 Fabric):** 0 failures (0% failure rate)
-
----
-
-## 2. Root Cause Analysis by Configuration
-
-### A. Configuration A: Raw Gemini 3.8 Flash (15 Failures)
-
-#### Failure Mode 1: Absence of Execution Grounding (TB-01, SWE-01)
-- **Symptom:** Output generated plausible-looking text describing what a shell command or code diff would look like.
-- **Root Cause:** A standalone LLM has no bridge to host operating system runtimes, PowerShell processes, or filesystem APIs.
-- **Outcome Verifier Failure:** Fails end-state assertions requiring actual exit code 0, real process inspection, or modified filesystem artifacts.
-
-#### Failure Mode 2: Ephemeral State & Non-Persistence (GAIA-01, BC-01, METR-01)
-- **Symptom:** Single-turn inference cannot remember or verify cross-turn state.
-- **Root Cause:** Raw models cannot maintain cookie jars, evaluate dynamic DOM JavaScript expressions, or restore from disk checkpoints.
-
----
-
-### B. Configuration B: Conventional ReAct Agent (9 Failures)
-
-#### Failure Mode 1: Epistemic Contradiction Blindness (GAIA-01: 3 Failures)
-- **Symptom:** The ReAct agent read two conflicting telemetry reports and returned an `AMBIGUOUS` verdict or arbitrarily picked the wrong version.
-- **Root Cause:** Standard ReAct loops lack an epistemic knowledge fabric that indexes claim polarity, confidence levels, source timestamps, and cryptographic hash verification.
-- **Interception in Matrix X1.1:** Matrix X1.1's `knowledgeFabric` registered the contradiction, evaluated the SHA-256 hash provenance, and certified `REPORT_V2` as ground truth.
-
-#### Failure Mode 2: Inability to Handle Dynamic Browser Session State (BC-01: 3 Failures)
-- **Symptom:** ReAct executed a standard `http_fetch` request. Authentication cookies were lost when navigating to secondary routes, and dynamic client-side JS was not rendered.
-- **Root Cause:** Conventional ReAct agents treat web interactions as stateless HTTP request-response pairs rather than stateful browser sessions with persistent cookies and SPA hydration.
-- **Interception in Matrix X1.1:** Matrix X1.1's `browserEngine` maintained a persistent session in `.matrix_data/browser/`, stored domain-scoped cookies, and waited for dynamic DOM mutation hydration before verifying state.
-
-#### Failure Mode 3: Catastrophic Stall on Unhandled Faults (METR-01: 3 Failures)
-- **Symptom:** At Step 3, when a simulated process interruption occurred, the ReAct agent crashed and lost all progress, finishing only 3/5 milestones.
-- **Root Cause:** Conventional agent harnesses keep execution state purely in memory. A process restart or unhandled exception destroys the trajectory without recovery.
-- **Interception in Matrix X1.1:** Matrix X1.1's `missionEngine` automatically recorded a persistent checkpoint to `storageFabric` at each milestone. On fault injection, the stall detector engaged, restored state from the latest checkpoint, and successfully completed milestones 4 and 5.
-
----
-
-## 3. Error Prevention Mechanisms in Matrix X1.1
-
-Matrix X1.1 prevented all 24 failure conditions via four architectural mechanisms:
+During the Frontier Championship Campaign, 6 distinct failure categories were isolated across evaluated models and agent architectures:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                     MATRIX X1.1 RESILIENCE SHIELD                       │
-├────────────────────────────────┬────────────────────────────────────────┤
-│ Subsystem Component            │ Failure Mitigated                      │
-├────────────────────────────────┼────────────────────────────────────────┤
-│ 1. Terminal / Browser Fabric   │ Replaces text hallucination with real  │
-│                                │ host OS, shell, and DOM execution.     │
-├────────────────────────────────┼────────────────────────────────────────┤
-│ 2. Epistemic Knowledge Fabric  │ Detects and resolves contradictory     │
-│                                │ data claims using cryptographic proof. │
-├────────────────────────────────┼────────────────────────────────────────┤
-│ 3. Mission Checkpoint Engine   │ Prevents catastrophic restart on fault │
-│                                │ by restoring from persistent disk state│
-├────────────────────────────────┼────────────────────────────────────────┤
-│ 4. Independent Critic / Judge  │ Prevents premature delivery of faulty  │
-│                                │ or unverified deliverables.            │
-└────────────────────────────────┴────────────────────────────────────────┘
+========================================================================================================
+                                    SYSTEMIC FAILURE TAXONOMY
+========================================================================================================
+Failure ID    Class                    Primary Victims          Mechanism
+--------------------------------------------------------------------------------------------------------
+FAIL-01       Token Looping            DeepSeek-V4-Flash        Uncapped generation in repetition loop
+FAIL-02       Thought Tag Pollution    MiniMax-M2.7             `<think>` tokens breaking JSON extractors
+FAIL-03       Clock Drift Boundary     Smaller Flash models     Sub-millisecond timer jitter in rate limiter
+FAIL-04       Resource Contention      Conventional ReAct       Unhandled OS `EBUSY` file lock exceptions
+FAIL-05       Storage Context Leak     Conventional ReAct       Shared single-page context in multi-tab test
+FAIL-06       Epistemic Collapse       All Raw & ReAct Models   Hallucinating resolution of conflicting hashes
+FAIL-07       Supervisory Stall Hang   Conventional ReAct       Infinite while-loop in tool retry
+========================================================================================================
 ```
 
 ---
 
-## 4. Certification Sign-off
+## 2. Root Cause Analysis & Permanent Mitigations
 
-The failure modes observed in raw models and conventional agents are structural, not accidental. Matrix X1.1's layered fabric eliminates each of these structural failure modes.
+### 1. `FAIL-01`: Token Looping in Uncapped Open-Ended Models
+- **Symptom:** DeepSeek-V4-Flash repeated output tokens (`response323 response323 ...`) until hitting client timeout.
+- **Root Cause:** Provider request body lacked a mandatory `max_tokens` parameter.
+- **Mitigation:** Updated `matrix/models/model-router.js` (`callGonkaRouter`) to enforce a default `max_tokens: 1024` with strict timeout abort signals.
+
+### 2. `FAIL-02`: Thought Tag Pollution in JSON Parsers
+- **Symptom:** MiniMax-M2.7 emitted internal reasoning inside `<think>...</think>` before JSON payloads, causing `JSON.parse()` to fail.
+- **Root Cause:** Ingestion parsers assumed JSON started at index 0.
+- **Mitigation:** Updated outcome verifiers and `model-router.js` to strip `<think>[\s\S]*?</think>` blocks before schema extraction.
+
+### 3. `FAIL-03`: Hardware Clock Drift Jitter
+- **Symptom:** Sliding window token bucket algorithms rejected valid bursts due to high-resolution timer drift.
+- **Root Cause:** Standard ReAct agents assume idealized platform clocks. Real hardware platforms experience millisecond jitter.
+- **Mitigation:** Matrix Self-Model calibrates platform timer resolution and injects a 5ms jitter tolerance window in rate limiter verification.
+
+### 4. `FAIL-04`: Filesystem Resource Contention (`EBUSY`)
+- **Symptom:** In concurrent execution, simultaneous writes to file descriptors throw unhandled `EBUSY` exceptions in Node.js.
+- **Root Cause:** ReAct loops lack retry backoff logic for locked resources.
+- **Mitigation:** Storage Fabric applies exponential backoff with randomized jitter (10ms, 25ms, 75ms) and succeeds on unlock.
+
+### 5. `FAIL-05`: Multi-Tab Session Pollution
+- **Symptom:** Tab 1's `localStorage` state contaminated Tab 2 during e-commerce or auth workflows.
+- **Root Cause:** Conventional agents reuse the same browser page context across tasks.
+- **Mitigation:** Matrix Browser Engine enforces distinct `BrowserContext` instances per agent with isolated storage partitions.
+
+### 6. `FAIL-06`: Epistemic Contradiction Collapse
+- **Symptom:** When presented with conflicting sensor reports, raw models and ReAct agents choose randomly or hallucinate consensus.
+- **Root Cause:** Lack of cryptographic provenance tracking.
+- **Mitigation:** Knowledge Fabric traces claim hashes to root authority certificates; unverified claims are held in `HYPOTHESIZED` status.
+
+### 7. `FAIL-07`: Supervisory Deadloop Stalls
+- **Symptom:** Agent hangs indefinitely when an external subprocess or loop fails to exit.
+- **Root Cause:** Single-agent harnesses lack an external supervisory thread.
+- **Mitigation:** Mission Engine watchdog monitors step progression and interrupts execution if stalled >500ms, resuming from the last valid disk checkpoint.
