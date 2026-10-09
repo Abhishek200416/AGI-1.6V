@@ -86,3 +86,7 @@
 {"timestamp":"2026-10-09T11:54:54.525Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
 {"timestamp":"2026-10-09T11:54:55.263Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
 {"timestamp":"2026-10-09T11:54:55.263Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T12:10:07.802Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T12:10:07.802Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T12:10:08.535Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T12:10:08.535Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
