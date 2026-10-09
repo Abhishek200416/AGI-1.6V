@@ -1,6 +1,6 @@
 [
   {
-    "id": "mem-mv0qftfc-qijp",
+    "id": "mem-mv0udg01-wbux",
     "scope": "PROJECT",
     "key": "target-k8s-namespace",
     "content": "production-payments-v4",
@@ -10,7 +10,7 @@
     ],
     "confidence": 0.99,
     "source": "orchestration-agent-v4",
-    "createdAt": "2026-10-09T08:57:50.520Z",
+    "createdAt": "2026-10-09T10:47:58.273Z",
     "expiresAt": null
   }
 ]
