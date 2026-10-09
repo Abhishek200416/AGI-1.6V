@@ -120,3 +120,15 @@
 {"timestamp":"2026-10-09T18:01:41.130Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
 {"timestamp":"2026-10-09T18:01:47.056Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
 {"timestamp":"2026-10-09T18:01:47.056Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T19:29:31.276Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T19:29:31.276Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T19:29:31.980Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T19:29:31.980Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T19:45:36.975Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T19:45:36.975Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T19:45:37.690Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T19:45:37.691Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T19:47:51.710Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T19:47:51.711Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T19:47:52.476Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T19:47:52.476Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}

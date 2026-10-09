@@ -5,6 +5,102 @@
   "openIncidents": [],
   "resolvedIncidents": [
     {
+      "incidentId": "INC-MV1DNRJB",
+      "timestamp": "2026-10-09T19:47:52.487Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
+      "incidentId": "INC-MV1DNQY2",
+      "timestamp": "2026-10-09T19:47:51.722Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
+      "incidentId": "INC-MV1DKVJ7",
+      "timestamp": "2026-10-09T19:45:37.699Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
+      "incidentId": "INC-MV1DKUZE",
+      "timestamp": "2026-10-09T19:45:36.986Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
+      "incidentId": "INC-MV1D06DU",
+      "timestamp": "2026-10-09T19:29:31.986Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
+      "incidentId": "INC-MV1D05UB",
+      "timestamp": "2026-10-09T19:29:31.283Z",
+      "service": "auth-service",
+      "severity": "HIGH",
+      "title": "Degradation detected on auth-service: Memory usage exceeded 95%",
+      "metricsExceeded": {
+        "reason": "Memory usage exceeded 95%",
+        "severity": "HIGH"
+      },
+      "diagnosis": "Root Cause: Memory leak or thread contention in auth-service service worker.",
+      "remediationStatus": "RESOLVED",
+      "remediationAction": "Restart worker thread and apply memory ceiling cap to auth-service",
+      "verified": true,
+      "rollbackTriggered": false
+    },
+    {
       "incidentId": "INC-MV19VBXZ",
       "timestamp": "2026-10-09T18:01:47.063Z",
       "service": "auth-service",
