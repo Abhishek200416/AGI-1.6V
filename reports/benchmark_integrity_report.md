@@ -2,7 +2,7 @@
 
 **Agent Identity:** `AGI 0.7`  
 **Git Commit:** `c00a549`  
-**Audit Timestamp:** `2026-10-09T15:11:37Z`  
+**Audit Timestamp:** `2026-10-09T15:20:37Z`  
 **Completion Status:** `VERIFIED`  
 
 ---
@@ -52,14 +52,14 @@ In accordance with strict benchmark integrity standards:
 | **SWE-bench Verified** | `EXTERNAL_BENCHMARK` | `BLOCKED` | `BLOCKED` | **0/0 (N/A)** | **0/0 (N/A)** | OFFICIAL_DOCKER_TEST_HARNESS | 0 | 0.0s | `FLAGGED (1)` |
 | **OSWorld 2.0 / OSWorld-Verified** | `EXTERNAL_BENCHMARK` | `BLOCKED` | `BLOCKED` | **0/0 (N/A)** | **0/0 (N/A)** | OFFICIAL_VM_EXECUTION_EVALUA | 0 | 0.0s | `FLAGGED (1)` |
 | **BrowserGym / WebArena-Verified** | `EXTERNAL_BENCHMARK` | `BLOCKED` | `BLOCKED` | **0/0 (N/A)** | **0/0 (N/A)** | OFFICIAL_BROWSERGYM_ENVIRONM | 0 | 0.0s | `FLAGGED (1)` |
-| **Berkeley Function Calling Leaderboard (BFCL)** | `EXTERNAL_BENCHMARK` | `FULL_OFFICIAL` | `COMPLETED_WITH_FAILURES` | **0/0 (N/A)** | **0/0 (N/A)** | OFFICIAL_BFCL_AST_EVALUATOR | 0 | 0.0s | `FLAGGED (1)` |
-| **GPQA Diamond** | `EXTERNAL_BENCHMARK` | `FULL_OFFICIAL` | `COMPLETED_WITH_FAILURES` | **0/0 (N/A)** | **0/0 (N/A)** | OFFICIAL_ACCURACY_EVALUATOR  | 0 | 0.0s | `FLAGGED (1)` |
+| **Berkeley Function Calling Leaderboard (BFCL)** | `EXTERNAL_BENCHMARK` | `FULL_OFFICIAL` | `COMPLETED_WITH_FAILURES` | **0/0 (N/A)** | **0/0 (N/A)** | OFFICIAL_BFCL_AST_EVALUATOR | 0 | 0.0s | `FLAGGED (2)` |
+| **GPQA Diamond** | `EXTERNAL_BENCHMARK` | `FULL_OFFICIAL` | `COMPLETED_WITH_FAILURES` | **0/0 (N/A)** | **0/0 (N/A)** | OFFICIAL_ACCURACY_EVALUATOR  | 0 | 0.0s | `FLAGGED (2)` |
 | **BrowseComp (simple-evals)** | `EXTERNAL_BENCHMARK` | `PILOT` | `COMPLETED_WITH_FAILURES` | **0/3** | **0/3** | OpenAI simple-evals Exact Ma | 6431 | 105.6s | `FLAGGED (1)` |
 | **BrowseComp (Hardened & Canonicalized)** | `EXTERNAL_BENCHMARK` | `CUSTOM_TEST` | `COMPLETED_WITH_FAILURES` | **1/3** | **0/3** | Dual Metric (Official Raw EM | 16323 | 84.4s | `FLAGGED (2)` |
 | **MemoryArena (Shopping Domain)** | `EXTERNAL_BENCHMARK` | `CUSTOM_TEST` | `COMPLETED_WITH_FAILURES` | **0/2 tasks (0/12 sessions)** | **0/0 (N/A) [No official container]** | MockWebShopCatalog exact ASI | 24342 | 248.3s | `FLAGGED (2)` |
 | **tau-bench (Retail Domain)** | `EXTERNAL_BENCHMARK` | `PILOT` | `PASSED` | **1/1** | **1/1** | Sierra Research MockRetailDo | 84223 | 267.7s | `CLEAN` |
-| **Berkeley Function Calling Leaderboard (BFCL)** | `EXTERNAL_BENCHMARK` | `DIAGNOSTIC_SAMPLE` | `COMPLETED_WITH_FAILURES` | **2/4** | **2/4** | Official BFCL Local AST Grad | 7350 | 41.1s | `FLAGGED (1)` |
-| **GPQA Diamond (Diagnostic Sample)** | `EXTERNAL_BENCHMARK` | `DIAGNOSTIC_SAMPLE` | `PASSED` | **4/4** | **4/4** | Official Multiple Choice Gra | 3546 | 39.0s | `FLAGGED (1)` |
+| **Berkeley Function Calling Leaderboard (BFCL)** | `EXTERNAL_BENCHMARK` | `DIAGNOSTIC_SAMPLE` | `COMPLETED_WITH_FAILURES` | **2/4** | **2/4** | Official BFCL Local AST Grad | 7350 | 41.1s | `FLAGGED (2)` |
+| **GPQA Diamond (Diagnostic Sample)** | `EXTERNAL_BENCHMARK` | `DIAGNOSTIC_SAMPLE` | `PASSED` | **4/4** | **4/4** | Official Multiple Choice Gra | 3546 | 39.0s | `FLAGGED (2)` |
 | **Internal Regression & Acceptance Suites** | `INTERNAL_TEST` | `CUSTOM_TEST` | `VERIFIED` | **5/5 suites (78/78 internal tests)** | **0/0 (N/A) [Internal Unit Tests Only]** | Native Node.js Test Harnesse | 0 | 1.4s | `CLEAN` |
 
 ---
@@ -87,7 +87,6 @@ The following discrepancies were identified between historical summary files (e.
 ### Comparison: BrowseComp (simple-evals) vs BrowseComp (Hardened & Canonicalized)
 - **Comparable Status:** `NO (NON-COMPARABLE)`
 - **Reasons Incompatible:**
-  - Incompatible benchmark names: 'BrowseComp (simple-evals)' vs 'BrowseComp (Hardened & Canonicalized)'.
   - Task split mismatch: 'test_subset (tasks 0-2)' vs 'test_subset (tasks 1-3)'.
   - Evaluator mismatch: Official (True) vs Unofficial (False).
 - **Run A Accuracy:** 0/3 (0.0%)
@@ -100,9 +99,7 @@ The following discrepancies were identified between historical summary files (e.
   - `TRADEOFF_ACCURACY_IMPROVED_AT_RESOURCE_COST`
 
 ### Comparison: tau-bench (Retail Dev-0 Foundation Model) vs tau-bench (Retail Dev-0 AGI 0.7 Hardened)
-- **Comparable Status:** `NO (NON-COMPARABLE)`
-- **Reasons Incompatible:**
-  - Incompatible benchmark names: 'tau-bench (Retail Dev-0 Foundation Model)' vs 'tau-bench (Retail Dev-0 AGI 0.7 Hardened)'.
+- **Comparable Status:** `YES (VALID COMPARISON)`
 - **Run A Accuracy:** 0/1 (0.0%)
 - **Run B Accuracy:** 1/1 (100.0%)
 - **Pass Rate Delta:** +100.0%

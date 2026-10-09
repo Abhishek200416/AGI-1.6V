@@ -1,7 +1,7 @@
 {
-  "checkpointId": "ckpt-TASK-INTERRUPT-01-1791558379210",
+  "checkpointId": "ckpt-TASK-INTERRUPT-01-1791558949456",
   "taskId": "TASK-INTERRUPT-01",
-  "timestamp": "2026-10-09T15:06:19.210Z",
+  "timestamp": "2026-10-09T15:15:49.456Z",
   "phase": "EXECUTION_PHASE_2",
   "dagState": {},
   "completedNodes": [

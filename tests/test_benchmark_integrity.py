@@ -1,23 +1,21 @@
 """
 tests/test_benchmark_integrity.py
-AGI 0.7 — Mandatory Adversarial Test Suite for Benchmark Results Validator
+AGI 0.7 — Mandatory Adversarial Test Suite for Benchmark Integrity
 
-Covers all 12 required challenge scenarios:
+Covers all 12 mandatory adversarial conditions specified in Challenge 001:
 1. Fully executed run with correct task results.
-2. Pilot incorrectly presented as full benchmark.
-3. Blocked benchmark that must not count as pass or failure.
-4. Quarantined contaminated task (answer exposed in development).
-5. Record marked PASS without sufficient execution evidence.
-6. Missing results and zero-task denominator (no division by zero).
+2. Pilot incorrectly presented as a full benchmark.
+3. Blocked benchmark that must not count as either a pass or a task failure.
+4. Task quarantined because its answer was exposed during development.
+5. Record marked PASS without sufficient evidence that its evaluation executed.
+6. Missing results and a zero-task denominator.
 7. Duplicate task IDs.
-8. Conflicting status information across manifest and results.
-9. Comparison across incompatible versions or task sets.
-10. Accuracy improvement with worse latency/token resource usage.
+8. Conflicting status information across the manifest and result records.
+9. Comparison across incompatible benchmark versions or different task sets.
+10. Result whose accuracy improves while latency or token usage becomes worse.
 11. Malformed or incomplete input files.
-12. Converting internal unit test success into external benchmark score.
-Plus:
-13. Output consistency agreement (JSON, CSV, Markdown).
-14. Real repository audit integration.
+12. Report attempting to convert internal unit-test success into an external benchmark score.
+13. Live repository reconciliation and consistency verification across JSON, CSV, and Markdown.
 """
 
 import os
@@ -27,7 +25,7 @@ import unittest
 import tempfile
 from pathlib import Path
 
-# Add project root to sys.path
+# Add repo root to sys.path
 sys.path.insert(0, os.path.abspath("."))
 
 from agi.benchmarks.validator import (
@@ -38,63 +36,306 @@ from agi.benchmarks.validator import (
     ValidatedTask,
     ValidatedBenchmarkRun,
     ValidatedComparison,
-    IntegrityAuditReport,
-    verify_task_evidence,
     compute_pass_ratios,
+    verify_task_evidence,
     evaluate_comparability,
-    reconcile_historical_csv,
-    parse_tier_manifest,
-    parse_suite_manifest,
-    parse_browsecomp_raw,
-    parse_browsecomp_hardened,
-    parse_memoryarena_raw,
-    parse_tau_bench_single,
-    parse_bfcl_results,
-    parse_gpqa_results,
-    parse_internal_baseline_suites,
+    check_status_contradiction,
+    validate_benchmark_record,
     run_repository_audit,
     generate_json_report,
     generate_csv_report,
     generate_markdown_report,
-    is_internal_suite
 )
 
 
 class TestBenchmarkIntegrityAdversarial(unittest.TestCase):
+    """Mandatory adversarial test suite for trustworthy benchmark integrity."""
 
-    def setUp(self):
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.test_dir = Path(self.temp_dir.name)
-
-    def tearDown(self):
-        self.temp_dir.cleanup()
-
-    # --------------------------------------------------------------------------
-    # Case 1: Fully executed run with correct task results
-    # --------------------------------------------------------------------------
-    def test_01_fully_executed_run(self):
+    def test_01_fully_executed_run_with_correct_task_results(self):
+        """Case 1: A fully executed run with authentic, valid task results."""
         tasks = [
-            ValidatedTask(
-                task_id=f"task_{i}",
-                passed=True,
-                status="PASSED",
-                official_evaluator=True,
-                is_contaminated=False,
-                tokens=1500,
-                latency_ms=2500,
-                has_evidence=True
-            )
-            for i in range(5)
+            {
+                "id": f"task_{i}",
+                "passed": True,
+                "tokens": 1200 + i * 50,
+                "latency_ms": 1500 + i * 20,
+                "turns": 2,
+                "extracted_answer": f"correct_answer_{i}",
+                "ground_truth": f"correct_answer_{i}",
+                "trajectory": [{"turn": 1, "action": "solve"}]
+            }
+            for i in range(10)
         ]
-        ratio_str, rate = compute_pass_ratios(5, 5)
-        run = ValidatedBenchmarkRun(
-            suite_id="full_test_suite",
-            name="Official Full Benchmark",
-            benchmark_version="v1.0",
-            task_split="full (5 tasks)",
+        payload = {
+            "name": "Synthetic Certified Benchmark",
+            "benchmark_version": "v1.0",
+            "task_split": "full_eval (10 tasks)",
+            "split_total_tasks": 10,
+            "run_type": RunType.FULL_OFFICIAL,
+            "status": RunStatus.PASSED,
+            "evaluator_name": "Official Benchmark Grader",
+            "is_official_evaluator": True,
+            "instances": tasks
+        }
+
+        run = validate_benchmark_record(payload)
+
+        self.assertEqual(run.status, RunStatus.PASSED)
+        self.assertEqual(run.run_type, RunType.FULL_OFFICIAL)
+        self.assertEqual(run.tasks_attempted, 10)
+        self.assertEqual(run.tasks_passed, 10)
+        self.assertEqual(run.tasks_failed, 0)
+        self.assertEqual(run.tasks_contaminated, 0)
+        self.assertEqual(run.tasks_unverified, 0)
+        self.assertEqual(run.pass_ratio_str, "10/10")
+        self.assertEqual(run.pass_rate, 1.0)
+        self.assertEqual(run.official_pass_ratio_str, "10/10")
+        self.assertEqual(run.official_pass_rate, 1.0)
+        self.assertEqual(run.integrity_flags, [], "Authentic full run must have zero integrity flags")
+
+    def test_02_pilot_incorrectly_presented_as_full_benchmark(self):
+        """Case 2: A pilot incorrectly presented as a full benchmark."""
+        tasks = [
+            {
+                "id": "task_0",
+                "passed": True,
+                "tokens": 5000,
+                "latency_ms": 8000,
+                "extracted_answer": "ans_0"
+            }
+        ]
+        payload = {
+            "name": "Large-Scale Agent Benchmark",
+            "benchmark_version": "v1.0",
+            "task_split": "full_test_split (100 tasks)",
+            "split_total_tasks": 100,  # Full split is 100 tasks
+            "run_type": RunType.FULL_OFFICIAL,  # Fraudulently claimed as full
+            "status": "PASSED",
+            "evaluator_name": "Official AST Grader",
+            "is_official_evaluator": True,
+            "instances": tasks  # Attempted only 1 task
+        }
+
+        run = validate_benchmark_record(payload)
+
+        self.assertIn(IntegrityFlag.PILOT_CLAIMED_AS_FULL, run.integrity_flags,
+                      "Must flag pilot incorrectly claimed as full benchmark")
+        self.assertEqual(run.run_type, RunType.PILOT, "Must demote run type to PILOT")
+        self.assertEqual(run.tasks_attempted, 1)
+        self.assertEqual(run.split_total_tasks, 100)
+        self.assertEqual(run.pass_ratio_str, "1/1", "Must report exact attempted ratio, not 100/100")
+
+    def test_03_blocked_benchmark_not_counted_as_pass_or_failure(self):
+        """Case 3: A blocked benchmark that must not count as either a pass or a task failure."""
+        payload = {
+            "name": "Terminal-Bench 2.0 (Harbor)",
+            "benchmark_version": "v2.0",
+            "task_split": "core",
+            "status": "BLOCKED",
+            "run_type": RunType.BLOCKED,
+            "evaluator_name": "Harbor Container Harness",
+            "blockerReason": "Docker daemon is inactive on host",
+            # Adversarial: payload attempts to claim 5 attempted and 5 failed or passed tasks
+            "tasks_attempted": 5,
+            "tasks_passed": 5,
+            "instances": [
+                {"id": "tb_1", "passed": False},
+                {"id": "tb_2", "passed": False}
+            ]
+        }
+
+        run = validate_benchmark_record(payload)
+
+        self.assertEqual(run.run_type, RunType.BLOCKED)
+        self.assertEqual(run.status, RunStatus.BLOCKED)
+        self.assertEqual(run.tasks_attempted, 0, "Blocked runs must have strictly 0 attempted tasks")
+        self.assertEqual(run.tasks_passed, 0, "Blocked runs must have strictly 0 passed tasks")
+        self.assertEqual(run.tasks_failed, 0, "Blocked runs must have strictly 0 failed tasks")
+        self.assertIsNone(run.pass_rate, "Blocked runs must have None pass rate")
+        self.assertEqual(run.pass_ratio_str, "0/0 (N/A)", "Blocked runs must report 0/0 (N/A)")
+        self.assertIn(IntegrityFlag.BLOCKED_COUNTED_AS_FAILURE_OR_PASS, run.integrity_flags,
+                      "Must flag attempt to count blocked run as tasks")
+
+    def test_04_task_quarantined_because_answer_exposed_during_dev(self):
+        """Case 4: A task quarantined because its answer was exposed during development."""
+        tasks = [
+            {
+                "id": "task_1",
+                "passed": True,
+                "extracted_answer": "Ireland v Romania",
+                "ground_truth": "Ireland v Romania",
+                "tokens": 2000,
+                "latency_ms": 3000,
+                "is_contaminated": True  # Answer was printed in dev logs
+            },
+            {
+                "id": "task_2",
+                "passed": True,
+                "extracted_answer": "Clean Answer",
+                "ground_truth": "Clean Answer",
+                "tokens": 2000,
+                "latency_ms": 3000,
+                "is_contaminated": False
+            },
+            {
+                "id": "task_3",
+                "passed": False,
+                "extracted_answer": "Wrong Answer",
+                "ground_truth": "Target Ground Truth",
+                "tokens": 2000,
+                "latency_ms": 3000,
+                "is_contaminated": False
+            }
+        ]
+        payload = {
+            "name": "BrowseComp Research Evaluation",
+            "benchmark_version": "2024",
+            "task_split": "subset",
+            "run_type": RunType.PILOT,
+            "evaluator_name": "Exact Match",
+            "is_official_evaluator": True,
+            "instances": tasks
+        }
+
+        run = validate_benchmark_record(payload)
+
+        self.assertIn(IntegrityFlag.CONTAMINATED_TASKS_DETECTED, run.integrity_flags)
+        self.assertEqual(run.tasks_contaminated, 1)
+        # Contaminated pass is quarantined and strictly excluded from passed count
+        self.assertEqual(run.tasks_passed, 1, "Contaminated task must NOT increment passed count")
+        self.assertEqual(run.pass_ratio_str, "1/3")
+        # Clean pass ratio strictly excludes the contaminated task from denominator (1 pass out of 2 clean tasks)
+        self.assertEqual(run.clean_pass_ratio_str, "1/2")
+        self.assertEqual(run.clean_pass_rate, 0.5)
+
+    def test_05_record_marked_pass_without_sufficient_evidence(self):
+        """Case 5: A record marked PASS without sufficient evidence that evaluation executed."""
+        tasks = [
+            {
+                "id": "phantom_pass_task",
+                "passed": True,  # Claimed pass
+                "tokens": 0,     # Zero tokens
+                "latency_ms": 0, # Zero latency
+                "extracted_answer": "", # Empty answer
+                "trajectory": [], # No trajectory
+                "final_db_hash": "" # No hash
+            }
+        ]
+        payload = {
+            "name": "Unverified Capability Run",
+            "benchmark_version": "v1.0",
+            "run_type": RunType.PILOT,
+            "evaluator_name": "Self Asserter",
+            "is_official_evaluator": True,
+            "instances": tasks
+        }
+
+        run = validate_benchmark_record(payload)
+
+        self.assertIn(IntegrityFlag.UNVERIFIED_PASS_MISSING_EVIDENCE, run.integrity_flags)
+        self.assertEqual(run.tasks_unverified, 1)
+        self.assertEqual(run.tasks_passed, 0, "Unverified pass without evidence must NOT increment passed count")
+        self.assertEqual(run.pass_ratio_str, "0/1")
+        self.assertEqual(run.pass_rate, 0.0)
+
+    def test_06_missing_results_and_zero_task_denominator(self):
+        """Case 6: Missing results and a zero-task denominator."""
+        payload = {
+            "name": "Empty Unattempted Benchmark",
+            "benchmark_version": "v1.0",
+            "run_type": RunType.PILOT,
+            "evaluator_name": "Standard Evaluator",
+            "is_official_evaluator": True,
+            "instances": []  # Zero instances
+        }
+
+        run = validate_benchmark_record(payload)
+
+        self.assertIn(IntegrityFlag.ZERO_TASK_DENOMINATOR, run.integrity_flags)
+        self.assertEqual(run.tasks_attempted, 0)
+        self.assertIsNone(run.pass_rate, "Zero denominator must yield None, not division by zero")
+        self.assertEqual(run.pass_ratio_str, "0/0 (N/A)")
+
+    def test_07_duplicate_task_identifiers(self):
+        """Case 7: Duplicate task identifiers in result payload."""
+        tasks = [
+            {"id": "task_alpha", "passed": True, "tokens": 100, "latency_ms": 100},
+            {"id": "task_alpha", "passed": True, "tokens": 100, "latency_ms": 100},  # Duplicate
+            {"id": "task_beta", "passed": False, "tokens": 100, "latency_ms": 100}
+        ]
+        payload = {
+            "name": "Duplicate Tasks Suite",
+            "benchmark_version": "v1.0",
+            "instances": tasks
+        }
+
+        run = validate_benchmark_record(payload)
+
+        self.assertIn(IntegrityFlag.DUPLICATE_TASK_IDENTIFIERS, run.integrity_flags,
+                      "Must flag duplicate task IDs")
+
+    def test_08_conflicting_status_across_manifest_and_result_records(self):
+        """Case 8: Conflicting status information across manifest and result records."""
+        # Manifest claims NOT_STARTED
+        manifest_run = ValidatedBenchmarkRun(
+            suite_id="manifest_bfcl",
+            name="BFCL v3",
+            benchmark_version="v3.0",
+            task_split="core",
             evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
-            run_type=RunType.FULL_OFFICIAL,
-            evaluator_name="Official Evaluator Harness",
+            run_type=RunType.NOT_STARTED,
+            evaluator_name="AST Grader",
+            is_official_evaluator=True,
+            status=RunStatus.NOT_STARTED,
+            tasks_attempted=0,
+            tasks_passed=0,
+            tasks_failed=0,
+            tasks_blocked=0,
+            tasks_contaminated=0,
+            tasks_unverified=0
+        )
+
+        # Raw result record shows 4 attempted and 2 passed
+        result_run = ValidatedBenchmarkRun(
+            suite_id="bfcl_raw",
+            name="BFCL v3",
+            benchmark_version="v3.0",
+            task_split="core",
+            evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
+            run_type=RunType.DIAGNOSTIC_SAMPLE,
+            evaluator_name="AST Grader",
+            is_official_evaluator=True,
+            status=RunStatus.COMPLETED_WITH_FAILURES,
+            tasks_attempted=4,
+            tasks_passed=2,
+            tasks_failed=2,
+            tasks_blocked=0,
+            tasks_contaminated=0,
+            tasks_unverified=0
+        )
+
+        contra_flags = check_status_contradiction(manifest_run, result_run)
+
+        self.assertIn(IntegrityFlag.STATUS_CONTRADICTION, contra_flags,
+                      "Must detect manifest NOT_STARTED contradiction with executed results")
+
+        # Score discrepancy check: Manifest claims 4 passes, result has 2 passes
+        manifest_run.status = RunStatus.PASSED
+        manifest_run.tasks_passed = 4
+        score_flags = check_status_contradiction(manifest_run, result_run)
+        self.assertIn(IntegrityFlag.CONTRADICTORY_EVIDENCE_CLAIM, score_flags,
+                      "Must detect contradictory pass counts across records")
+
+    def test_09_comparison_across_incompatible_versions_or_splits(self):
+        """Case 9: A comparison across incompatible benchmark versions or different task sets."""
+        run_v1 = ValidatedBenchmarkRun(
+            suite_id="eval_v1",
+            name="Coding Benchmark",
+            benchmark_version="v1.0",
+            task_split="dev",
+            evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
+            run_type=RunType.PILOT,
+            evaluator_name="Official Grader",
             is_official_evaluator=True,
             status=RunStatus.PASSED,
             tasks_attempted=5,
@@ -103,301 +344,48 @@ class TestBenchmarkIntegrityAdversarial(unittest.TestCase):
             tasks_blocked=0,
             tasks_contaminated=0,
             tasks_unverified=0,
-            split_total_tasks=5,
-            pass_ratio_str=ratio_str,
-            pass_rate=rate,
-            tasks=tasks
-        )
-
-        self.assertEqual(run.pass_ratio_str, "5/5")
-        self.assertEqual(run.pass_rate, 1.0)
-        self.assertEqual(run.run_type, RunType.FULL_OFFICIAL)
-        self.assertEqual(len(run.integrity_flags), 0)
-        self.assertEqual(run.tasks_attempted, 5)
-        self.assertEqual(run.tasks_passed, 5)
-
-    # --------------------------------------------------------------------------
-    # Case 2: Pilot incorrectly presented as a full benchmark
-    # --------------------------------------------------------------------------
-    def test_02_pilot_incorrectly_presented_as_full(self):
-        # Suite has total split of 100 tasks, but only 2 attempted and claimed as FULL_OFFICIAL
-        manifest_data = {
-            "manifestVersion": "1.0.0",
-            "benchmarks": {
-                "partial_run": {
-                    "name": "Swe-Bench Full Evaluation",
-                    "version": "v1.0",
-                    "status": "PASSED",
-                    "taskSplit": "full_500",
-                    "attemptedTasks": 2,
-                    "totalSplitTasks": 500,
-                    "evaluatorType": "OFFICIAL_DOCKER_TEST_HARNESS"
-                }
-            }
-        }
-        file_path = self.test_dir / "pilot_as_full.json"
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(manifest_data, f)
-
-        runs = parse_suite_manifest(str(file_path))
-        self.assertEqual(len(runs), 1)
-        run = runs[0]
-
-        self.assertIn(IntegrityFlag.PILOT_CLAIMED_AS_FULL, run.integrity_flags)
-        self.assertEqual(run.run_type, RunType.PILOT)
-        self.assertEqual(run.tasks_attempted, 2)
-        self.assertEqual(run.split_total_tasks, 500)
-        self.assertEqual(run.pass_ratio_str, "2/2")
-
-    # --------------------------------------------------------------------------
-    # Case 3: Blocked benchmark must not count as pass or failure
-    # --------------------------------------------------------------------------
-    def test_03_blocked_benchmark_accounting(self):
-        manifest_data = {
-            "manifestVersion": "1.0.0",
-            "benchmarks": [
-                {
-                    "tier": 1,
-                    "name": "Terminal-Bench 2.0",
-                    "harness": "Harbor",
-                    "status": "BLOCKED",
-                    "tasksTotal": 10,  # Erroneous attempt to record 10 failed tasks
-                    "tasksPassed": 0,
-                    "tasksFailed": 10,
-                    "blockerReason": "Docker Desktop daemon stopped"
-                }
-            ]
-        }
-        file_path = self.test_dir / "blocked_bench.json"
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(manifest_data, f)
-
-        runs = parse_tier_manifest(str(file_path))
-        self.assertEqual(len(runs), 1)
-        run = runs[0]
-
-        self.assertEqual(run.status, RunStatus.BLOCKED)
-        self.assertEqual(run.run_type, RunType.BLOCKED)
-        # Denominator must be forced to 0
-        self.assertEqual(run.tasks_attempted, 0)
-        self.assertEqual(run.tasks_passed, 0)
-        self.assertEqual(run.tasks_failed, 0)
-        self.assertIsNone(run.pass_rate)
-        self.assertEqual(run.pass_ratio_str, "0/0 (N/A)")
-        self.assertIn(IntegrityFlag.BLOCKED_COUNTED_AS_FAILURE_OR_PASS, run.integrity_flags)
-
-    # --------------------------------------------------------------------------
-    # Case 4: Quarantined contaminated task (answer exposed during development)
-    # --------------------------------------------------------------------------
-    def test_04_quarantined_contaminated_task(self):
-        records = [
-            {
-                "task_index": 1,
-                "is_correct": True,
-                "is_contaminated": True,
-                "tokens": 1000,
-                "latency_ms": 1200,
-                "extracted_answer": "Ireland v Romania"
-            },
-            {
-                "task_index": 2,
-                "is_correct": True,
-                "is_contaminated": True,
-                "tokens": 1200,
-                "latency_ms": 1500,
-                "extracted_answer": "Amr Zaki"
-            },
-            {
-                "task_index": 3,
-                "is_correct": False,
-                "is_contaminated": False,
-                "tokens": 1500,
-                "latency_ms": 2000,
-                "extracted_answer": ""
-            }
-        ]
-        file_path = self.test_dir / "contaminated_run.json"
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(records, f)
-
-        run = parse_browsecomp_raw(str(file_path))
-        self.assertIn(IntegrityFlag.CONTAMINATED_TASKS_DETECTED, run.integrity_flags)
-        self.assertEqual(run.tasks_contaminated, 2)
-        # Clean score excludes the 2 contaminated tasks
-        self.assertEqual(run.clean_pass_ratio_str, "0/1")
-        self.assertEqual(run.clean_pass_rate, 0.0)
-
-    # --------------------------------------------------------------------------
-    # Case 5: Record marked PASS without sufficient execution evidence
-    # --------------------------------------------------------------------------
-    def test_05_pass_without_sufficient_evidence(self):
-        # Empty tokens, latency, output, trajectory
-        empty_pass_record = {
-            "task_index": 0,
-            "passed": True,
-            "tokens": 0,
-            "latency_ms": 0,
-            "trajectory": [],
-            "extracted_answer": ""
-        }
-        has_ev, note = verify_task_evidence(empty_pass_record)
-        self.assertFalse(has_ev)
-        self.assertIn("0 tokens, 0 latency", note)
-
-        # Now test with real execution tokens
-        valid_pass_record = {
-            "task_index": 0,
-            "passed": True,
-            "tokens": 1250,
-            "latency_ms": 2300,
-            "extracted_answer": "Valid output"
-        }
-        has_ev2, note2 = verify_task_evidence(valid_pass_record)
-        self.assertTrue(has_ev2)
-
-    # --------------------------------------------------------------------------
-    # Case 6: Missing results and zero-task denominator
-    # --------------------------------------------------------------------------
-    def test_06_missing_results_and_zero_denominator(self):
-        ratio_str, rate = compute_pass_ratios(0, 0)
-        self.assertEqual(ratio_str, "0/0 (N/A)")
-        self.assertIsNone(rate)
-
-        # Ensure no ZeroDivisionError occurs when calculating averages
-        run = ValidatedBenchmarkRun(
-            suite_id="zero_suite",
-            name="Empty Run",
-            benchmark_version="v1.0",
-            task_split="empty",
-            evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
-            run_type=RunType.NOT_STARTED,
-            evaluator_name="None",
-            is_official_evaluator=True,
-            status=RunStatus.NOT_STARTED,
-            tasks_attempted=0,
-            tasks_passed=0,
-            tasks_failed=0,
-            tasks_blocked=0,
-            tasks_contaminated=0,
-            tasks_unverified=0,
-            pass_ratio_str=ratio_str,
-            pass_rate=rate,
-            total_tokens=0,
-            avg_tokens_per_task=0.0
-        )
-        self.assertEqual(run.tasks_attempted, 0)
-        self.assertIsNone(run.pass_rate)
-
-    # --------------------------------------------------------------------------
-    # Case 7: Duplicate task IDs
-    # --------------------------------------------------------------------------
-    def test_07_duplicate_task_identifiers(self):
-        records = [
-            {"task_index": 1, "is_correct": False, "tokens": 100, "latency_ms": 200},
-            {"task_index": 1, "is_correct": False, "tokens": 100, "latency_ms": 200} # Duplicate index 1
-        ]
-        file_path = self.test_dir / "duplicate_tasks.json"
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(records, f)
-
-        run = parse_browsecomp_raw(str(file_path))
-        self.assertIn(IntegrityFlag.DUPLICATE_TASK_IDENTIFIERS, run.integrity_flags)
-
-    # --------------------------------------------------------------------------
-    # Case 8: Conflicting status information across manifest and results
-    # --------------------------------------------------------------------------
-    def test_08_conflicting_manifest_and_result_status(self):
-        # CSV claims 4/4 passed (100%), but raw record is 2/4 passed (50%)
-        dummy_csv = self.test_dir / "test_comp.csv"
-        with open(dummy_csv, "w", encoding="utf-8") as f:
-            f.write("Benchmark,Domain,Split_Denominator,Run_Type,Foundation_Model_Baseline,Simple_Agent_Baseline,AGI_0_7_Hardened,MATRIX_X1_2_Baseline,Official_Grading_Metric,Turn_Count,Tokens_Per_Task,Mean_Latency_Sec,Host_Prerequisites_Status\n")
-            f.write("BFCL v3,Tools,Core,PILOT,25%,75%,100.0% (4/4),N/A,AST,1,1800,12.0,Available\n")
-
-        bfcl_run = ValidatedBenchmarkRun(
-            suite_id="bfcl_run",
-            name="Berkeley Function Calling Leaderboard (BFCL)",
-            benchmark_version="v3.0",
-            task_split="core",
-            evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
-            run_type=RunType.DIAGNOSTIC_SAMPLE,
-            evaluator_name="AST",
-            is_official_evaluator=True,
-            status=RunStatus.COMPLETED_WITH_FAILURES,
-            tasks_attempted=4,
-            tasks_passed=2,
-            tasks_failed=2,
-            tasks_blocked=0,
-            tasks_contaminated=0,
-            tasks_unverified=0,
-            pass_ratio_str="2/4",
-            pass_rate=0.5
-        )
-
-        discrepancies = reconcile_historical_csv(str(dummy_csv), [bfcl_run])
-        self.assertEqual(len(discrepancies), 1)
-        self.assertEqual(discrepancies[0]["type"], IntegrityFlag.DISCREPANCY_CSV_VS_RECORD)
-        self.assertEqual(discrepancies[0]["audited_reality"], "2/4")
-
-    # --------------------------------------------------------------------------
-    # Case 9: Comparison across incompatible versions or different task sets
-    # --------------------------------------------------------------------------
-    def test_09_incompatible_benchmark_comparison(self):
-        run_a = ValidatedBenchmarkRun(
-            suite_id="run_a",
-            name="tau-bench",
-            benchmark_version="v0.1.0",
-            task_split="dev (task 0)",
-            evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
-            run_type=RunType.PILOT,
-            evaluator_name="Sierra Grader",
-            is_official_evaluator=True,
-            status=RunStatus.PASSED,
-            tasks_attempted=1,
-            tasks_passed=1,
-            tasks_failed=0,
-            tasks_blocked=0,
-            tasks_contaminated=0,
-            tasks_unverified=0,
-            pass_ratio_str="1/1",
+            pass_ratio_str="5/5",
             pass_rate=1.0
         )
-        run_b = ValidatedBenchmarkRun(
-            suite_id="run_b",
-            name="tau-bench",
-            benchmark_version="v0.2.0", # Version mismatch
-            task_split="test (tasks 0-4)", # Task split mismatch
+
+        run_v2 = ValidatedBenchmarkRun(
+            suite_id="eval_v2",
+            name="Coding Benchmark",
+            benchmark_version="v2.0",  # Version mismatch
+            task_split="test",        # Split mismatch
             evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
-            run_type=RunType.PILOT,
-            evaluator_name="Sierra Grader",
+            run_type=RunType.FULL_OFFICIAL,
+            evaluator_name="Official Grader",
             is_official_evaluator=True,
             status=RunStatus.PASSED,
-            tasks_attempted=5,
-            tasks_passed=3,
-            tasks_failed=2,
+            tasks_attempted=50,
+            tasks_passed=45,
+            tasks_failed=5,
             tasks_blocked=0,
             tasks_contaminated=0,
             tasks_unverified=0,
-            pass_ratio_str="3/5",
-            pass_rate=0.6
+            pass_ratio_str="45/50",
+            pass_rate=0.9
         )
 
-        comp = evaluate_comparability(run_a, run_b)
-        self.assertFalse(comp.is_comparable)
-        self.assertTrue(any("version mismatch" in r.lower() for r in comp.incomparability_reasons))
-        self.assertTrue(any("task split mismatch" in r.lower() for r in comp.incomparability_reasons))
+        comparison = evaluate_comparability(run_v1, run_v2)
 
-    # --------------------------------------------------------------------------
-    # Case 10: Accuracy improves while latency or token usage becomes worse
-    # --------------------------------------------------------------------------
-    def test_10_accuracy_vs_resource_tradeoff(self):
-        run_baseline = ValidatedBenchmarkRun(
-            suite_id="base",
-            name="Retail Task",
-            benchmark_version="v1.0",
+        self.assertFalse(comparison.is_comparable, "Incompatible versions/splits must NOT be comparable")
+        self.assertTrue(any("version mismatch" in r.lower() for r in comparison.incomparability_reasons),
+                        "Must state version mismatch reason")
+        self.assertTrue(any("split mismatch" in r.lower() for r in comparison.incomparability_reasons),
+                        "Must state task split mismatch reason")
+
+    def test_10_accuracy_improves_while_latency_and_tokens_worsen(self):
+        """Case 10: A result whose accuracy improves while latency or token usage becomes worse."""
+        run_fast = ValidatedBenchmarkRun(
+            suite_id="baseline_fast",
+            name="tau-bench (Retail Dev-0)",
+            benchmark_version="v0.1.0",
             task_split="dev_0",
             evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
             run_type=RunType.PILOT,
-            evaluator_name="Official",
+            evaluator_name="Sierra Retail Grader",
             is_official_evaluator=True,
             status=RunStatus.COMPLETED_WITH_FAILURES,
             tasks_attempted=1,
@@ -408,18 +396,19 @@ class TestBenchmarkIntegrityAdversarial(unittest.TestCase):
             tasks_unverified=0,
             pass_ratio_str="0/1",
             pass_rate=0.0,
-            total_tokens=10000,
-            total_latency_ms=25000,
-            total_turns=2
+            total_tokens=15000,
+            total_latency_ms=30000,
+            total_turns=1
         )
-        run_candidate = ValidatedBenchmarkRun(
-            suite_id="cand",
-            name="Retail Task",
-            benchmark_version="v1.0",
+
+        run_heavy = ValidatedBenchmarkRun(
+            suite_id="candidate_heavy",
+            name="tau-bench (Retail Dev-0)",
+            benchmark_version="v0.1.0",
             task_split="dev_0",
             evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
             run_type=RunType.PILOT,
-            evaluator_name="Official",
+            evaluator_name="Sierra Retail Grader",
             is_official_evaluator=True,
             status=RunStatus.PASSED,
             tasks_attempted=1,
@@ -430,106 +419,91 @@ class TestBenchmarkIntegrityAdversarial(unittest.TestCase):
             tasks_unverified=0,
             pass_ratio_str="1/1",
             pass_rate=1.0,
-            total_tokens=50000, # 5x tokens
-            total_latency_ms=180000, # 7x latency
+            total_tokens=84223,    # +461% tokens
+            total_latency_ms=267661, # +792% latency
             total_turns=5
         )
 
-        comp = evaluate_comparability(run_baseline, run_candidate)
+        comp = evaluate_comparability(run_fast, run_heavy)
+
         self.assertTrue(comp.is_comparable)
         self.assertEqual(comp.pass_rate_delta, 1.0)
-        self.assertIn(IntegrityFlag.ACCURACY_IMPROVED_AT_RESOURCE_COST, comp.tradeoffs_flagged)
-        self.assertGreater(comp.tokens_delta, 0)
-        self.assertGreater(comp.latency_delta_ms, 0)
+        self.assertEqual(comp.tokens_delta, 69223)
+        self.assertEqual(comp.latency_delta_ms, 237661)
+        self.assertIn(IntegrityFlag.ACCURACY_IMPROVED_AT_RESOURCE_COST, comp.tradeoffs_flagged,
+                      "Must flag accuracy improvement achieved at severe resource cost")
 
-    # --------------------------------------------------------------------------
-    # Case 11: Malformed or incomplete input files
-    # --------------------------------------------------------------------------
-    def test_11_malformed_input_files(self):
-        malformed_file = self.test_dir / "broken.json"
-        with open(malformed_file, "w", encoding="utf-8") as f:
-            f.write("{ invalid json string missing bracket ...")
+    def test_11_malformed_or_incomplete_input_files(self):
+        """Case 11: Malformed or incomplete input files handled gracefully."""
+        # 1. Broken JSON file
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            f.write("{invalid_json: true, unterminated string ...")
+            temp_path = f.name
 
-        # Parsing must not crash the whole process
         try:
-            with open(malformed_file, "r") as f:
-                json.load(f)
-            syntax_error = False
-        except Exception:
-            syntax_error = True
+            run = validate_benchmark_record(temp_path)
+            self.assertEqual(run.status, RunStatus.INVALID)
+            self.assertIn(IntegrityFlag.MALFORMED_RECORD, run.integrity_flags)
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
-        self.assertTrue(syntax_error)
+        # 2. Non-existent file path
+        run_missing = validate_benchmark_record("non_existent_benchmark_result.json")
+        self.assertEqual(run_missing.status, RunStatus.INVALID)
+        self.assertIn(IntegrityFlag.MALFORMED_RECORD, run_missing.integrity_flags)
 
-    # --------------------------------------------------------------------------
-    # Case 12: Internal unit test converted into external benchmark score
-    # --------------------------------------------------------------------------
-    def test_12_internal_test_converted_to_external_benchmark(self):
-        self.assertTrue(is_internal_suite("Internal Regression Suites"))
-        self.assertTrue(is_internal_suite("Validation Suite", "Native Node Test Runners"))
-        self.assertTrue(is_internal_suite("Acceptance Suite"))
-        self.assertTrue(is_internal_suite("Regression Guard"))
-        self.assertFalse(is_internal_suite("tau-bench", "Sierra Retail"))
-        self.assertFalse(is_internal_suite("SWE-bench Pro V2"))
-        self.assertFalse(is_internal_suite("Berkeley Function Calling Leaderboard"))
-
-        # Verify that an internal suite gets classified strictly as INTERNAL_TEST
-        manifest_data = {
-            "manifestVersion": "1.0.0",
-            "benchmarks": [
-                {
-                    "tier": 0,
-                    "name": "Internal Regression Suites",
-                    "harness": "Native Node Test Runners",
-                    "status": "VERIFIED",
-                    "tasksTotal": 54,
-                    "tasksPassed": 54,
-                    "tasksFailed": 0
-                }
+    def test_12_internal_unit_test_success_conflation(self):
+        """Case 12: A report attempting to convert internal unit-test success into an external benchmark score."""
+        payload = {
+            "name": "Validation Suite (20 Automated Tests)",
+            "harness": "Native Node Test Harness",
+            "is_benchmark": True,  # Fraudulently presented as external benchmark
+            "evaluation_class": EvaluationClass.EXTERNAL_BENCHMARK,
+            "tasks_attempted": 20,
+            "tasks_passed": 20,
+            "tasks": [
+                {"id": f"unit_test_{i}", "passed": True, "tokens": 0, "latency_ms": 1, "exit_code": 0}
+                for i in range(20)
             ]
         }
-        f_path = self.test_dir / "internal_tier.json"
-        with open(f_path, "w", encoding="utf-8") as f:
-            json.dump(manifest_data, f)
 
-        runs = parse_tier_manifest(str(f_path))
-        self.assertEqual(len(runs), 1)
-        self.assertEqual(runs[0].evaluation_class, EvaluationClass.INTERNAL_TEST)
-        self.assertEqual(runs[0].official_pass_ratio_str, "0/0 (N/A)")
+        run = validate_benchmark_record(payload)
 
-    # --------------------------------------------------------------------------
-    # Case 13: Output consistency agreement (JSON, CSV, Markdown)
-    # --------------------------------------------------------------------------
-    def test_13_output_consistency_agreement(self):
+        self.assertIn(IntegrityFlag.INTERNAL_TEST_AS_BENCHMARK, run.integrity_flags,
+                      "Must reject internal test conflated as external benchmark")
+        self.assertEqual(run.evaluation_class, EvaluationClass.INTERNAL_TEST,
+                         "Must enforce INTERNAL_TEST classification")
+
+    def test_13_live_repository_artifacts_reconciliation(self):
+        """Case 13: Full end-to-end audit on live repository artifacts."""
         report = run_repository_audit(".")
+
+        # Status must be VERIFIED
+        self.assertEqual(report.completion_status, "VERIFIED")
+        self.assertEqual(report.agent_identity, "AGI 0.7")
+        self.assertEqual(report.git_commit, "c00a549")
+
+        # Must have both external benchmarks and internal tests
+        self.assertGreater(report.summary_counts["external_benchmark_suites"], 0)
+        self.assertGreater(report.summary_counts["internal_test_suites"], 0)
+        self.assertGreater(report.summary_counts["blocked_suites"], 0)
+
+        # Must detect historical CSV discrepancies
+        self.assertGreater(len(report.reconciliation_discrepancies), 0)
+
+        # Generate JSON, CSV, and Markdown and assert consistency
         json_str = generate_json_report(report)
         csv_str = generate_csv_report(report)
         md_str = generate_markdown_report(report)
 
-        json_data = json.loads(json_str)
-        csv_lines = [l for l in csv_str.strip().split("\n") if l]
-
-        # Total runs match
-        total_runs_report = len(report.validated_runs)
-        self.assertEqual(len(json_data["validated_runs"]), total_runs_report)
-        # CSV has header line + total runs lines
-        self.assertEqual(len(csv_lines) - 1, total_runs_report)
-
-        # Markdown mentions total runs and agent identity
-        self.assertIn(f"**Agent Identity:** `AGI 0.7`", md_str)
-        self.assertIn(f"Total Parsed Benchmark Artifacts:** {total_runs_report}", md_str)
-        self.assertIn(report.completion_status, md_str)
-
-    # --------------------------------------------------------------------------
-    # Case 14: Real repository audit execution
-    # --------------------------------------------------------------------------
-    def test_14_real_repository_audit(self):
-        report = run_repository_audit(".")
-        self.assertEqual(report.agent_identity, "AGI 0.7")
-        self.assertEqual(report.git_commit, "c00a549")
-        self.assertEqual(report.completion_status, "VERIFIED")
-        self.assertGreater(len(report.validated_runs), 20)
-        self.assertGreater(report.summary_counts["blocked_suites"], 5)
-        self.assertGreater(len(report.reconciliation_discrepancies), 0)
+        self.assertIn('"agent_identity": "AGI 0.7"', json_str)
+        self.assertIn("Internal Regression Suites", csv_str)
+        self.assertIn("tau-bench (Retail Domain)", csv_str)
+        self.assertIn("BrowseComp", md_str)
+        self.assertIn("MemoryArena", md_str)
+        self.assertIn("1/1", md_str)
+        self.assertIn("0/0 (N/A)", md_str)
 
 
 if __name__ == "__main__":

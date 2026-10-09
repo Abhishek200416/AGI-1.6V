@@ -890,13 +890,21 @@ def parse_bfcl_results(file_path: str) -> ValidatedBenchmarkRun:
 
     instances = data.get("instances", [])
     flags: List[str] = []
+    seen_ids = set()
     tasks: List[ValidatedTask] = []
     passed_count = 0
     total_tokens = 0
     total_latency = 0
 
+    if "total_instances" in data and data["total_instances"] != len(instances):
+        flags.append(IntegrityFlag.INCONSISTENT_TASK_COUNTS)
+
     for item in instances:
         i_id = item.get("id", "unknown")
+        if i_id in seen_ids:
+            flags.append(IntegrityFlag.DUPLICATE_TASK_IDENTIFIERS)
+        seen_ids.add(i_id)
+
         passed = item.get("passed", False)
         tok = item.get("tokens", 0)
         lat = item.get("latency_ms", 0)
@@ -981,13 +989,21 @@ def parse_gpqa_results(file_path: str) -> ValidatedBenchmarkRun:
 
     instances = data.get("instances", [])
     flags: List[str] = []
+    seen_ids = set()
     tasks: List[ValidatedTask] = []
     passed_count = 0
     total_tokens = 0
     total_latency = 0
 
+    if "total_instances" in data and data["total_instances"] != len(instances):
+        flags.append(IntegrityFlag.INCONSISTENT_TASK_COUNTS)
+
     for item in instances:
         i_id = item.get("id", "unknown")
+        if i_id in seen_ids:
+            flags.append(IntegrityFlag.DUPLICATE_TASK_IDENTIFIERS)
+        seen_ids.add(i_id)
+
         passed = item.get("passed", False)
         tok = item.get("tokens", 0)
         think = item.get("thinking_tokens", 0)
@@ -997,6 +1013,9 @@ def parse_gpqa_results(file_path: str) -> ValidatedBenchmarkRun:
         if passed and ev_ok:
             passed_count += 1
             status = "PASSED"
+        elif passed and not ev_ok:
+            flags.append(IntegrityFlag.UNVERIFIED_PASS_MISSING_EVIDENCE)
+            status = "UNVERIFIED"
         else:
             status = "FAILED"
 
@@ -1150,6 +1169,268 @@ def parse_internal_baseline_suites(file_path: str) -> ValidatedBenchmarkRun:
 
 
 # ==============================================================================
+# Universal Record & Artifact Integrity Validator
+# ==============================================================================
+
+def check_status_contradiction(manifest_run: ValidatedBenchmarkRun, result_run: ValidatedBenchmarkRun) -> List[str]:
+    """Cross-checks manifest declaration against authentic result record."""
+    flags: List[str] = []
+    if manifest_run.status == RunStatus.NOT_STARTED and result_run.tasks_attempted > 0:
+        flags.append(IntegrityFlag.STATUS_CONTRADICTION)
+    elif manifest_run.status == RunStatus.BLOCKED and result_run.tasks_attempted > 0:
+        flags.append(IntegrityFlag.STATUS_CONTRADICTION)
+    elif manifest_run.tasks_passed != result_run.tasks_passed and result_run.tasks_attempted > 0:
+        flags.append(IntegrityFlag.CONTRADICTORY_EVIDENCE_CLAIM)
+    return flags
+
+
+def validate_benchmark_record(data: Union[Dict[str, Any], str, Path], source_file: str = "synthetic") -> ValidatedBenchmarkRun:
+    """
+    Universal integrity validator for any benchmark result payload or file.
+    Validates:
+    1. Internal unit tests vs external benchmarks (IntegrityFlag.INTERNAL_TEST_AS_BENCHMARK).
+    2. Pilots claimed as full benchmarks (IntegrityFlag.PILOT_CLAIMED_AS_FULL).
+    3. Blocked benchmarks with non-zero task counts (IntegrityFlag.BLOCKED_COUNTED_AS_FAILURE_OR_PASS).
+    4. Quarantined contaminated tasks (IntegrityFlag.CONTAMINATED_TASKS_DETECTED).
+    5. Unverified passes missing execution evidence (IntegrityFlag.UNVERIFIED_PASS_MISSING_EVIDENCE).
+    6. Missing results and zero denominators (IntegrityFlag.ZERO_TASK_DENOMINATOR).
+    7. Duplicate task IDs (IntegrityFlag.DUPLICATE_TASK_IDENTIFIERS).
+    8. Inconsistent task counts (IntegrityFlag.INCONSISTENT_TASK_COUNTS).
+    9. Custom normalizers / mocks claimed as official (IntegrityFlag.CUSTOM_NORMALIZER_SUBSTITUTED_FOR_OFFICIAL).
+    10. Malformed or invalid records (IntegrityFlag.MALFORMED_RECORD).
+    """
+    flags: List[str] = []
+    src = str(source_file)
+
+    if isinstance(data, (str, Path)):
+        src = str(data)
+        try:
+            with open(data, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            flags.append(IntegrityFlag.MALFORMED_RECORD)
+            return ValidatedBenchmarkRun(
+                suite_id="malformed_record",
+                name="Malformed Input Record",
+                benchmark_version="unknown",
+                task_split="unknown",
+                evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
+                run_type=RunType.INVALID_SETUP,
+                evaluator_name="None",
+                is_official_evaluator=False,
+                status=RunStatus.INVALID,
+                tasks_attempted=0,
+                tasks_passed=0,
+                tasks_failed=0,
+                tasks_blocked=0,
+                tasks_contaminated=0,
+                tasks_unverified=0,
+                pass_ratio_str="0/0 (N/A)",
+                pass_rate=None,
+                source_artifacts=[src],
+                integrity_flags=flags,
+                audit_notes=[f"Failed to parse input file: {e}"]
+            )
+
+    if not isinstance(data, dict):
+        if isinstance(data, list):
+            data = {"tasks": data, "name": Path(src).stem}
+        else:
+            flags.append(IntegrityFlag.MALFORMED_RECORD)
+            return ValidatedBenchmarkRun(
+                suite_id="malformed_record",
+                name="Malformed Input Record",
+                benchmark_version="unknown",
+                task_split="unknown",
+                evaluation_class=EvaluationClass.EXTERNAL_BENCHMARK,
+                run_type=RunType.INVALID_SETUP,
+                evaluator_name="None",
+                is_official_evaluator=False,
+                status=RunStatus.INVALID,
+                tasks_attempted=0,
+                tasks_passed=0,
+                tasks_failed=0,
+                tasks_blocked=0,
+                tasks_contaminated=0,
+                tasks_unverified=0,
+                pass_ratio_str="0/0 (N/A)",
+                pass_rate=None,
+                source_artifacts=[src],
+                integrity_flags=flags,
+                audit_notes=["Input data is not a valid dictionary or list."]
+            )
+
+    name = data.get("name") or data.get("benchmark") or "Unnamed Benchmark"
+    harness = data.get("harness") or data.get("evaluator") or data.get("evaluator_name") or ""
+    is_internal = is_internal_suite(name, harness, src) or data.get("evaluation_class") == EvaluationClass.INTERNAL_TEST or data.get("is_internal", False)
+    claimed_class = data.get("evaluation_class", EvaluationClass.INTERNAL_TEST if is_internal else EvaluationClass.EXTERNAL_BENCHMARK)
+
+    if is_internal and (claimed_class == EvaluationClass.EXTERNAL_BENCHMARK or data.get("is_benchmark", False)):
+        flags.append(IntegrityFlag.INTERNAL_TEST_AS_BENCHMARK)
+        eval_class = EvaluationClass.INTERNAL_TEST
+    else:
+        eval_class = EvaluationClass.INTERNAL_TEST if is_internal else EvaluationClass.EXTERNAL_BENCHMARK
+
+    raw_status = data.get("status", "COMPLETED")
+    raw_run_type = data.get("run_type", "")
+    is_blocked = (raw_status == "BLOCKED" or raw_run_type == RunType.BLOCKED or data.get("is_blocked", False))
+
+    if is_blocked:
+        tasks_in_payload = data.get("tasks") or data.get("instances") or []
+        if len(tasks_in_payload) > 0 or data.get("tasks_attempted", 0) > 0 or data.get("tasks_passed", 0) > 0:
+            flags.append(IntegrityFlag.BLOCKED_COUNTED_AS_FAILURE_OR_PASS)
+        blocker = data.get("blockerReason") or data.get("blocker") or "Blocked prerequisite"
+        return ValidatedBenchmarkRun(
+            suite_id=re.sub(r"[^\w]", "_", name.lower()),
+            name=name,
+            benchmark_version=data.get("benchmark_version", "v1.0"),
+            task_split=data.get("task_split", "none"),
+            evaluation_class=eval_class,
+            run_type=RunType.BLOCKED,
+            evaluator_name=harness or "None",
+            is_official_evaluator=data.get("is_official_evaluator", True),
+            status=RunStatus.BLOCKED,
+            tasks_attempted=0,
+            tasks_passed=0,
+            tasks_failed=0,
+            tasks_blocked=0,
+            tasks_contaminated=0,
+            tasks_unverified=0,
+            pass_ratio_str="0/0 (N/A)",
+            pass_rate=None,
+            source_artifacts=[src],
+            blocker_reason=blocker,
+            integrity_flags=flags,
+            audit_notes=["Benchmark execution is blocked."]
+        )
+
+    tasks_list = data.get("instances") or data.get("tasks") or []
+    total_split = data.get("split_total_tasks") or data.get("total_split_tasks") or data.get("totalSplitTasks")
+    total_instances = data.get("total_instances") or data.get("tasksTotal") or data.get("tasks_total")
+
+    if total_instances is not None and len(tasks_list) > 0 and total_instances != len(tasks_list):
+        flags.append(IntegrityFlag.INCONSISTENT_TASK_COUNTS)
+
+    seen_ids = set()
+    validated_tasks: List[ValidatedTask] = []
+    passed_count = 0
+    failed_count = 0
+    quarantined_count = 0
+    unverified_count = 0
+    tot_tok = 0
+    tot_lat = 0
+    tot_turns = 0
+    quarantined_task_ids = set(data.get("quarantinedTasks") or data.get("quarantined_tasks") or data.get("contaminatedTasks") or [])
+
+    for item in tasks_list:
+        t_id = str(item.get("id") or item.get("task_id") or item.get("task_index") or len(validated_tasks))
+        if t_id in seen_ids:
+            flags.append(IntegrityFlag.DUPLICATE_TASK_IDENTIFIERS)
+        seen_ids.add(t_id)
+
+        is_contam = bool(item.get("is_contaminated", False) or t_id in quarantined_task_ids or (int(t_id) in quarantined_task_ids if t_id.isdigit() else False))
+        if is_contam:
+            flags.append(IntegrityFlag.CONTAMINATED_TASKS_DETECTED)
+            quarantined_count += 1
+            task_status = "QUARANTINED"
+        else:
+            task_status = "PENDING"
+
+        passed = bool(item.get("passed", False) or item.get("is_correct", False) or (item.get("reward", 0) >= 1.0))
+        ev_ok, ev_note = verify_task_evidence(item)
+
+        if passed and not ev_ok:
+            flags.append(IntegrityFlag.UNVERIFIED_PASS_MISSING_EVIDENCE)
+            task_status = "UNVERIFIED"
+            unverified_count += 1
+        elif not is_contam:
+            if passed:
+                task_status = "PASSED"
+                passed_count += 1
+            else:
+                task_status = "FAILED"
+                failed_count += 1
+
+        tok = item.get("tokens", 0) or item.get("total_tokens", 0)
+        lat = item.get("latency_ms", 0) or item.get("total_latency_ms", 0)
+        turns = item.get("turns", 1)
+        tot_tok += tok
+        tot_lat += lat
+        tot_turns += turns
+
+        validated_tasks.append(ValidatedTask(
+            task_id=t_id,
+            passed=passed and ev_ok and not is_contam,
+            status=task_status,
+            is_contaminated=is_contam,
+            has_evidence=ev_ok,
+            tokens=tok,
+            latency_ms=lat,
+            evidence_notes=ev_note,
+            details=item
+        ))
+
+    attempted = len(validated_tasks) if len(validated_tasks) > 0 else data.get("tasks_attempted", 0)
+    if attempted == 0:
+        flags.append(IntegrityFlag.ZERO_TASK_DENOMINATOR)
+
+    if len(validated_tasks) == 0 and data.get("tasks_passed"):
+        passed_count = data.get("tasks_passed", 0)
+
+    ratio_str, rate = compute_pass_ratios(attempted, passed_count)
+    clean_attempted = max(0, attempted - quarantined_count)
+    clean_ratio_str, clean_rate = compute_pass_ratios(clean_attempted, passed_count)
+
+    run_type = raw_run_type or (RunType.PILOT if (total_split and attempted < total_split) else RunType.FULL_OFFICIAL)
+    if raw_run_type in [RunType.FULL_OFFICIAL, "FULL", "FULL_OFFICIAL", "OFFICIAL"]:
+        if total_split and attempted < total_split:
+            flags.append(IntegrityFlag.PILOT_CLAIMED_AS_FULL)
+            run_type = RunType.PILOT
+
+    is_official = data.get("is_official_evaluator", True)
+    if not is_official or "CUSTOM" in harness.upper() or "MOCK" in harness.upper():
+        is_official = False
+        if run_type == RunType.FULL_OFFICIAL or data.get("claimed_official", False):
+            flags.append(IntegrityFlag.CUSTOM_NORMALIZER_SUBSTITUTED_FOR_OFFICIAL)
+            run_type = RunType.CUSTOM_TEST
+
+    return ValidatedBenchmarkRun(
+        suite_id=re.sub(r"[^\w]", "_", name.lower()),
+        name=name,
+        benchmark_version=data.get("benchmark_version", "v1.0"),
+        task_split=data.get("task_split", "full"),
+        evaluation_class=eval_class,
+        run_type=run_type,
+        evaluator_name=harness or "Official Evaluator",
+        is_official_evaluator=is_official,
+        status=raw_status,
+        tasks_attempted=attempted,
+        tasks_passed=passed_count,
+        tasks_failed=failed_count,
+        tasks_blocked=0,
+        tasks_contaminated=quarantined_count,
+        tasks_unverified=unverified_count,
+        split_total_tasks=total_split,
+        pass_ratio_str=ratio_str,
+        pass_rate=rate,
+        clean_pass_ratio_str=clean_ratio_str,
+        clean_pass_rate=clean_rate,
+        official_pass_ratio_str=clean_ratio_str if is_official else "0/0 (N/A)",
+        official_pass_rate=clean_rate if is_official else None,
+        total_tokens=tot_tok,
+        avg_tokens_per_task=float(tot_tok / attempted) if attempted > 0 else 0.0,
+        total_latency_ms=tot_lat,
+        avg_latency_ms=float(tot_lat / attempted) if attempted > 0 else 0.0,
+        total_turns=tot_turns,
+        avg_turns_per_task=float(tot_turns / attempted) if attempted > 0 else 0.0,
+        source_artifacts=[src],
+        integrity_flags=list(set(flags)),
+        audit_notes=data.get("notes", []) if isinstance(data.get("notes"), list) else [str(data.get("notes", ""))],
+        tasks=validated_tasks
+    )
+
+
+# ==============================================================================
 # Comparability Engine
 # ==============================================================================
 
@@ -1165,8 +1446,12 @@ def evaluate_comparability(run_a: ValidatedBenchmarkRun, run_b: ValidatedBenchma
     # 1. Benchmark identity
     clean_a = re.sub(r"[^a-zA-Z0-9]", "", run_a.name.lower())
     clean_b = re.sub(r"[^a-zA-Z0-9]", "", run_b.name.lower())
-    # Partial match allowed if same domain
-    if not (clean_a in clean_b or clean_b in clean_a):
+    
+    # Extract core benchmark family root (e.g. "taubench", "browsecomp", "memoryarena", "terminalbench")
+    root_keywords = ["taubench", "browsecomp", "memoryarena", "terminalbench", "swebench", "osworld", "browsergym", "bfcl", "gpqa"]
+    same_family = any(kw in clean_a and kw in clean_b for kw in root_keywords)
+
+    if not (clean_a in clean_b or clean_b in clean_a or same_family):
         reasons.append(f"Incompatible benchmark names: '{run_a.name}' vs '{run_b.name}'.")
 
     # 2. Version match
@@ -1245,13 +1530,6 @@ def reconcile_historical_csv(csv_path: str, verified_runs: List[ValidatedBenchma
     if not os.path.exists(csv_path):
         return discrepancies
 
-    run_map = {r.name.lower(): r for r in verified_runs}
-    # Also index by key substring
-    for r in verified_runs:
-        for word in r.name.lower().split():
-            if len(word) > 3 and word not in run_map:
-                run_map[word] = r
-
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -1260,11 +1538,16 @@ def reconcile_historical_csv(csv_path: str, verified_runs: List[ValidatedBenchma
             run_type = row.get("Run_Type", "")
             split = row.get("Split_Denominator", "")
 
+            bench_clean = re.sub(r"[^\w\s]", " ", bench.lower())
+            bench_words = set(w for w in bench_clean.split() if len(w) >= 3)
+
             # Look up verified run
             matched_run = None
-            for key, run in run_map.items():
-                if key in bench.lower() or bench.lower() in key:
-                    matched_run = run
+            for r in verified_runs:
+                r_clean = re.sub(r"[^\w\s]", " ", (r.name + " " + r.suite_id).lower())
+                r_words = set(w for w in r_clean.split() if len(w) >= 3)
+                if (bench_words & r_words) or (bench.lower() in r.name.lower()) or (r.name.lower() in bench.lower()):
+                    matched_run = r
                     break
 
             if not matched_run:
@@ -1451,6 +1734,21 @@ def run_repository_audit(repo_root: str = ".") -> IntegrityAuditReport:
             comparisons.append(evaluate_comparability(run_fm, run_agi_tw))
 
     # Summary Accounting
+    # Cross-reference manifest declarations against executed raw results
+    for m in runs:
+        if "manifest" in m.suite_id:
+            for raw in runs:
+                if "manifest" not in raw.suite_id and raw.tasks_attempted > 0:
+                    if (m.name.lower() in raw.name.lower() or raw.name.lower() in m.name.lower()
+                            or ("bfcl" in m.suite_id and "bfcl" in raw.suite_id)
+                            or ("gpqa" in m.suite_id and "gpqa" in raw.suite_id)):
+                        contra_flags = check_status_contradiction(m, raw)
+                        for cf in contra_flags:
+                            if cf not in m.integrity_flags:
+                                m.integrity_flags.append(cf)
+                            if cf not in raw.integrity_flags:
+                                raw.integrity_flags.append(cf)
+
     total_suites = len(runs)
     internal_suites = sum(1 for r in runs if r.evaluation_class == EvaluationClass.INTERNAL_TEST)
     external_suites = sum(1 for r in runs if r.evaluation_class == EvaluationClass.EXTERNAL_BENCHMARK)
