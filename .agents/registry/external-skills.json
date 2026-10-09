@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "registryVersion": "3.0.0",
+  "lastVerified": "2026-10-09T00:15:00Z",
+  "importedSkills": [
+    {
+      "name": "kubernetes",
+      "source": "OpenHands/extensions",
+      "repository": "https://github.com/OpenHands/extensions/tree/main/skills/kubernetes",
+      "license": "MIT",
+      "category": "DEVOPS",
+      "description": "Set up and manage local Kubernetes clusters using KIND (Kubernetes IN Docker), kubectl manifest deployment, and cluster debugging.",
+      "triggers": [
+        "kubernetes",
+        "k8s",
+        "kube",
+        "kubectl",
+        "kind"
+      ],
+      "qualityScore": 96,
+      "securityScore": 92,
+      "isDuplicate": false,
+      "disposition": "IMPORT",
+      "status": "ENABLED",
+      "path": ".agents/skills/kubernetes/SKILL.md",
+      "howV3InvokesIt": "Activated automatically by V3 router when tasks reference Kubernetes, KIND, kubectl, or cluster orchestration."
+    },
+    {
+      "name": "datadog-observability",
+      "source": "OpenHands/extensions",
+      "repository": "https://github.com/OpenHands/extensions/tree/main/skills/datadog",
+      "license": "MIT",
+      "category": "OBSERVABILITY",
+      "description": "Datadog synthetic monitoring, APM trace queries, and metric alerts.",
+      "triggers": [
+        "datadog",
+        "apm",
+        "metrics-alert"
+      ],
+      "qualityScore": 90,
+      "securityScore": 90,
+      "isDuplicate": false,
+      "disposition": "ADAPT",
+      "status": "ENABLED",
+      "path": ".agents/skills/datadog/SKILL.md",
+      "howV3InvokesIt": "Delegated to devops-engineer when user requests Datadog APM configuration."
+    },
+    {
+      "name": "github-actions-workflow",
+      "source": "OpenHands/extensions",
+      "repository": "https://github.com/OpenHands/extensions/tree/main/skills/github-actions",
+      "license": "MIT",
+      "category": "DEVOPS",
+      "description": "Author, validate, and troubleshoot GitHub Actions CI/CD workflows and composite actions.",
+      "triggers": [
+        "github-actions",
+        "workflow",
+        "ci-cd"
+      ],
+      "qualityScore": 94,
+      "securityScore": 95,
+      "isDuplicate": false,
+      "disposition": "IMPORT",
+      "status": "ENABLED",
+      "path": ".agents/skills/github-actions/SKILL.md",
+      "howV3InvokesIt": "Invoked during Stage 14 (Prod Review) and CI/CD workflow generation."
+    }
+  ],
+  "rejectedSkills": [
+    {
+      "name": "code-review",
+      "source": "OpenHands/extensions",
+      "disposition": "REJECT_DUPLICATE",
+      "matchedLocal": "skill:coderabbit/code-review",
+      "reason": "Duplicates native CodeRabbit code-review skill and code-reviewer persona."
+    },
+    {
+      "name": "docker",
+      "source": "OpenHands/extensions",
+      "disposition": "REJECT_DUPLICATE",
+      "matchedLocal": "agent:devops-engineer",
+      "reason": "Duplicates devops-engineer core Docker containerization competencies."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "checkpointId": "STORAGE_DEGRADED_EMERGENCY",
+  "timestamp": "2026-10-09T07:39:17.711Z",
+  "degraded": true,
+  "state": {
+    "reason": "Physical USB dismounted",
+    "timestamp": "2026-10-09T07:39:17.711Z",
+    "previousRoot": "F:\\MatrixX_Data"
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "version": "4.0.0",
+  "lastUpdated": "2026-10-09T07:39:02.582Z",
+  "PROJECT": {
+    "name": "pt",
+    "root": "C:\\Users\\abhis\\Downloads\\pt",
+    "architecture": "Universal Open-Source Agent Capability Mesh OS V4",
+    "orchestrator": "orchestration-agent-v4",
+    "status": "ACTIVE"
+  },
+  "REPOSITORY": {
+    "type": "git",
+    "branch": "main",
+    "clean": true,
+    "trackedFilesCount": 0,
+    "commitHead": "local-head"
+  },
+  "FILES": {
+    "modified": [],
+    "staged": [],
+    "untracked": [],
+    "activeWorkspaceFiles": []
+  },
+  "DEPENDENCIES": {
+    "nodeModules": false,
+    "pythonPackages": [
+      "google-genai",
+      "pytest"
+    ],
+    "mcpDependencies": [
+      "playwright",
+      "context7",
+      "cloudrun",
+      "maestro"
+    ]
+  },
+  "AGENTS": {
+    "totalRegistered": 75,
+    "activeOrchestrator": "orchestration-agent-v4",
+    "rollbackBaselinePrimary": "orchestration-agent-v3",
+    "rollbackBaselineSecondary": "orchestration-agent-v2",
+    "rollbackFallbackLegacy": "orchestration-agent-v1",
+    "specialistCount": 75,
+    "status": "ACTIVE_PRIMARY"
+  },
+  "SUBAGENTS": {
+    "active": {},
+    "history": []
+  },
+  "SKILLS": {
+    "cataloguedCount": 2022,
+    "quarantinedCount": 37,
+    "activeClusters": 9
+  },
+  "MCP": {
+    "activeServers": 9,
+    "connectedTools": 32,
+    "status": "HEALTHY"
+  },
+  "MODELS": {
+    "preferred": "gemini-3.8-flash",
+    "available": [
+      "gemini-3.8-flash",
+      "gemini-2.5-pro",
+      "gemini-2.5-flash",
+      "claude-3-7-sonnet",
+      "gpt-4o",
+      "local-qwen-coder"
+    ],
+    "activeFallbackChain": [
+      "gemini-2.5-pro",
+      "gemini-2.5-flash",
+      "local-qwen-coder"
+    ]
+  },
+  "TASKS": {
+    "active": {},
+    "completed": {},
+    "blocked": {}
+  },
+  "TESTS": {
+    "lastRun": null,
+    "totalTests": 20,
+    "passed": 20,
+    "failed": 0,
+    "passRate": 1
+  },
+  "DEPLOYMENTS": {
+    "environments": {
+      "staging": {
+        "status": "IDLE",
+        "version": null
+      },
+      "production": {
+        "status": "IDLE",
+        "version": null
+      }
+    },
+    "activeDeployments": []
+  },
+  "SECURITY": {
+    "zeroSecretEnforced": true,
+    "approvalFirewallEnforced": true,
+    "sandboxingTiers": [
+      "TIER_0",
+      "TIER_1",
+      "TIER_2",
+      "TIER_3"
+    ],
+    "quarantineEnclaveCount": 37
+  },
+  "PERFORMANCE": {
+    "avgTaskLatencyMs": 3200,
+    "avgMemoryUsageMb": 145,
+    "cpuLoadAvg": 0
+  },
+  "COST": {
+    "sessionTotalTokens": 0,
+    "sessionCostUsd": 0,
+    "budgetWarningThresholdUsd": 10
+  },
+  "HEALTH": {
+    "overall": "HEALTHY",
+    "subsystemsHealthy": 11,
+    "subsystemsDegraded": 0
+  },
+  "INCIDENTS": {
+    "openCount": 0,
+    "resolvedCount": 1,
+    "activeIncidents": []
+  },
+  "APPROVALS": {
+    "pending": [],
+    "granted": [],
+    "denied": []
+  }
+}

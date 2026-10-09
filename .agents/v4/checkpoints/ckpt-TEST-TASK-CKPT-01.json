@@ -1,0 +1,20 @@
+{
+  "checkpointId": "ckpt-TEST-TASK-CKPT-01-1791531541576",
+  "taskId": "TEST-TASK-CKPT-01",
+  "timestamp": "2026-10-09T07:39:01.576Z",
+  "phase": "STEP_2",
+  "dagState": {},
+  "completedNodes": [
+    "node_1",
+    "node_2"
+  ],
+  "failedNodes": [],
+  "agentOutputs": {},
+  "artifacts": [],
+  "environmentState": {},
+  "verificationState": {},
+  "destructiveNodes": [
+    "node_2",
+    "node_3"
+  ]
+}

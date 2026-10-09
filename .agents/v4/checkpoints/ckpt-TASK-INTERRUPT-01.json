@@ -1,0 +1,19 @@
+{
+  "checkpointId": "ckpt-TASK-INTERRUPT-01-1791531541590",
+  "taskId": "TASK-INTERRUPT-01",
+  "timestamp": "2026-10-09T07:39:01.590Z",
+  "phase": "EXECUTION_PHASE_2",
+  "dagState": {},
+  "completedNodes": [
+    "init",
+    "lint"
+  ],
+  "failedNodes": [],
+  "agentOutputs": {},
+  "artifacts": [],
+  "environmentState": {},
+  "verificationState": {},
+  "destructiveNodes": [
+    "migrate_db"
+  ]
+}

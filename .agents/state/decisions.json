@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "4.0.0",
+  "source": ".agents/registry/decisions.json",
+  "activeDecisionsCount": 4,
+  "lastSynced": "2026-10-09T00:30:00Z"
+}

@@ -1,0 +1,29 @@
+{
+  "sessionId": "bmk-b1",
+  "missionId": null,
+  "state": "TERMINATED",
+  "currentUrl": "file://C:\\Users\\abhis\\Downloads\\pt\\.matrix_data\\page.html",
+  "title": "Test Doc",
+  "tabs": [
+    {
+      "tabId": "tab-1",
+      "url": "file://C:\\Users\\abhis\\Downloads\\pt\\.matrix_data\\page.html",
+      "title": "Test Doc",
+      "active": true
+    }
+  ],
+  "history": [
+    "about:blank",
+    "file://C:\\Users\\abhis\\Downloads\\pt\\.matrix_data\\page.html"
+  ],
+  "actionCount": 0,
+  "lastVerifiedState": {
+    "action": "CLICK",
+    "target": "button:has-text(\"Submit\")",
+    "stateBefore": "file://C:\\Users\\abhis\\Downloads\\pt\\.matrix_data\\page.html",
+    "stateAfter": "file://C:\\Users\\abhis\\Downloads\\pt\\.matrix_data\\page.html",
+    "verified": true,
+    "timestamp": "2026-10-08T21:17:45.352Z"
+  },
+  "checkpointedAt": "2026-10-08T21:17:45.355Z"
+}

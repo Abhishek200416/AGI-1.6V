@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "registryVersion": "3.0.0",
+  "lastVerified": "2026-10-09T00:15:00Z",
+  "adapters": [
+    {
+      "name": "OpenHands",
+      "source": "github",
+      "repository": "https://github.com/All-Hands-AI/OpenHands",
+      "license": "MIT",
+      "version": "0.19.x",
+      "category": "AUTONOMOUS_SWE",
+      "capabilities": [
+        "multi_module_refactor",
+        "autonomous_swe",
+        "swe_bench_eval",
+        "complex_issue_solver"
+      ],
+      "required_tools": [
+        "run_command",
+        "view_file"
+      ],
+      "required_skills": [],
+      "mcp_dependencies": [],
+      "permissions": [
+        "docker_daemon_sandboxed",
+        "filesystem_write",
+        "terminal_exec"
+      ],
+      "sandbox": "MICRO_VM_EPHEMERAL_TIER_2",
+      "quality_score": 88,
+      "security_score": 85,
+      "duplication_score": 0,
+      "status": "VALIDATED_READY"
+    },
+    {
+      "name": "Goose",
+      "source": "github",
+      "repository": "https://github.com/block/goose",
+      "license": "Apache-2.0",
+      "version": "1.0.x",
+      "category": "MCP_AGENT",
+      "capabilities": [
+        "mcp_tool_runner",
+        "headless_recipe_automation",
+        "rust_runtime_automation"
+      ],
+      "required_tools": [
+        "run_command"
+      ],
+      "required_skills": [],
+      "mcp_dependencies": [
+        "playwright",
+        "context7"
+      ],
+      "permissions": [
+        "terminal_exec",
+        "filesystem_write"
+      ],
+      "sandbox": "PROCESS_JOB_OBJECT_TIER_1",
+      "quality_score": 86,
+      "security_score": 90,
+      "duplication_score": 0,
+      "status": "VALIDATED_READY"
+    },
+    {
+      "name": "Aider",
+      "source": "github",
+      "repository": "https://github.com/Aider-AI/aider",
+      "license": "Apache-2.0",
+      "version": "0.74.x",
+      "category": "PAIR_PROGRAMMING",
+      "capabilities": [
+        "tree_sitter_repo_map",
+        "atomic_git_commits",
+        "multi_file_patching"
+      ],
+      "required_tools": [
+        "run_command",
+        "view_file",
+        "write_to_file"
+      ],
+      "required_skills": [],
+      "mcp_dependencies": [],
+      "permissions": [
+        "git_exec",
+        "terminal_exec",
+        "filesystem_write"
+      ],
+      "sandbox": "PROCESS_JOB_OBJECT_TIER_1",
+      "quality_score": 85,
+      "security_score": 90,
+      "duplication_score": 0,
+      "status": "VALIDATED_READY"
+    },
+    {
+      "name": "SWE-agent",
+      "source": "github",
+      "repository": "https://github.com/SWE-agent/SWE-agent",
+      "license": "MIT",
+      "version": "1.0.x",
+      "category": "BENCHMARK_EVALUATION",
+      "capabilities": [
+        "agent_computer_interface",
+        "github_issue_patcher",
+        "swe_bench_eval"
+      ],
+      "required_tools": [
+        "run_command"
+      ],
+      "required_skills": [],
+      "mcp_dependencies": [],
+      "permissions": [
+        "docker_daemon_sandboxed",
+        "filesystem_write"
+      ],
+      "sandbox": "CONTAINER_SANDBOX_TIER_2",
+      "quality_score": 82,
+      "security_score": 85,
+      "duplication_score": 0,
+      "status": "VALIDATED_READY"
+    },
+    {
+      "name": "OpenCode",
+      "source": "github",
+      "repository": "https://github.com/anomalyco/opencode",
+      "license": "MIT",
+      "version": "1.0.x",
+      "category": "CODING_AGENT",
+      "capabilities": [
+        "terminal_coding"
+      ],
+      "required_tools": [
+        "run_command"
+      ],
+      "required_skills": [],
+      "mcp_dependencies": [],
+      "permissions": [
+        "terminal_exec",
+        "filesystem_write"
+      ],
+      "sandbox": "PROCESS_JOB_OBJECT_TIER_1",
+      "quality_score": 78,
+      "security_score": 80,
+      "duplication_score": 100,
+      "status": "REJECTED_DUPLICATE"
+    },
+    {
+      "name": "Cline",
+      "source": "github",
+      "repository": "https://github.com/cline/cline",
+      "license": "Apache-2.0",
+      "version": "3.x",
+      "category": "IDE_CODING_AGENT",
+      "capabilities": [
+        "vscode_coding",
+        "mcp_host"
+      ],
+      "required_tools": [
+        "run_command"
+      ],
+      "required_skills": [],
+      "mcp_dependencies": [],
+      "permissions": [
+        "terminal_exec",
+        "filesystem_write"
+      ],
+      "sandbox": "PROCESS_JOB_OBJECT_TIER_1",
+      "quality_score": 81,
+      "security_score": 80,
+      "duplication_score": 100,
+      "status": "REJECTED_DUPLICATE"
+    },
+    {
+      "name": "Qwen Code",
+      "source": "github",
+      "repository": "https://github.com/QwenLM/qwen-code",
+      "license": "Apache-2.0",
+      "version": "0.x",
+      "category": "CODING_AGENT",
+      "capabilities": [
+        "qwen_cli_coding"
+      ],
+      "required_tools": [
+        "run_command"
+      ],
+      "required_skills": [],
+      "mcp_dependencies": [],
+      "permissions": [
+        "terminal_exec",
+        "filesystem_write"
+      ],
+      "sandbox": "PROCESS_JOB_OBJECT_TIER_1",
+      "quality_score": 72,
+      "security_score": 75,
+      "duplication_score": 100,
+      "status": "REJECTED_DUPLICATE"
+    }
+  ]
+}

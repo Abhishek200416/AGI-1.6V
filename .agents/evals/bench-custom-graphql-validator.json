@@ -1,0 +1,40 @@
+{
+  "candidate": "custom-graphql-validator",
+  "timestamp": "2026-10-09T07:39:01.583Z",
+  "sandboxTier": "TIER_1",
+  "threshold": 75,
+  "averageScore": 94.2,
+  "passed": true,
+  "benchmarks": {
+    "functional": {
+      "score": 95,
+      "pass": true,
+      "details": "Syntax and contract assertion verified non-destructively"
+    },
+    "latency": {
+      "score": 92,
+      "pass": true,
+      "details": "Response completed in 320ms (< 1000ms threshold)"
+    },
+    "resource": {
+      "score": 90,
+      "pass": true,
+      "details": "Memory usage 45MB within 512MB sandbox cap"
+    },
+    "security": {
+      "score": 96,
+      "pass": true,
+      "details": "No secret leaks or token exfiltration attempts detected"
+    },
+    "compatibility": {
+      "score": 98,
+      "pass": true,
+      "details": "Schema conforms to V4 adapter contract specification"
+    },
+    "reliability": {
+      "score": 94,
+      "pass": true,
+      "details": "100% assertions succeeded under mocked stress test"
+    }
+  }
+}

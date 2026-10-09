@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "registryVersion": "4.0.0",
+  "lastUpdated": "2026-10-09T00:30:00Z",
+  "benchmarkRecords": [
+    {
+      "benchmarkId": "BENCH-001",
+      "candidateName": "kubernetes-operator-skill",
+      "candidateKind": "SKILL",
+      "category": "DEVOPS",
+      "tests": {
+        "functional": { "score": 96, "details": "KIND cluster init syntax passed non-destructive contract assertion" },
+        "latency": { "score": 92, "details": "Execution overhead < 450ms" },
+        "resource": { "score": 90, "details": "Memory footprint 32MB within 512MB limit" },
+        "security": { "score": 95, "details": "No host root mounts, strictly sandboxed terminal" },
+        "compatibility": { "score": 98, "details": "Clean markdown runbook matches Antigravity skill specification" },
+        "reliability": { "score": 94, "details": "Zero unhandled exceptions on error injection" }
+      },
+      "totalScore": 94.2,
+      "threshold": 75.0,
+      "status": "PROMOTED",
+      "evidence": "Passed 6/6 automated contract assertions in .agents/evals/contracts/kubernetes.json"
+    },
+    {
+      "benchmarkId": "BENCH-002",
+      "candidateName": "playwright-mcp-browser",
+      "candidateKind": "MCP",
+      "category": "BROWSER_AUTOMATION",
+      "tests": {
+        "functional": { "score": 98, "details": "Navigated headless page and extracted DOM selectors successfully" },
+        "latency": { "score": 88, "details": "Session startup 1200ms" },
+        "resource": { "score": 89, "details": "180MB RAM inside browser container" },
+        "security": { "score": 96, "details": "Strict credential isolation, no cookie leaks" },
+        "compatibility": { "score": 97, "details": "MCP JSON-RPC standard compliance" },
+        "reliability": { "score": 95, "details": "Reconnected cleanly upon artificial socket drop" }
+      },
+      "totalScore": 93.8,
+      "threshold": 75.0,
+      "status": "PROMOTED",
+      "evidence": "Passed 6/6 automated contract assertions in .agents/evals/contracts/playwright-mcp.json"
+    },
+    {
+      "benchmarkId": "BENCH-003",
+      "candidateName": "untrusted-privilege-escalator",
+      "candidateKind": "EXTERNAL_AGENT",
+      "category": "SECURITY_EXPLOIT",
+      "tests": {
+        "functional": { "score": 10, "details": "Attempted raw root socket binding" },
+        "latency": { "score": 0, "details": "Terminated early" },
+        "resource": { "score": 0, "details": "Violated memory limits" },
+        "security": { "score": 5, "details": "CRITICAL: Attempted credential exfiltration to untrusted IP" },
+        "compatibility": { "score": 0, "details": "Incompatible schema" },
+        "reliability": { "score": 0, "details": "Aborted" }
+      },
+      "totalScore": 2.5,
+      "threshold": 85.0,
+      "status": "REJECTED_QUARANTINED",
+      "evidence": "Failed security benchmark; routed to ~/.agents/quarantine/ with TIER_3 enforcement"
+    }
+  ]
+}
