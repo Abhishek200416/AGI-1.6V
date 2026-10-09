@@ -106,7 +106,7 @@ class AntigravityCliProvider {
   async callModel({
     model = 'gemini-3.8-flash-low',
     prompt = '',
-    timeoutMs = 60000,
+    timeoutMs = null,
     temperature = 0.2
   }) {
     const startTime = Date.now();
@@ -120,6 +120,9 @@ class AntigravityCliProvider {
       targetSlug = 'gemini-3.1-pro-high';
     }
 
+    // Calibrate timeout for high-effort reasoning (Directive 0 & ADR-02)
+    const effectiveTimeoutMs = timeoutMs !== null ? timeoutMs : (targetSlug.includes('high') || targetSlug.includes('pro') ? 120000 : 60000);
+
     const args = [
       '--model', targetSlug,
       '--disable-slash-commands',
@@ -127,8 +130,8 @@ class AntigravityCliProvider {
       '--output-format', 'json'
     ];
 
-    if (timeoutMs > 0) {
-      args.push('--print-timeout', `${Math.round(timeoutMs / 1000)}s`);
+    if (effectiveTimeoutMs > 0) {
+      args.push('--print-timeout', `${Math.round(effectiveTimeoutMs / 1000)}s`);
     }
 
     return new Promise((resolve) => {
@@ -167,10 +170,10 @@ class AntigravityCliProvider {
           output: null,
           tokensUsed: 0,
           latencyMs: Date.now() - startTime,
-          error: `CLI execution timed out after ${timeoutMs}ms`,
+          error: `CLI execution timed out after ${effectiveTimeoutMs}ms`,
           timestamp: new Date().toISOString()
         });
-      }, timeoutMs + 2000);
+      }, effectiveTimeoutMs + 2000);
 
       child.stdout.on('data', d => { stdout += d.toString(); });
       child.stderr.on('data', d => { stderr += d.toString(); });

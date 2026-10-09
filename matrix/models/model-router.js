@@ -284,6 +284,23 @@ class ModelRouter {
   }
 
   /**
+   * MATRIX X1.2 Sole Model Routing Policy (Directive 0)
+   * Enforces exclusive use of Gemini 3.8 Flash High across all agent roles
+   */
+  routeX12({
+    taskType = 'GENERAL',
+    complexity = 'HIGH',
+    agentSpecialization = null
+  } = {}) {
+    return {
+      selectedModel: 'gemini-3.8-flash-high',
+      canonicalModelId: 'gemini-3.8-flash-high',
+      provider: 'Antigravity CLI',
+      rationale: `MATRIX X1.2 Sole Model Invariance: Routed ${agentSpecialization || taskType} to Gemini 3.8 Flash High (Directive 0 & ADR-01)`
+    };
+  }
+
+  /**
    * Escalate along the model cascade
    */
   escalate({
@@ -345,6 +362,9 @@ class ModelRouter {
     const modelMeta = this.models[resolvedModelKey] || this.models['gemini-3.8-flash'];
     const canonicalId = modelMeta.canonicalModelId || resolvedModelKey;
 
+    // Calibrate timeout for high-effort models (ADR-02)
+    const effectiveTimeoutMs = (timeoutMs === 60000 && (canonicalId.includes('high') || canonicalId.includes('pro') || resolvedModelKey.includes('high'))) ? 120000 : timeoutMs;
+
     const estInputTokens = Math.max(50, Math.round(prompt.length / 4));
     let estOutputTokens = Math.max(20, Math.round(estInputTokens * 0.8));
 
@@ -358,7 +378,7 @@ class ModelRouter {
       const cliResult = await this.antigravityCli.callModel({
         model: canonicalId,
         prompt: systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt,
-        timeoutMs,
+        timeoutMs: effectiveTimeoutMs,
         temperature
       });
 

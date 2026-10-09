@@ -64,3 +64,13 @@
 {"timestamp":"2026-10-09T08:08:58.435Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
 {"timestamp":"2026-10-09T08:11:22.821Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
 {"timestamp":"2026-10-09T08:11:22.821Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T08:55:44.715Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T08:55:44.716Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T08:56:06.968Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T08:56:06.969Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T08:56:12.286Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T08:56:12.287Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T08:57:33.745Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T08:57:33.745Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
+{"timestamp":"2026-10-09T08:57:50.518Z","actor":"external_agent_sandboxed","action":"workspace_write_scoped","decision":"GRANTED","metadata":{}}
+{"timestamp":"2026-10-09T08:57:50.519Z","actor":"external_agent_sandboxed","action":"root_shell","decision":"DENIED","metadata":{}}
