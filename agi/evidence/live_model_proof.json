@@ -1,0 +1,11 @@
+{
+  "agent": "AGI 0.7",
+  "model": "gemini-3.8-flash-high",
+  "prompt": "Compute 37 * 43. Output ONLY the numerical answer.",
+  "expected": "1591",
+  "actual": "1591",
+  "tokens": 22518,
+  "thinking_tokens": 144,
+  "latency_ms": 30248,
+  "verified": true
+}

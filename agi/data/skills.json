@@ -1,0 +1,40 @@
+{
+  "skill-sort": {
+    "id": "skill-sort",
+    "name": "Numeric Array Sort",
+    "description": "",
+    "version": "1.0.0",
+    "parameters": {},
+    "implementation": "function run(arr) { return arr.slice().sort((a,b) => a - b); }",
+    "status": "ACTIVE",
+    "tests": [
+      {
+        "input": [
+          3,
+          1,
+          2
+        ],
+        "expected": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "input": [
+          10,
+          -5,
+          0
+        ],
+        "expected": [
+          -5,
+          0,
+          10
+        ]
+      }
+    ],
+    "createdAt": "2026-10-09T11:54:55.504Z",
+    "updatedAt": "2026-10-09T11:54:55.510Z",
+    "lastProof": {}
+  }
+}

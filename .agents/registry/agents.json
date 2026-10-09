@@ -5,6 +5,17 @@
   "defaultQualityThreshold": 75,
   "orchestrators": [
     {
+      "name": "agi-0-7",
+      "version": "0.7.0",
+      "status": "ACTIVE_PRIMARY",
+      "role": "AGI 0.7 — Frontier Autonomous Research & Engineering System",
+      "file": ".agents/agents/agi-0-7/agent.md",
+      "description": "AGI 0.7 — Frontier Research · Autonomous Computer Operation · Verified Self-Improvement · Persistent Intelligence · Advanced Safety Engineering.",
+      "mainAgent": true,
+      "subagent": true,
+      "hidden": false
+    },
+    {
       "name": "orchestration-agent-x1",
       "version": "X1.0.0",
       "status": "ACTIVE_PRIMARY",

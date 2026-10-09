@@ -1,7 +1,7 @@
 {
-  "checkpointId": "ckpt-TEST-TASK-CKPT-01-1791542878257",
+  "checkpointId": "ckpt-TEST-TASK-CKPT-01-1791546895253",
   "taskId": "TEST-TASK-CKPT-01",
-  "timestamp": "2026-10-09T10:47:58.257Z",
+  "timestamp": "2026-10-09T11:54:55.253Z",
   "phase": "STEP_2",
   "dagState": {},
   "completedNodes": [

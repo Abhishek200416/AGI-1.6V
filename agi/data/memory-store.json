@@ -1,0 +1,37 @@
+{
+  "working": [],
+  "episodic": [],
+  "semantic": [
+    {
+      "id": "MEM-mv0wrjpb-nu6s",
+      "key": "quantum_crypto",
+      "value": "lattice-based post-quantum cryptography",
+      "importance": 9,
+      "tags": [
+        "crypto"
+      ],
+      "createdAt": "2026-10-09T11:54:55.487Z",
+      "lastAccessed": "2026-10-09T11:54:55.490Z",
+      "accessCount": 2
+    },
+    {
+      "id": "MEM-mv0wrjpd-vw23",
+      "key": "classical_sorting",
+      "value": "quicksort algorithm",
+      "importance": 4,
+      "tags": [
+        "algorithm"
+      ],
+      "createdAt": "2026-10-09T11:54:55.489Z",
+      "lastAccessed": "2026-10-09T11:54:55.490Z",
+      "accessCount": 2
+    }
+  ],
+  "procedural": [],
+  "environment": [],
+  "resource": [],
+  "project": [],
+  "experiment": [],
+  "security": [],
+  "paperTrading": []
+}
