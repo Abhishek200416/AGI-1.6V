@@ -26,43 +26,50 @@ When developers try to combine external single-purpose agents (Cursor, Cline, ra
 
 ```mermaid
 flowchart TB
-    classDef amber fill:#D97706,stroke:#FBBF24,stroke-width:2px,color:#FFFFFF,font-weight:bold
-    classDef blue fill:#0284C7,stroke:#38BDF8,stroke-width:2px,color:#FFFFFF,font-weight:bold
-    classDef emerald fill:#059669,stroke:#34D399,stroke-width:3px,color:#FFFFFF,font-weight:bold
+    classDef amber fill:#D97706,stroke:#FBBF24,stroke-width:2px,color:#FFFFFF
+    classDef blue fill:#0284C7,stroke:#38BDF8,stroke-width:2px,color:#FFFFFF
+    classDef emerald fill:#059669,stroke:#34D399,stroke-width:3px,color:#FFFFFF
 
-    subgraph COMP["🏆 AGI 1.7 OMEGA COMMAND vs. OUTSIDE AGENTS (70-BENCHMARK COMPOSITE)"]
+    subgraph COMP["AGI 1.7 OMEGA COMMAND vs OUTSIDE AGENTS (70-BENCHMARK COMPOSITE)"]
         direction TB
-        subgraph OVERALL["OVERALL 70-BENCHMARK MEAN SCORE & FOOTPRINT"]
+        subgraph OVERALL["OVERALL 70-BENCHMARK MEAN SCORE"]
             direction LR
-            O_SINGLE["🟧 Outside Single Agents<br/>██░░░░░░░░ 20.69% Score<br/>1 Persona | Stateless | High Prompt Bloat"]:::amber
-            O_MULTI["🟦 Outside Multi-Agent Frameworks<br/>████░░░░░░ 41.80% Score<br/>Manual Wiring | Unbounded Chatter"]:::blue
-            O_17["🟩 AGI 1.7 OMEGA COMMAND<br/>██████████ 99.64% Score<br/>100 Agents Inside 1 Install | -88.2% Tokens"]:::emerald
+            O_SINGLE["Outside Single Agents | ██░░░░░░░░ 20.69% | 1 Persona, Stateless"]
+            O_MULTI["Outside Multi-Agent Frameworks | ████░░░░░░ 41.80% | Manual Wiring, High Chatter"]
+            O_17["AGI 1.7 OMEGA COMMAND | ██████████ 99.64% | 100 Agents in 1 Install, -88.2% Tokens"]
             O_SINGLE --> O_MULTI --> O_17
         end
 
-        subgraph WHY_LESS["📉 WHY AGI 1.7 USES LESS TOKENS, LESS RAM & ZERO EXTERNAL AGENT INSTALLS"]
-            direction TB
-            subgraph L1["1. Agent Installation Footprint (1 Unified Runtime vs. 100 Separate Agents)"]
-                direction LR
-                I_OUT["🟧 Outside Ecosystem: Install & Configure 100 Separate Agent Packages<br/>██████████ 100 Separate Installs"]:::amber --> I_17["🟩 AGI 1.7: All 100 Specialists Pre-Wired Inside agents/AGI_1_7/<br/>█░░░░░░░░░ 1 Single Install (-99% Setup)"]:::emerald
-            end
-            subgraph L2["2. Turn-1 Input Token Consumption (Isolated CWD + ACON Compression)"]
-                direction LR
-                T_OUT["🟧 Outside Repo-CWD Agents: 31,840 Input Tokens/Turn<br/>██████████ 100% Token Burn"]:::amber --> T_17["🟩 AGI 1.7 Isolated-CWD Engine: 3,742 Input Tokens/Turn<br/>█░░░░░░░░░ 11.8% Token Burn (-88.2% Less)"]:::emerald
-            end
-            subgraph L3["3. Simultaneous Heavy Process RAM Footprint (100 Logical Tasks -> 1..4 Active Workers)"]
-                direction LR
-                R_OUT["🟧 Unbounded Multi-Agent Spawn: 100 Processes (Host Freeze Risk)<br/>██████████ 100% RAM Spike"]:::amber --> R_17["🟩 AGI 1.7 Win32 RAM Governor (1,400 MB Floor): 1..4 Active Workers<br/>█░░░░░░░░░ 96% Less Process Overhead"]:::emerald
-            end
+        subgraph L1["1. Agent Installation Footprint (1 Unified Runtime vs 100 Separate Agents)"]
+            direction LR
+            I_OUT["Outside Ecosystem | ██████████ 100 Separate Agent Installs"]
+            I_17["AGI 1.7 OMEGA COMMAND | █░░░░░░░░░ 1 Single Install (All 100 Specialists Inside)"]
+            I_OUT --> I_17
+        end
+
+        subgraph L2["2. Turn-1 Input Token Consumption (Isolated CWD + ACON Compression)"]
+            direction LR
+            T_OUT["Outside Repo-CWD Agents | ██████████ 31,840 Input Tokens per Turn (100% Burn)"]
+            T_17["AGI 1.7 Isolated-CWD Engine | █░░░░░░░░░ 3,742 Input Tokens per Turn (-88.2% Less Burn)"]
+            T_OUT --> T_17
+        end
+
+        subgraph L3["3. Simultaneous Process RAM Footprint (100 Logical Tasks to 1..4 Active Workers)"]
+            direction LR
+            R_OUT["Unbounded Multi-Agent Spawn | ██████████ 100 Processes (Host Freeze Risk)"]
+            R_17["AGI 1.7 Win32 RAM Governor | █░░░░░░░░░ 1 to 4 Active Workers (-96% Process Overhead)"]
+            R_OUT --> R_17
         end
     end
 
+    class O_SINGLE,I_OUT,T_OUT,R_OUT amber
+    class O_MULTI blue
+    class O_17,I_17,T_17,R_17 emerald
     style COMP fill:#0F172A,stroke:#10B981,stroke-width:3px,color:#F8FAFC
     style OVERALL fill:#1E293B,stroke:#F59E0B,stroke-width:2px,color:#FDE68A
-    style WHY_LESS fill:#0F172A,stroke:#334155,stroke-width:1px,color:#E2E8F0
-    style L1 fill:#1E293B,stroke:#475569,color:#F8FAFC
-    style L2 fill:#1E293B,stroke:#475569,color:#F8FAFC
-    style L3 fill:#1E293B,stroke:#475569,color:#F8FAFC
+    style L1 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
+    style L2 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
+    style L3 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
 ```
 
 ### 1.2 Side-by-Side Comparison: AGI 1.7 vs. Outside Single Agents & External Multi-Agent Frameworks
@@ -87,44 +94,62 @@ When you run **AGI 1.7**, [`CapabilityRouter`](agents/AGI_1_7/ecosystem/agent_re
 
 ```mermaid
 flowchart LR
-    classDef router fill:#059669,stroke:#34D399,stroke-width:2px,color:#FFFFFF,font-weight:bold
+    classDef router fill:#059669,stroke:#34D399,stroke-width:3px,color:#FFFFFF
     classDef fam fill:#1E293B,stroke:#38BDF8,stroke-width:1px,color:#F8FAFC
 
-    R["🟩 AGI 1.7 CapabilityRouter<br/>(1 Single Install = 100 Agents Inside)"]:::router
+    R["AGI 1.7 CapabilityRouter (1 Single Install = All 100 Specialists Inside)"]
 
-    subgraph G_ENG["Engineering, Planning & Ops (30 Agents)"]
-        F1["1. Planning & Architecture (6)"]:::fam
-        F7["7. Software Engineering (10)"]:::fam
-        F8["8. Terminal, Shell & OS Ops (8)"]:::fam
-        F9["9. Containers, Virt & Cloud (6)"]:::fam
+    subgraph G_ENG["Engineering, Planning and Ops (30 Agents)"]
+        F1["1. Planning and Architecture (6 Agents)"]
+        F7["7. Software Engineering (10 Agents)"]
+        F8["8. Terminal, Shell and OS Ops (8 Agents)"]
+        F9["9. Containers, Virtualization and Cloud (6 Agents)"]
     end
 
-    subgraph G_SCI["Science, Math & Deep Research (30 Agents)"]
-        F2["2. Research & Evidence Synthesis (8)"]:::fam
-        F3["3. Math & Symbolic Reasoning (6)"]:::fam
-        F4["4. Physics & Physical Sciences (6)"]:::fam
-        F5["5. Chemistry & Molecular (5)"]:::fam
-        F6["6. Biology & Biomedical (5)"]:::fam
+    subgraph G_SCI["Science, Math and Deep Research (30 Agents)"]
+        F2["2. Research and Evidence Synthesis (8 Agents)"]
+        F3["3. Mathematics and Symbolic Reasoning (6 Agents)"]
+        F4["4. Physics and Physical Sciences (6 Agents)"]
+        F5["5. Chemistry and Molecular Sciences (5 Agents)"]
+        F6["6. Biology and Biomedical Sciences (5 Agents)"]
     end
 
-    subgraph G_AUT["Web, Desktop, Data & QA (26 Agents)"]
-        F10["10. Browser & Web Automation (6)"]:::fam
-        F11["11. Desktop & Computer Use (6)"]:::fam
-        F12["12. Data, Storage & Databases (6)"]:::fam
-        F13["13. Testing, QA & Verification (8)"]:::fam
+    subgraph G_AUT["Web, Desktop, Data and QA (26 Agents)"]
+        F10["10. Browser and Web Automation (6 Agents)"]
+        F11["11. Desktop and Computer Use (6 Agents)"]
+        F12["12. Data, Storage and Databases (6 Agents)"]
+        F13["13. Testing, QA and Verification (8 Agents)"]
     end
 
-    subgraph G_GOV["Security, Token Perf & Release (14 Agents)"]
-        F14["14. Security, Permissions & Safety (6)"]:::fam
-        F15["15. Performance & Token Economy (4)"]:::fam
-        F16["16. Release, Governance & Audit (4)"]:::fam
+    subgraph G_GOV["Security, Token Economy and Release (14 Agents)"]
+        F14["14. Security, Permissions and Safety (6 Agents)"]
+        F15["15. Performance and Token Optimization (4 Agents)"]
+        F16["16. Release, Governance and Reporting (4 Agents)"]
     end
 
-    R --> G_ENG & G_SCI & G_AUT & G_GOV
-    style G_ENG fill:#0F172A,stroke:#10B981,color:#F8FAFC
-    style G_SCI fill:#0F172A,stroke:#A855F7,color:#F8FAFC
-    style G_AUT fill:#0F172A,stroke:#38BDF8,color:#F8FAFC
-    style G_GOV fill:#0F172A,stroke:#F59E0B,color:#F8FAFC
+    R --> F1
+    R --> F7
+    R --> F8
+    R --> F9
+    R --> F2
+    R --> F3
+    R --> F4
+    R --> F5
+    R --> F6
+    R --> F10
+    R --> F11
+    R --> F12
+    R --> F13
+    R --> F14
+    R --> F15
+    R --> F16
+
+    class R router
+    class F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11,F12,F13,F14,F15,F16 fam
+    style G_ENG fill:#0F172A,stroke:#10B981,stroke-width:2px,color:#F8FAFC
+    style G_SCI fill:#0F172A,stroke:#A855F7,stroke-width:2px,color:#F8FAFC
+    style G_AUT fill:#0F172A,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC
+    style G_GOV fill:#0F172A,stroke:#F59E0B,stroke-width:2px,color:#F8FAFC
 ```
 
 ### Complete Directory of the 100 Embedded Specialists Across 16 Families
@@ -184,13 +209,66 @@ Alongside the **100 specialist agents**, `agents/AGI_1_7/` bundles:
 ## 📊 4. Verified 70-Benchmark Scorecard Across 7 Domains (`99.64%` Overall Mean)
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"xyChart": {"backgroundColor": "#0F172A", "titleColor": "#34D399", "xAxisLabelColor": "#F8FAFC", "yAxisLabelColor": "#F8FAFC", "plotColorPalette": "#D97706, #10B981"}}}}%%
-xychart-beta
-    title "AGI 1.7 OMEGA COMMAND vs Outside Single-Agent Baseline Across 7 Domains (70 Benchmarks)"
-    x-axis ["D1 Routing", "D2 Task DB", "D3 Process", "D4 Memory", "D5 Tokens", "D6 Terminal", "D7 Reasoning", "ALL 70 MEAN"]
-    y-axis "Score (0 to 100)" 0 --> 100
-    bar [21.35, 3.43, 10.00, 13.04, 4.50, 43.00, 49.48, 20.69]
-    bar [100.00, 100.00, 100.00, 99.65, 99.85, 100.00, 97.95, 99.64]
+flowchart TB
+    classDef amber fill:#D97706,stroke:#FBBF24,stroke-width:2px,color:#FFFFFF
+    classDef emerald fill:#059669,stroke:#34D399,stroke-width:2px,color:#FFFFFF
+
+    subgraph DOMAINS["7-DOMAIN BENCHMARK BAR GRAPH (OUTSIDE BASELINE vs AGI 1.7 OMEGA COMMAND)"]
+        direction TB
+        subgraph D1["D1 - 100-Specialist Registry and DAG Routing (01-10)"]
+            direction LR
+            D1_B["Outside Baseline | ██░░░░░░░░ 21.35%"]
+            D1_A["AGI 1.7 OMEGA COMMAND | ██████████ 100.00%"]
+            D1_B --> D1_A
+        end
+        subgraph D2["D2 - 14-State SQLite WAL Task DB and Live Inbox (11-20)"]
+            direction LR
+            D2_B["Outside Baseline | ░░░░░░░░░░ 3.43%"]
+            D2_A["AGI 1.7 OMEGA COMMAND | ██████████ 100.00%"]
+            D2_B --> D2_A
+        end
+        subgraph D3["D3 - Streaming Process Supervisor and Callbacks (21-30)"]
+            direction LR
+            D3_B["Outside Baseline | █░░░░░░░░░ 10.00%"]
+            D3_A["AGI 1.7 OMEGA COMMAND | ██████████ 100.00%"]
+            D3_B --> D3_A
+        end
+        subgraph D4["D4 - 10-Layer SQLite Memory and Supersession (31-40)"]
+            direction LR
+            D4_B["Outside Baseline | █░░░░░░░░░ 13.04%"]
+            D4_A["AGI 1.7 OMEGA COMMAND | ██████████ 99.65%"]
+            D4_B --> D4_A
+        end
+        subgraph D5["D5 - Isolated-CWD Token Economy and RAM Gov (41-50)"]
+            direction LR
+            D5_B["Outside Baseline | ░░░░░░░░░░ 4.50%"]
+            D5_A["AGI 1.7 OMEGA COMMAND | ██████████ 99.85%"]
+            D5_B --> D5_A
+        end
+        subgraph D6["D6 - Terminal-Bench 2.0 Harbor and OSWorld Safety (51-60)"]
+            direction LR
+            D6_B["Outside Baseline | ████░░░░░░ 43.00%"]
+            D6_A["AGI 1.7 OMEGA COMMAND | ██████████ 100.00%"]
+            D6_B --> D6_A
+        end
+        subgraph D7["D7 - GPQA Clean 189, BFCL, tau-bench and SSRF (61-70)"]
+            direction LR
+            D7_B["Outside Baseline | █████░░░░░ 49.48%"]
+            D7_A["AGI 1.7 OMEGA COMMAND | ██████████ 97.95%"]
+            D7_B --> D7_A
+        end
+    end
+
+    class D1_B,D2_B,D3_B,D4_B,D5_B,D6_B,D7_B amber
+    class D1_A,D2_A,D3_A,D4_A,D5_A,D6_A,D7_A emerald
+    style DOMAINS fill:#0F172A,stroke:#10B981,stroke-width:3px,color:#F8FAFC
+    style D1 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
+    style D2 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
+    style D3 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
+    style D4 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
+    style D5 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
+    style D6 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
+    style D7 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
 ```
 
 | Domain (10 Benchmarks Each = 70 Total) | Outside Single-Agent Baseline | **🟩 AGI 1.7 (`OMEGA COMMAND`)** | Visual Score Bar (`🟧` Baseline vs `🟩` AGI 1.7) | Key Verified Evidence |
