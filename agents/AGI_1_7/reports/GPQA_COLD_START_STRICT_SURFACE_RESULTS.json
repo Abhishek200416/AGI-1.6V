@@ -9,7 +9,7 @@
     "blind_answer_key_separation": true
   },
   "cli_and_model_metadata": {
-    "cli_binary": "C:\\Users\\abhis\\AppData\\Local\\agy\\bin\\agy.exe",
+    "cli_binary": "<USER_HOME>\\AppData\\Local\\agy\\bin\\agy.exe",
     "cli_version": "1.3.3",
     "model_identifier": "gemini-3.8-flash-high",
     "effort_level": "high"

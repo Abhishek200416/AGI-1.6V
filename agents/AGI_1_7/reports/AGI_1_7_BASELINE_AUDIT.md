@@ -2,13 +2,13 @@
 
 **Audit ID:** `AUDIT-AGI17-PHASE0-20261010`  
 **Audit Timestamp:** `2026-10-10T18:14:30+05:30` (`2026-10-10T12:44:30Z`)  
-**Repository Root:** `C:\Users\abhis\Downloads\pt`  
+**Repository Root:** `<REPO_ROOT>`  
 **Git Remote:** `origin https://github.com/Abhishek200416/AGI-1.6V.git`  
 **Active Branch & Commit:** `main` @ `06390fa` (`docs(agi16): add comprehensive flagship README detailing 76 subagents, 74 GSD skills, 11 plugins, 21 MCPs, comparisons, and capabilities`)  
 **Tracked Modifications:** `0` modified tracked files (clean baseline preserved). Untracked root scratch files left untouched.  
 **Active External Processes Preserved:**
-- PID `20556` (`C:\Users\abhis\Downloads\pt\.venv\Scripts\python.exe -u D:\AGI_Evaluation\AGI_1_6_OMEGA_NEXUS\OSWorld-V2\scripts\download_and_verify_vm.py`, 5.1 MB RAM, 0.0s CPU)
-- PID `22884` (`C:\Users\abhis\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\python.exe -u D:\AGI_Evaluation\AGI_1_6_OMEGA_NEXUS\OSWorld-V2\scripts\download_and_verify_vm.py`, 31.7 MB RAM, 0.66s CPU)
+- PID `20556` (`<REPO_ROOT>\.venv\Scripts\python.exe -u D:\AGI_Evaluation\AGI_1_6_OMEGA_NEXUS\OSWorld-V2\scripts\download_and_verify_vm.py`, 5.1 MB RAM, 0.0s CPU)
+- PID `22884` (`<USER_HOME>\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\python.exe -u D:\AGI_Evaluation\AGI_1_6_OMEGA_NEXUS\OSWorld-V2\scripts\download_and_verify_vm.py`, 31.7 MB RAM, 0.66s CPU)
 - Both processes are preserved without termination or interference and accounted for in host resource headroom.
 
 ---
@@ -93,7 +93,7 @@ In accordance with Mission Rule 1, `agents/AGI_1_5/` and `agents/AGI_1_6/` (alon
      - Mean latency: **127,609.3 ms (127.61s)**; Median (p50): **97,924 ms (97.92s)**; p95: **329,949 ms (329.95s)**; Sum of subprocess durations: **24,118.2s**.
   2. **Why Input Tokens Exploded to 7.39M (p50 = 30,626, p90 = 91,604, max = 219,095):**
      - In `scripts/run_gpqa_diamond_clean_189.py` (lines `21–22`), `os.environ["AGI_ISOLATED_CWD"] = r"D:\AGI_Evaluation\AGI_1_5_FULL_BENCHMARKS\preflight"` was set. For the **17 questions** evaluated under that isolated working directory, `input_tokens` was only **2,223 to 2,345 tokens** (e.g., item 4 `rec1zl5LvaatzGhFt` used `2,256` input tokens and finished in `29.4s`)!
-     - However, when `scripts/execute_benchmark_campaign.py` was written (lines `23–30`), **`AGI_ISOLATED_CWD` was omitted!** Consequently, `cwd=os.environ.get("AGI_ISOLATED_CWD")` in `agi_agent_adapter.py:90` passed `cwd=None`, causing `agy.exe` to execute inside `C:\Users\abhis\Downloads\pt`.
+     - However, when `scripts/execute_benchmark_campaign.py` was written (lines `23–30`), **`AGI_ISOLATED_CWD` was omitted!** Consequently, `cwd=os.environ.get("AGI_ISOLATED_CWD")` in `agi_agent_adapter.py:90` passed `cwd=None`, causing `agy.exe` to execute inside `<REPO_ROOT>`.
      - Running `agy.exe` inside the repository root caused the CLI to load the entire repository context, skills, rules, and MCP schemas (**~22,700 input tokens on Turn 1**).
      - Worse still, because `--dangerously-skip-permissions` was enabled without forbidding tool invocation in the prompt, `agy.exe` frequently executed multi-turn internal tool/thinking loops per question, where `usage.input_tokens` in `agy.exe --output-format json` accumulates across turns (`Turn 1: ~22.7k + Turn 2: ~25k + Turn 3: ~28k = ~75k–219k input tokens`!).
      - Moreover, failed timed-out subprocesses (`subprocess.TimeoutExpired` in `agi_agent_adapter.py:126–136`) recorded `tokens: 0` because `agy.exe` killed on timeout did not emit its final JSON object, even though those 14 timed-out runs consumed server-side tokens before timing out at 180s–360s.

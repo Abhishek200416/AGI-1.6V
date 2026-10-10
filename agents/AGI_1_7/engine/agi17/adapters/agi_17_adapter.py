@@ -21,6 +21,7 @@ from agents.AGI_1_7.ecosystem.agent_registry.specialist_factory import Specialis
 from ..capabilities.capability_profiler import CapabilityProfiler
 from ..capabilities.resource_snapshot import ResourceSnapshot
 from ..memory.omega_command_memory import OmegaCommandMemory
+from ..orchestration.ci_repair_agent import CIRepairAgent
 from ..orchestration.hierarchical_orchestrator import HierarchicalOrchestrator, SubtaskSpec
 from ..orchestration.resource_governor import ResourceGovernor
 from ..process_supervision.process_supervisor import ProcessSupervisor
@@ -94,6 +95,12 @@ class AGI17Adapter:
             model_adapter=self.model_adapter,
             supervisor=self.supervisor,
         )
+        self.ci_repair_agent = CIRepairAgent(
+            model_adapter=self.model_adapter,
+            sandbox_runner=self.orchestrator.sandbox_runner,
+            specialist_factory=self.specialist_factory,
+            ecosystem_coordinator=self.ecosystem_coordinator,
+        )
         self.progress_service = ProgressService(
             task_store=self.task_manager.store,
             token_controller=self.token_controller,
@@ -139,6 +146,25 @@ class AGI17Adapter:
             fallback_module_code=fallback_module_code,
             fallback_test_code=fallback_test_code,
         )
+
+    def run_ci_repair(
+        self,
+        *,
+        workspace_dir: str | Path,
+        module_filename: str,
+        test_pattern: str = "test_*.py",
+        issue_description: str = "Fix failing Python unit tests with minimal diff.",
+        write_patch_to_workspace: bool = True,
+    ) -> Dict[str, Any]:
+        """Executes the focused Python CI-Repair product workflow inside a disposable sandbox."""
+        res = self.ci_repair_agent.repair_workspace(
+            workspace_dir=workspace_dir,
+            module_filename=module_filename,
+            test_pattern=test_pattern,
+            issue_description=issue_description,
+            write_patch_to_workspace=write_patch_to_workspace,
+        )
+        return res.to_dict()
 
     def execute(
         self,

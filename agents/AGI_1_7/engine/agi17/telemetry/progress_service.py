@@ -33,7 +33,7 @@ class ProgressService:
         try:
             self.output_dir.mkdir(parents=True, exist_ok=True)
         except Exception:
-            self.output_dir = Path(r"c:\Users\abhis\Downloads\pt\agents\AGI_1_7\state_fallback\telemetry")
+            self.output_dir = Path(__file__).resolve().parents[3] / "state_fallback" / "telemetry"
             self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def build_live_telemetry(self, extra_benchmarks: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

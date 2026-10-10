@@ -1,18 +1,18 @@
 # AGI 1.7 (OMEGA COMMAND) — GPQA Diamond Clean 1.2.2 Reworked Evaluation Report
 
 **Run IDs:**
-- **Fresh Cold-Start From-Scratch Run (Zero Checkpoint Reuse, Strict Surface-Only):** [`GPQA_COLD_START_STRICT_SURFACE_RESULTS.json`](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_7/reports/GPQA_COLD_START_STRICT_SURFACE_RESULTS.json)
+- **Fresh Cold-Start From-Scratch Run (Zero Checkpoint Reuse, Strict Surface-Only):** [`GPQA_COLD_START_STRICT_SURFACE_RESULTS.json`](file:///<REPO_ROOT>/agents/AGI_1_7/reports/GPQA_COLD_START_STRICT_SURFACE_RESULTS.json)
 - **Full 189-Question Audit Ledger:** `EVAL-AGI17-GPQA-CLEAN-189` (`D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\raw_results\gpqa_clean_189_agi17_summary.json`)
 
 **Target Agent:** `AGI 1.7 — OMEGA COMMAND` (`v1.7.0`, 100-Specialist Registry, Ecosystem Coordinator & Isolated-CWD Token Economy)  
-**Verified CLI & Model Identity:** `C:\Users\abhis\AppData\Local\agy\bin\agy.exe` (`v1.3.3`) | `gemini-3.8-flash-high` (`--effort high`, zero silent fallback)  
+**Verified CLI & Model Identity:** `<USER_HOME>\AppData\Local\agy\bin\agy.exe` (`v1.3.3`) | `gemini-3.8-flash-high` (`--effort high`, zero silent fallback)  
 **Dataset & Version:** Official `gpqa-diamond-clean v1.2.2` (`198` source -> `9` excluded -> **`189` verified questions**)
 
 ---
 
 ## 1. Exact Grading Rules & Methodological Separation
 
-In accordance with strict benchmark auditing standards, [`run_gpqa_clean_189_agi17.py`](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_7/scripts/run_gpqa_clean_189_agi17.py) enforces **Strict Surface-Only Grading** by default (`allow_transcript_recovery = False`) and separates **Fresh Cold-Start Runs** from **Checkpoint-Resumed Composite Runs**:
+In accordance with strict benchmark auditing standards, [`run_gpqa_clean_189_agi17.py`](file:///<REPO_ROOT>/agents/AGI_1_7/scripts/run_gpqa_clean_189_agi17.py) enforces **Strict Surface-Only Grading** by default (`allow_transcript_recovery = False`) and separates **Fresh Cold-Start Runs** from **Checkpoint-Resumed Composite Runs**:
 
 1. **Strict Surface-Only Extraction (`extract_choice()`):**
    - Only the final surfaced `stdout` text returned by `agy.exe` is inspected.
@@ -29,12 +29,12 @@ In accordance with strict benchmark auditing standards, [`run_gpqa_clean_189_agi
 
 ## 2. Fresh From-Scratch Cold-Start Strict Surface-Only Evaluation (`GPQA_COLD_START_STRICT_SURFACE_RESULTS.json`)
 
-To verify live cold-start performance with **zero checkpoint reuse** and **zero thinking-transcript recovery**, [`run_gpqa_clean_189_agi17.py --cold-start-sample-n 10`](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_7/scripts/run_gpqa_clean_189_agi17.py) evaluated a 10-question stratified sample across Biology, Chemistry, and Physics from scratch (explicitly including `recnTTKdBzfuoZ7w7`):
+To verify live cold-start performance with **zero checkpoint reuse** and **zero thinking-transcript recovery**, [`run_gpqa_clean_189_agi17.py --cold-start-sample-n 10`](file:///<REPO_ROOT>/agents/AGI_1_7/scripts/run_gpqa_clean_189_agi17.py) evaluated a 10-question stratified sample across Biology, Chemistry, and Physics from scratch (explicitly including `recnTTKdBzfuoZ7w7`):
 
-| Metric | Fresh Cold-Start Value ([`GPQA_COLD_START_STRICT_SURFACE_RESULTS.json`](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_7/reports/GPQA_COLD_START_STRICT_SURFACE_RESULTS.json)) |
+| Metric | Fresh Cold-Start Value ([`GPQA_COLD_START_STRICT_SURFACE_RESULTS.json`](file:///<REPO_ROOT>/agents/AGI_1_7/reports/GPQA_COLD_START_STRICT_SURFACE_RESULTS.json)) |
 | :--- | :--- |
 | **Evaluation Mode** | `FRESH_FROM_SCRATCH_COLD_START_STRICT_SURFACE_ONLY` |
-| **CLI Binary & Version** | `C:\Users\abhis\AppData\Local\agy\bin\agy.exe` (`v1.3.3`) |
+| **CLI Binary & Version** | `<USER_HOME>\AppData\Local\agy\bin\agy.exe` (`v1.3.3`) |
 | **Model Identifier** | `gemini-3.8-flash-high` (`effort = high`) |
 | **Checkpoint Reuse Allowed** | `False` (`0` prior items loaded) |
 | **Thinking-Transcript Recovery Allowed** | `False` (`surface_stdout_choice_tag_required = True`) |

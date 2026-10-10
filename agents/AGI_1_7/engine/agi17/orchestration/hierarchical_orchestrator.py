@@ -34,6 +34,7 @@ from agents.AGI_1_7.ecosystem.agent_registry.specialist_factory import Specialis
 from ..capabilities.resource_snapshot import LiveResourceMetrics
 from ..memory.omega_command_memory import OmegaCommandMemory
 from ..process_supervision.process_supervisor import ProcessSupervisor
+from ..process_supervision.sandbox_runner import DisposableSandboxRunner
 from ..task_control.task_manager import DurableTaskManager
 from ..task_control.task_state_machine import TERMINAL_STATES, TaskState
 from ..telemetry.token_economy import AdaptiveTokenController
@@ -87,6 +88,7 @@ class SubtaskSpec:
     executor_fn: Optional[Callable[[AgentContract, Dict[str, Any]], Dict[str, Any]]] = None
     verification_command: Optional[List[str]] = None
     verification_cwd: Optional[str] = None
+    use_disposable_sandbox: bool = False
     repair_specialist_id: str = "swe_patch_minimizer"
     repair_fn: Optional[Callable[[Dict[str, Any], Dict[str, Any]], Dict[str, Any]]] = None
 
@@ -118,6 +120,7 @@ class HierarchicalOrchestrator:
         ecosystem_coordinator: Optional[EcosystemCoordinator] = None,
         model_adapter: Optional[Any] = None,
         supervisor: Optional[ProcessSupervisor] = None,
+        sandbox_runner: Optional[DisposableSandboxRunner] = None,
     ) -> None:
         self.task_manager = task_manager or DurableTaskManager()
         self.memory = memory or OmegaCommandMemory()
@@ -126,6 +129,7 @@ class HierarchicalOrchestrator:
         self.specialist_factory = specialist_factory or SpecialistFactory()
         self.ecosystem_coordinator = ecosystem_coordinator or EcosystemCoordinator()
         self.supervisor = supervisor or ProcessSupervisor(task_manager=self.task_manager)
+        self.sandbox_runner = sandbox_runner or DisposableSandboxRunner()
         self.model_adapter = model_adapter
 
     def build_code_and_test_subtasks(
@@ -253,9 +257,34 @@ class HierarchicalOrchestrator:
                     "-v",
                 ],
                 verification_cwd=str(ws),
+                use_disposable_sandbox=True,
                 repair_specialist_id="swe_patch_minimizer",
             ),
         ]
+
+    def _run_sandboxed_workspace_tests(self, verification_cwd: str | Path, sandbox_id: str) -> Dict[str, Any]:
+        """Executes workspace Python unit tests inside the disposable container / ephemeral sandbox."""
+        ws_dir = Path(verification_cwd)
+        files_map: Dict[str, str] = {}
+        if ws_dir.is_dir():
+            for py_file in sorted(ws_dir.glob("*.py")):
+                if py_file.is_file():
+                    files_map[py_file.name] = py_file.read_text(encoding="utf-8", errors="replace")
+        sbx_res = self.sandbox_runner.run_python_unittest_sandbox(
+            files=files_map,
+            test_pattern="test_*.py",
+            sandbox_id=sandbox_id,
+        )
+        return {
+            "exit_code": sbx_res.exit_code,
+            "stdout": sbx_res.stdout,
+            "stderr": sbx_res.stderr,
+            "notification_id": sbx_res.sandbox_id,
+            "isolation_backend": sbx_res.isolation_backend,
+            "network_disabled": sbx_res.network_disabled,
+            "cleanup_verified": sbx_res.cleanup_verified,
+            "duration_sec": sbx_res.duration_sec,
+        }
 
     def requires_hierarchical_planning(
         self,
@@ -869,23 +898,29 @@ class HierarchicalOrchestrator:
                         verification_failed = True
                         failure_details = dict(artifacts)
 
-                    if sp_spec and sp_spec.verification_command:
-                        ver_notif = self.supervisor.run_supervised(
-                            task_id=f"{cid}-VERIFY-ATT1",
-                            command=sp_spec.verification_command,
-                            cwd=sp_spec.verification_cwd,
-                            wall_timeout_sec=60.0,
-                            idle_timeout_sec=30.0,
-                        )
-                        stdout_txt = Path(ver_notif.stdout_log_path).read_text(encoding="utf-8", errors="replace") if Path(ver_notif.stdout_log_path).exists() else ""
-                        stderr_txt = Path(ver_notif.stderr_log_path).read_text(encoding="utf-8", errors="replace") if Path(ver_notif.stderr_log_path).exists() else ""
-                        artifacts["initial_verification_run"] = {
-                            "exit_code": ver_notif.exit_code,
-                            "stdout": stdout_txt,
-                            "stderr": stderr_txt,
-                            "notification_id": ver_notif.notification_id,
-                        }
-                        if ver_notif.exit_code != 0:
+                    if sp_spec and (sp_spec.verification_command or (sp_spec.use_disposable_sandbox and sp_spec.verification_cwd)):
+                        if sp_spec.use_disposable_sandbox and sp_spec.verification_cwd:
+                            artifacts["initial_verification_run"] = self._run_sandboxed_workspace_tests(
+                                sp_spec.verification_cwd,
+                                sandbox_id=f"{cid}-VERIFY-ATT1",
+                            )
+                        else:
+                            ver_notif = self.supervisor.run_supervised(
+                                task_id=f"{cid}-VERIFY-ATT1",
+                                command=sp_spec.verification_command,
+                                cwd=sp_spec.verification_cwd,
+                                wall_timeout_sec=60.0,
+                                idle_timeout_sec=30.0,
+                            )
+                            stdout_txt = Path(ver_notif.stdout_log_path).read_text(encoding="utf-8", errors="replace") if Path(ver_notif.stdout_log_path).exists() else ""
+                            stderr_txt = Path(ver_notif.stderr_log_path).read_text(encoding="utf-8", errors="replace") if Path(ver_notif.stderr_log_path).exists() else ""
+                            artifacts["initial_verification_run"] = {
+                                "exit_code": ver_notif.exit_code,
+                                "stdout": stdout_txt,
+                                "stderr": stderr_txt,
+                                "notification_id": ver_notif.notification_id,
+                            }
+                        if artifacts["initial_verification_run"]["exit_code"] != 0:
                             verification_failed = True
                             failure_details = artifacts["initial_verification_run"]
                             res["task_correctness_verified"] = False
@@ -929,7 +964,15 @@ class HierarchicalOrchestrator:
                         artifacts["repair_execution"] = repair_out
 
                         self.task_manager.transition(cid, TaskState.VERIFYING, reason="Re-verifying after specialist patch")
-                        if sp_spec.verification_command:
+                        if sp_spec.use_disposable_sandbox and sp_spec.verification_cwd:
+                            artifacts["post_repair_verification_run"] = self._run_sandboxed_workspace_tests(
+                                sp_spec.verification_cwd,
+                                sandbox_id=f"{cid}-VERIFY-ATT2",
+                            )
+                            re_exit = artifacts["post_repair_verification_run"]["exit_code"]
+                            verification_failed = re_exit != 0
+                            res["task_correctness_verified"] = (re_exit == 0)
+                        elif sp_spec.verification_command:
                             re_notif = self.supervisor.run_supervised(
                                 task_id=f"{cid}-VERIFY-ATT2",
                                 command=sp_spec.verification_command,

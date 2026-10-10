@@ -60,10 +60,10 @@
 
 | Service / Tool | Status | Version / Details |
 |---|---|---|
-| **Python Venv** | `AVAILABLE` | Python `3.14.2` at `c:\Users\abhis\Downloads\pt\.venv\Scripts\python.exe` |
+| **Python Venv** | `AVAILABLE` | Python `3.14.2` at `<REPO_ROOT>\.venv\Scripts\python.exe` |
 | **Antigravity CLI (`agy.exe`)** | `AVAILABLE` | `%LOCALAPPDATA%\agy\bin\agy.exe` (`v1.3.3`) |
 | **Sole Foundation Model** | `AVAILABLE` | `gemini-3.8-flash-high` (enforced by `ModelAdapter`; zero silent fallbacks) |
 | **CLI Telemetry Flags** | `VERIFIED` | `--output-format json`, `--output-format stream-json`, `--effort (low\|medium\|high\|xhigh\|max)`, `--disable-slash-commands`, `--print-timeout` |
 | **Docker Engine (WSL 2)** | `AVAILABLE` | Docker Server `v29.2.0` (`vmmemWSL` ~993 MB working set) |
-| **Harbor CLI** | `AVAILABLE` | `c:\Users\abhis\Downloads\pt\.venv\Scripts\harbor.exe` |
+| **Harbor CLI** | `AVAILABLE` | `<REPO_ROOT>\.venv\Scripts\harbor.exe` |
 | **Power & Thermal Sensors** | `MEASURED` / `UNAVAILABLE` | AC/Battery state measured via Win32 `GetSystemPowerStatus`; CPU ring-0 thermal zone marked `UNAVAILABLE` in user space. |

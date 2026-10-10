@@ -73,7 +73,7 @@ class CompletionNotifier:
         try:
             self.notifications_dir.mkdir(parents=True, exist_ok=True)
         except Exception:
-            self.notifications_dir = Path(r"c:\Users\abhis\Downloads\pt\agents\AGI_1_7\state_fallback\agent_messages")
+            self.notifications_dir = Path(__file__).resolve().parents[3] / "state_fallback" / "agent_messages"
             self.notifications_dir.mkdir(parents=True, exist_ok=True)
         self._callbacks: List[Callable[[CompletionNotification], None]] = []
 

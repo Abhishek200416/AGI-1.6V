@@ -60,7 +60,7 @@ class ProcessSupervisor:
         try:
             self.logs_dir.mkdir(parents=True, exist_ok=True)
         except Exception:
-            self.logs_dir = Path(r"c:\Users\abhis\Downloads\pt\agents\AGI_1_7\state_fallback\logs\processes")
+            self.logs_dir = Path(__file__).resolve().parents[3] / "state_fallback" / "logs" / "processes"
             self.logs_dir.mkdir(parents=True, exist_ok=True)
         self.heartbeat_interval_sec = heartbeat_interval_sec
         self._active_processes: Dict[str, subprocess.Popen] = {}
