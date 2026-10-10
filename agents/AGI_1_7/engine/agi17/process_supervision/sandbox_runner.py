@@ -64,6 +64,31 @@ class SandboxPolicy:
     docker_image: Optional[str] = None
     block_dangerous_code_patterns: bool = True
 
+    @classmethod
+    def production(cls, docker_image: Optional[str] = None) -> "SandboxPolicy":
+        """Fail-closed production policy: requires disposable Docker container isolation and never silently downgrades to host."""
+        return cls(
+            isolation_mode="docker",
+            require_container_isolation=True,
+            network_enabled=False,
+            cpu_limit=1.0,
+            memory_limit_mb=256,
+            pids_limit=64,
+            wall_timeout_sec=30.0,
+            docker_image=docker_image,
+            block_dangerous_code_patterns=True,
+        )
+
+    @classmethod
+    def development(cls) -> "SandboxPolicy":
+        """Development/CI policy: uses Docker when available, or restricted ephemeral tempdir with sanitized env."""
+        return cls(
+            isolation_mode="auto",
+            require_container_isolation=False,
+            network_enabled=False,
+            block_dangerous_code_patterns=True,
+        )
+
 
 @dataclass
 class SandboxExecutionResult:
@@ -79,6 +104,8 @@ class SandboxExecutionResult:
     stderr: str
     network_disabled: bool
     cleanup_verified: bool
+    policy_requested_network_disabled: bool = True
+    verified_network_isolated: bool = False
     security_warnings: List[str] = field(default_factory=list)
     command_executed: List[str] = field(default_factory=list)
 
@@ -151,7 +178,16 @@ def validate_relative_sandbox_path(sandbox_root: Path, candidate_path: str | Pat
     norm_parts = Path(cand_str).parts
     if ".." in norm_parts:
         raise PathTraversalViolationError(f"Parent directory traversal ('..') rejected in sandbox path: '{cand_str}'")
-    target = (root_resolved / cand_str).resolve()
+    raw_target = root_resolved / cand_str
+    # Check intermediate and final path components for symlinks before resolving
+    cur_check = root_resolved
+    for part in norm_parts:
+        cur_check = cur_check / part
+        if cur_check.is_symlink():
+            raise PathTraversalViolationError(f"Symlink escape rejected in sandbox path: '{cand_str}'")
+    if raw_target.is_symlink():
+        raise PathTraversalViolationError(f"Symlink escape rejected in sandbox path: '{cand_str}'")
+    target = raw_target.resolve()
     try:
         target.relative_to(root_resolved)
     except ValueError as exc:
@@ -317,13 +353,15 @@ class DisposableSandboxRunner:
                     "docker",
                     "run",
                     "--rm",
+                    "--user",
+                    "65534:65534",
                     "--cap-drop",
                     "ALL",
                     "--security-opt",
                     "no-new-privileges",
                     "--read-only",
                     "--tmpfs",
-                    "/tmp:rw,exec,nosuid,size=64m",
+                    "/tmp:rw,exec,nosuid,size=64m,mode=1777",
                     "--cpus",
                     str(self.policy.cpu_limit),
                     "--memory",
@@ -396,6 +434,8 @@ class DisposableSandboxRunner:
         dt = round(time.perf_counter() - t0, 4)
         stdout_redacted = redact_sensitive_text(stdout_str[: self.policy.max_output_bytes])
         stderr_redacted = redact_sensitive_text(stderr_str[: self.policy.max_output_bytes])
+        policy_net_disabled = not self.policy.network_enabled
+        verified_net_isolated = bool(use_docker and policy_net_disabled)
 
         return SandboxExecutionResult(
             sandbox_id=sid,
@@ -406,8 +446,10 @@ class DisposableSandboxRunner:
             duration_sec=dt,
             stdout=stdout_redacted,
             stderr=stderr_redacted,
-            network_disabled=not self.policy.network_enabled,
+            network_disabled=policy_net_disabled,
             cleanup_verified=cleanup_ok,
+            policy_requested_network_disabled=policy_net_disabled,
+            verified_network_isolated=verified_net_isolated,
             security_warnings=warnings,
             command_executed=[redact_sensitive_text(c) for c in cmd_executed],
         )

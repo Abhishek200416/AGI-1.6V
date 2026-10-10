@@ -143,6 +143,7 @@ class HierarchicalOrchestrator:
         inject_deliberate_test_failure: bool = False,
         fallback_module_code: Optional[str] = None,
         fallback_test_code: Optional[str] = None,
+        adaptive_reuse_existing_tests: bool = True,
     ) -> List[SubtaskSpec]:
         """Builds a 3-specialist live-model coding + unit-testing + self-healing DAG."""
         ws = Path(code_task_dir).resolve()
@@ -162,6 +163,31 @@ class HierarchicalOrchestrator:
                     )
             except Exception:
                 pass
+
+        existing_test_files: List[Path] = []
+        existing_tests_snippets: List[str] = []
+        for tf in sorted(ws.glob("test_*.py")):
+            if tf.is_file():
+                try:
+                    t_content = tf.read_text(encoding="utf-8", errors="replace")
+                    if t_content.strip():
+                        existing_test_files.append(tf)
+                        existing_tests_snippets.append(f"# {tf.name}\n{t_content}")
+                except Exception:
+                    pass
+
+        existing_tests_block = ""
+        if existing_tests_snippets:
+            existing_tests_block = (
+                "\n\nEXISTING WORKSPACE UNIT TESTS (all tested methods, signatures, and return structures MUST be satisfied):\n"
+                "```python\n" + "\n\n".join(existing_tests_snippets) + "\n```"
+            )
+
+        reuse_existing_tests_in_stage3 = bool(
+            adaptive_reuse_existing_tests
+            and len(existing_test_files) > 0
+            and not inject_deliberate_test_failure
+        )
 
         def _inject_deliberate_fault(_target: Path) -> Dict[str, Any]:
             if not inject_deliberate_test_failure or not module_path.exists():
@@ -203,8 +229,10 @@ class HierarchicalOrchestrator:
                 title=f"{title} — Stage 1: Architecture & Edge-Case Specification",
                 description=(
                     f"Specify the exact Python class/function signatures, type annotations, and edge-case invariants for `{module_filename}`: {prompt} "
+                    f"Ensure all methods and return formats required by existing workspace tests are included, and invalid arguments raise `ValueError`. "
                     f"Keep your specification concise (4-6 bullet points)."
                     f"{existing_source_block}"
+                    f"{existing_tests_block}"
                 ),
                 preferred_specialist_id="plan_systems_architect",
                 depends_on_indices=[],
@@ -216,8 +244,10 @@ class HierarchicalOrchestrator:
                 title=f"{title} — Stage 2: Live Model Python Implementation (`{module_filename}`)",
                 description=(
                     f"Implement the complete Python module `{module_filename}` fulfilling `{prompt}` and the upstream specification. "
+                    f"Ensure all methods/contracts in existing workspace unit tests and `ValueError` input validations are implemented accurately. "
                     f"Return ONLY the complete Python code inside a ```python ... ``` block."
                     f"{existing_source_block}"
+                    f"{existing_tests_block}"
                 ),
                 preferred_specialist_id="swe_python_runtime_engineer",
                 depends_on_indices=[0],
@@ -230,16 +260,20 @@ class HierarchicalOrchestrator:
             SubtaskSpec(
                 title=f"{title} — Stage 3: Live Model Unit Test Generation, Execution & Self-Healing (`{test_filename}`)",
                 description=(
-                    f"Write a Python `unittest` suite `{test_filename}` that imports from `{module_stem}` and tests "
-                    f"normal operation, boundary conditions, and exception handling (`ValueError`) as specified in the upstream implementation. "
-                    f"Return ONLY the complete `{test_filename}` code inside a ```python ... ``` block."
+                    f"Execute existing repository unit tests in disposable sandbox and escalate to `{module_filename}` self-healing repair if any assertion fails."
+                    if reuse_existing_tests_in_stage3
+                    else (
+                        f"Write a Python `unittest` suite `{test_filename}` that imports from `{module_stem}` and tests "
+                        f"normal operation, boundary conditions, and exception handling (`ValueError`) as specified in the upstream implementation. "
+                        f"Return ONLY the complete `{test_filename}` code inside a ```python ... ``` block."
+                    )
                 ),
                 preferred_specialist_id="qa_unit_suite_runner",
                 depends_on_indices=[0, 1],
-                queue_type="model_call",
+                queue_type="light_in_process" if reuse_existing_tests_in_stage3 else "model_call",
                 token_budget=24000,
-                use_live_model=True,
-                target_file_path=str(test_path),
+                use_live_model=not reuse_existing_tests_in_stage3,
+                target_file_path=None if reuse_existing_tests_in_stage3 else str(test_path),
                 repair_target_file=str(module_path),
                 fallback_code=fallback_test_code,
                 post_write_fault_injector=_inject_deliberate_fault if inject_deliberate_test_failure else None,
@@ -282,6 +316,7 @@ class HierarchicalOrchestrator:
             "notification_id": sbx_res.sandbox_id,
             "isolation_backend": sbx_res.isolation_backend,
             "network_disabled": sbx_res.network_disabled,
+            "verified_network_isolated": getattr(sbx_res, "verified_network_isolated", False),
             "cleanup_verified": sbx_res.cleanup_verified,
             "duration_sec": sbx_res.duration_sec,
         }
@@ -381,27 +416,58 @@ class HierarchicalOrchestrator:
         self.task_manager.transition(root_id, TaskState.READY, reason="Root mission ready")
         self.task_manager.transition(root_id, TaskState.RUNNING, reason="Root mission execution started")
 
-        if not is_hierarchical:
-            return self._execute_fast_path(
+        try:
+            if not is_hierarchical:
+                return self._execute_fast_path(
+                    root_id=root_id,
+                    title=title,
+                    prompt=prompt,
+                    retrieved_memory=retrieved_memory,
+                    started_at=started_at,
+                    use_live_model=effective_live_model,
+                )
+
+            return self._execute_hierarchical_dag(
                 root_id=root_id,
                 title=title,
                 prompt=prompt,
                 retrieved_memory=retrieved_memory,
-                started_at=started_at,
+                explicit_subtasks=subtasks,
                 use_live_model=effective_live_model,
+                custom_subtask_hook=custom_subtask_hook,
+                simulated_resource_snapshot=simulated_resource_snapshot,
+                started_at=started_at,
             )
-
-        return self._execute_hierarchical_dag(
-            root_id=root_id,
-            title=title,
-            prompt=prompt,
-            retrieved_memory=retrieved_memory,
-            explicit_subtasks=subtasks,
-            use_live_model=effective_live_model,
-            custom_subtask_hook=custom_subtask_hook,
-            simulated_resource_snapshot=simulated_resource_snapshot,
-            started_at=started_at,
-        )
+        except Exception as exc:
+            exc_name = type(exc).__name__
+            if "BudgetExceeded" in exc_name:
+                term_outcome = "BUDGET_EXCEEDED"
+            elif "DirectiveZeroViolation" in exc_name or "Sandbox" in exc_name or "Policy" in exc_name:
+                term_outcome = "BLOCKED_BY_POLICY"
+            elif "Timeout" in exc_name:
+                term_outcome = "TIMED_OUT"
+            else:
+                term_outcome = "FAILED"
+            try:
+                cur_rec = self.task_manager.store.get_task(root_id)
+                if cur_rec and TaskState(cur_rec["state"]) not in TERMINAL_STATES:
+                    self.task_manager.transition(
+                        root_id,
+                        TaskState.FAILED,
+                        reason=f"Mission terminated with {term_outcome}: {exc}",
+                        error={"exception_type": exc_name, "message": str(exc)},
+                    )
+            except Exception:
+                pass
+            return {
+                "mission_id": root_id,
+                "execution_path": "HIERARCHICAL_DAG" if is_hierarchical else "DIRECT_FAST_PATH",
+                "final_state": TaskState.FAILED.value,
+                "terminal_outcome": term_outcome,
+                "error": {"exception_type": exc_name, "message": str(exc)},
+                "memory_retrieval": retrieved_memory,
+                "duration_sec": round(time.time() - started_at, 4),
+            }
 
     def _execute_fast_path(
         self,
@@ -460,10 +526,12 @@ class HierarchicalOrchestrator:
             source_task_id=root_id,
         )
 
+        verified_flag = bool(out.get("task_correctness_verified") is True)
         return {
             "mission_id": root_id,
             "execution_path": "DIRECT_FAST_PATH",
             "final_state": TaskState.SUCCEEDED.value,
+            "terminal_outcome": "SUCCEEDED_AND_VERIFIED" if verified_flag else "SUCCEEDED_UNVERIFIED",
             "logical_children_created": 0,
             "specialist_used": routed["agent_id"],
             "memory_retrieval": retrieved_memory,
@@ -535,10 +603,15 @@ class HierarchicalOrchestrator:
                     default=str,
                 )
             coord = self.ecosystem_coordinator.build_coordination_railings(contract, is_repair=False)
+            mem_guardrails = self.memory.build_compact_memory_prompt_block(
+                f"{contract.agent_id} {payload.get('task_prompt', '')}"
+            )
+            guardrail_section = f"\n{mem_guardrails}\n" if mem_guardrails else "\n"
             full_prompt = (
                 f"You are AGI 1.7 Embedded Specialist `{contract.agent_id}` ({contract.display_name}, Family: {contract.family}).\n"
                 f"Primary Capabilities: {', '.join(contract.primary_capabilities)}\n"
-                f"{coord['railings_prompt_block']}\n"
+                f"{coord['railings_prompt_block']}"
+                f"{guardrail_section}"
                 f"IMPORTANT: Do NOT call any tools, shell commands, or file views. Respond directly in this turn.\n"
                 f"Task ({child_id}): {payload['task_prompt']}"
                 f"{upstream_summary}"
@@ -560,6 +633,7 @@ class HierarchicalOrchestrator:
                     "plugins_applied": coord["plugins_applied"],
                     "skills_applied": coord["skills_applied"],
                 },
+                "memory_guardrails_injected": bool(mem_guardrails),
                 "fallback_used": False,
                 "fallback_reason": None,
                 "analysis": model_res["response_text"],
@@ -623,6 +697,10 @@ class HierarchicalOrchestrator:
         except Exception:
             repair_contract = self.specialist_factory.get_contract("swe_patch_minimizer")
         coord = self.ecosystem_coordinator.build_coordination_railings(repair_contract, is_repair=True)
+        mem_guardrails = self.memory.build_compact_memory_prompt_block(
+            f"{repair_file.name} {stderr_trace[:200]}"
+        )
+        guardrail_section = f"\n{mem_guardrails}\n" if mem_guardrails else "\n"
         test_files_block = ""
         if repair_file.is_file() and repair_file.parent.is_dir():
             test_snippets = []
@@ -636,7 +714,8 @@ class HierarchicalOrchestrator:
 
         repair_prompt = (
             f"You are AGI 1.7 Embedded Specialist `{sp_spec.repair_specialist_id}` (Minimal Diff & Root-Cause Patch Engineer).\n"
-            f"{coord['railings_prompt_block']}\n"
+            f"{coord['railings_prompt_block']}"
+            f"{guardrail_section}"
             f"IMPORTANT: Do NOT call any tools or shell commands. Return ONLY the complete corrected Python file for `{repair_file.name}` inside a ```python ... ``` block.\n\n"
             f"BROKEN PYTHON FILE (`{repair_file.name}`):\n```python\n{broken_code}\n```"
             f"{test_files_block}\n\n"
@@ -673,6 +752,7 @@ class HierarchicalOrchestrator:
                 "plugins_applied": coord["plugins_applied"],
                 "skills_applied": coord["skills_applied"],
             },
+            "memory_guardrails_injected": bool(mem_guardrails),
             "fallback_used": fallback_used,
             "fallback_reason": fallback_reason,
             "repair_specialist_id": sp_spec.repair_specialist_id,
@@ -774,6 +854,11 @@ class HierarchicalOrchestrator:
                     "mission_id": root_id,
                     "execution_path": "HIERARCHICAL_DAG",
                     "final_state": root_rec["state"],
+                    "terminal_outcome": (
+                        "CANCELLED"
+                        if root_rec["state"] == TaskState.CANCELED.value
+                        else "FAILED"
+                    ),
                     "inbox_actions_applied": inbox_actions,
                     "completed_subtasks": len(completed_results),
                     "duration_sec": round(time.time() - started_at, 4),
@@ -994,6 +1079,33 @@ class HierarchicalOrchestrator:
                             verification_failed = not bool(repair_out.get("verification_passed", True))
                             res["task_correctness_verified"] = not verification_failed
 
+                        if not verification_failed:
+                            target_mod = Path(
+                                sp_spec.repair_target_file
+                                or sp_spec.target_file_path
+                                or "module.py"
+                            ).name
+                            err_trace = str(failure_details.get("stderr") or failure_details.get("stdout") or "verification_failure")
+                            err_line = next(
+                                (
+                                    ln.strip()
+                                    for ln in reversed(err_trace.splitlines())
+                                    if any(k in ln for k in ("Error", "FAIL:", "AssertionError", "ValueError"))
+                                ),
+                                "test_assertion_failure",
+                            )
+                            lesson = self.memory.record_failure_lesson(
+                                task_id=cid,
+                                module_name=target_mod,
+                                failing_assertion=err_line[:120],
+                                root_cause=f"Initial implementation of {target_mod} failed {err_line[:80]}",
+                                minimal_patch_rule=(
+                                    f"For {target_mod}, enforce boundary equality (`<=`/`>=`), input ValueError guards, "
+                                    f"and exact return contracts tested in repository unit tests ({err_line[:80]})."
+                                ),
+                            )
+                            artifacts["self_learning_lesson_recorded"] = lesson
+
                     if verification_failed:
                         self.task_manager.transition(
                             cid,
@@ -1070,9 +1182,20 @@ class HierarchicalOrchestrator:
         )
 
         fallback_events: List[Dict[str, Any]] = []
+        verified_children_count = 0
+        any_timed_out = False
         for cid_key, ch_res in completed_results.items():
+            if isinstance(ch_res, dict):
+                if ch_res.get("task_correctness_verified") is True:
+                    verified_children_count += 1
+                if ch_res.get("timed_out"):
+                    any_timed_out = True
             art = ch_res.get("artifacts") if isinstance(ch_res, dict) else {}
             if isinstance(art, dict):
+                if art.get("task_correctness_verified") is True and ch_res.get("task_correctness_verified") is not True:
+                    verified_children_count += 1
+                if art.get("timed_out"):
+                    any_timed_out = True
                 if art.get("fallback_used"):
                     fallback_events.append(
                         {
@@ -1091,10 +1214,20 @@ class HierarchicalOrchestrator:
                         }
                     )
 
+        if all_ok:
+            if len(fallback_events) == 0 and verified_children_count > 0:
+                terminal_outcome = "SUCCEEDED_AND_VERIFIED"
+            else:
+                terminal_outcome = "SUCCEEDED_UNVERIFIED"
+        else:
+            terminal_outcome = "TIMED_OUT" if any_timed_out else "FAILED"
+
         return {
             "mission_id": root_id,
             "execution_path": "HIERARCHICAL_DAG",
             "final_state": final_state,
+            "terminal_outcome": terminal_outcome,
+            "verified_children_count": verified_children_count,
             "logical_children_created": len(final_children),
             "succeeded_children": succeeded_cnt,
             "max_concurrent_workers_used": max_Observed_concurrency,

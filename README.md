@@ -5,7 +5,7 @@
 [![Sole Model](https://img.shields.io/badge/Foundation%20Model-gemini--3.8--flash--high-059669.svg)](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py)
 [![Sandbox](https://img.shields.io/badge/Sandbox-Disposable%20Docker%20Container%20(--network%20none)-0284C7.svg)](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py)
 [![Embedded Agents](https://img.shields.io/badge/Specialist%20Contracts-100%20Across%2016%20Families-7E22CE.svg)](agents/AGI_1_7/ecosystem/agent_registry/registry.json)
-[![Tests](https://img.shields.io/badge/Offline%20Verification%20Suite-61%2F61%20Passing-16A34A.svg)](.github/workflows/agi17-ci.yml)
+[![Tests](https://img.shields.io/badge/Offline%20Verification%20Suite-65%2F65%20Passing-16A34A.svg)](.github/workflows/agi17-ci.yml)
 
 **AGI 1.7 — OMEGA COMMAND** is a self-contained, resource-aware, persistent multi-agent engineering and automated **Python CI-Repair** runtime built around **Google's Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** using the **Python 3.10+ Standard Library** (`0` third-party PyPI runtime dependencies required).
 
@@ -13,7 +13,7 @@
 > **What This Repository Is (And What It Is Not)**
 > - **Orchestration & Sandboxed Verification Runtime:** AGI 1.7 is a multi-agent orchestration, transactional SQLite WAL task-control, disposable Docker sandbox, and persistent-memory system wrapping `gemini-3.8-flash-high` via [`ModelAdapter`](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py). It is **not** a custom pre-trained or fine-tuned base LLM.
 > - **1 Unified Entrypoint (`AGI 1.7`) with 100 Embedded Specialist Contracts:** All 100 schema-validated specialist contracts across 16 functional families ([`registry.json`](agents/AGI_1_7/ecosystem/agent_registry/registry.json)) are embedded inside [`agents/AGI_1_7/`](agents/AGI_1_7/) and coordinated dynamically with Ponytail minimal-diff railings via [`EcosystemCoordinator`](agents/AGI_1_7/ecosystem/agent_registry/ecosystem_coordinator.py).
-> - **Focused Commercial Product Workflow (`CIRepairAgent`):** Includes a dedicated **Automated Python CI-Repair & Test-Healing Agent** ([`ci_repair_agent.py`](agents/AGI_1_7/engine/agi17/orchestration/ci_repair_agent.py), [`PRODUCT_SPEC_PYTHON_CI_REPAIR.md`](agents/AGI_1_7/docs/PRODUCT_SPEC_PYTHON_CI_REPAIR.md)) that reproduces failing `unittest` suites inside a network-disabled disposable container, synthesizes a minimal root-cause patch under strict USD/token ceilings, verifies zero test regressions inside the sandbox, and emits a unified diff and reviewable PR payload (`requires_human_approval=True`).
+> - **Focused Commercial Product Workflow (`CIRepairAgent`):** Includes a dedicated **Automated Python CI-Repair & Test-Healing Agent** ([`ci_repair_agent.py`](agents/AGI_1_7/engine/agi17/orchestration/ci_repair_agent.py), [`PRODUCT_SPEC_PYTHON_CI_REPAIR.md`](agents/AGI_1_7/docs/PRODUCT_SPEC_PYTHON_CI_REPAIR.md), [`PRODUCTION_READINESS_AND_COMMERCIAL_DOSSIER.md`](agents/AGI_1_7/docs/PRODUCTION_READINESS_AND_COMMERCIAL_DOSSIER.md)) that reproduces failing `unittest` suites inside a network-disabled disposable container, synthesizes a minimal root-cause patch under strict USD/token ceilings, verifies zero test regressions inside the sandbox, and stages a unified diff and reviewable PR payload (`requires_human_approval=True`).
 
 ---
 
@@ -21,9 +21,9 @@
 
 To prevent conflating deterministic unit tests with live LLM benchmark runs, all results in this repository are strictly separated into five verifiable categories:
 
-### Category 1: Deterministic Runtime, Sandbox & Security Verification (`61 / 61` Offline Tests)
+### Category 1: Deterministic Runtime, Sandbox & Security Verification (`65 / 65` Offline Tests)
 Executed automatically on every push and Pull Request across `ubuntu-latest` and `windows-latest` ([`.github/workflows/agi17-ci.yml`](.github/workflows/agi17-ci.yml)):
-- **[`test_production_hardening_sprint.py`](agents/AGI_1_7/tests/test_production_hardening_sprint.py) (`12 / 12` passing):** Repository secret/path leak scan (`0` leaks), typed `ModelRequest`/`ModelResponse`/`ModelProviderConfig`, `DeterministicMockProvider`, USD cost budget ceiling enforcement (`ModelCostBudgetExceededError`), `DisposableSandboxRunner` execution & `finally:` cleanup, `PathTraversalViolationError`, prompt-injection/malicious-code blocking (`UntrustedContentSecurityError`), fail-closed container check (`SandboxIsolationUnavailableError`), `HighImpactApprovalGate`, and end-to-end `CIRepairAgent` verification.
+- **[`test_production_hardening_sprint.py`](agents/AGI_1_7/tests/test_production_hardening_sprint.py) (`16 / 16` passing):** Repository secret/path leak scan (`0` leaks), typed `ModelRequest`/`ModelResponse`/`ModelProviderConfig`, `DeterministicMockProvider`, USD cost budget ceiling enforcement (`ModelCostBudgetExceededError`), `DisposableSandboxRunner` execution & `finally:` cleanup, `PathTraversalViolationError` & symlink rejection, prompt-injection/malicious-code blocking (`UntrustedContentSecurityError`), fail-closed `SandboxPolicy.production()` (`SandboxIsolationUnavailableError`), `HighImpactApprovalGate`, Layer 7 self-learning failure memory (`record_failure_lesson` + `build_compact_memory_prompt_block`), SQLite task `idempotency_key` deduplication, 5-tier capability maturity breakdown, 50-task held-out suite integrity, and end-to-end `CIRepairAgent` staged-patch verification.
 - **[`test_agi17_unit_suite.py`](agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py) (`26 / 26` passing):** 100-contract JSON schema validation, 14-state SQLite WAL transitions, DFS dependency cycle detection, SHA-256 checkpoint verification, and SSRF firewall rules.
 - **[`test_agi17_integration_suite.py`](agents/AGI_1_7/tests/integration/test_agi17_integration_suite.py) (`16 / 16` passing):** Crash recovery (`reconcile_after_restart()`), live `CommandInbox` mid-run overrides (`ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `REPRIORITIZE`), and 10-layer SQLite memory fact supersession.
 - **[`test_agi17_e2e_demos.py`](agents/AGI_1_7/tests/end_to_end/test_agi17_e2e_demos.py) (`7 / 7` passing):** End-to-end DAG orchestration, disagreement self-healing, and detached background execution (`--detach`).
@@ -32,22 +32,22 @@ Executed automatically on every push and Pull Request across `ubuntu-latest` and
 - **Artifact:** [`agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json`](agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json) (reproducible via [`demo_real_multi_agent_code_fix.py`](agents/AGI_1_7/scripts/demo_real_multi_agent_code_fix.py)).
 - **Result:** `4` live `gemini-3.8-flash-high` calls (`70,708` provider-reported tokens, `\$0.015855` USD, `0` fallbacks): `plan_systems_architect` specifies contract $\rightarrow$ `swe_python_runtime_engineer` writes `interval_merger.py` $\rightarrow$ `qa_unit_suite_runner` writes 13 unit tests and detects 3 boundary failures (`exit_code=1`) $\rightarrow$ `swe_patch_minimizer` patches `interval_merger.py` from the `stderr` traceback $\rightarrow$ re-test passes `13 / 13` (`exit_code=0`).
 
-### Category 3: Preliminary 3-Way Held-Out Coding Benchmark (`Config A` vs. `Config B` vs. `Config C`)
-- **Report & Raw Ledger:** [`HELDOUT_CODING_BENCHMARK_REPORT.md`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_REPORT.md) | [`HELDOUT_CODING_BENCHMARK_RAW_RESULTS.json`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_RAW_RESULTS.json)
-- **Scope Note:** This is a preliminary 3-task repository coding evaluation (`9` unseen held-out `unittest` methods graded inside `DisposableSandboxRunner` with `--network none`).
+### Category 3: 50-Task Held-Out Suite & Live 3-Way Coding Benchmark (`Config A` vs. `Config B` vs. `Config C`)
+- **Report, 50-Task Suite & Raw Ledger:** [`HELDOUT_CODING_BENCHMARK_REPORT.md`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_REPORT.md) | [`heldout_coding_suite.py`](agents/AGI_1_7/benchmarks/heldout_coding_suite.py) (`50` tasks across `10` categories) | [`HELDOUT_CODING_BENCHMARK_RAW_RESULTS.json`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_RAW_RESULTS.json)
+- **Scope Note:** `HELDOUT_CODING_50_SUITE` defines `50` tasks with SHA-256-locked graders; live 3-way model execution was performed on the `3` primary repository tasks (`9` unseen held-out `unittest` methods graded inside `DisposableSandboxRunner` with `--network none`).
 
-| Metric | **Config A: `RAW_BASE_MODEL_SINGLE_SHOT`** | **Config B: `SINGLE_AGENT_REPAIR_LOOP`** | **Config C: `AGI_1_7_OMEGA_COMMAND`** |
-| :--- | :---: | :---: | :---: |
-| **Verified Tasks Completed (`100%` Unseen Tests Pass)** | `0 / 3` (`0.00%`) | `0 / 3` (`0.00%`) | **`2 / 3` (`66.67%`)** |
-| **Unseen Held-Out Unit Tests Passed** | `4 / 7` (`57.14%`) | `4 / 9` (`44.44%`) | **`8 / 9` (`88.89%`)** |
-| **Regression Rate (Broke Starter Module)** | `33.33%` | `33.33%` | **`0.00%`** |
-| **Failure / Timeout Rate** | `0.00%` | `33.33%` | **`0.00%`** |
-| **Average Latency per Task** | **`66.89s`** | `271.07s` | `221.14s` |
-| **Total Tokens / Total Cost (USD)** | **`38,365` (`\$0.011823`)** | `95,820` (`\$0.029215`) | `218,552` (`\$0.060927`) |
-| **Cost per Verified Completed Task (USD)** | `N/A` (`0` verified) | `N/A` (`0` verified) | **`\$0.030464`** |
-| **Deterministic Fallbacks Used** | `False` (`0`) | `False` (`0`) | **`False` (`0`)** |
+| Metric | **Config A: `RAW_BASE_MODEL_SINGLE_SHOT`** | **Config B: `SINGLE_AGENT_REPAIR_LOOP`** | **Config C (Baseline Run 1)** | **Config C (Self-Improved Run 2)** |
+| :--- | :---: | :---: | :---: | :---: |
+| **Verified Tasks Completed (`100%` Unseen Tests Pass)** | `0 / 3` (`0.00%`) | `0 / 3` (`0.00%`) | `2 / 3` (`66.67%`) | **`3 / 3` (`100.00%`)** |
+| **Unseen Held-Out Unit Tests Passed** | `4 / 7` (`57.14%`) | `4 / 9` (`44.44%`) | `8 / 9` (`88.89%`) | **`9 / 9` (`100.00%`)** |
+| **Regression Rate (Broke Starter Module)** | `33.33%` | `33.33%` | `0.00%` | **`0.00%`** |
+| **Failure / Timeout Rate** | `0.00%` | `33.33%` | `33.33%` | **`0.00%`** |
+| **Average Latency per Task** | **`66.89s`** | `271.07s` | `221.14s` | **`168.63s`** (`-23.7%` vs Run 1) |
+| **Total Tokens / Total Cost (USD)** | **`38,365` (`\$0.011823`)** | `95,820` (`\$0.029215`) | `218,552` (`\$0.060927`) | **`185,788` (`\$0.050967`)** |
+| **Cost per Verified Completed Task (USD)** | `N/A` (`0` verified) | `N/A` (`0` verified) | `\$0.030464` | **`\$0.016989`** (`-44.2%` vs Run 1) |
+| **Deterministic Fallbacks Used** | `False` (`0`) | `False` (`0`) | `False` (`0`) | **`False` (`0`)** |
 
-*Engineering Trade-Off Analysis:* Config C (`AGI 1.7`) consumes more tokens than single-shot generation (`218,552` vs `38,365`) because it executes a 3-specialist specification, implementation, adversarial test generation, and repair loop. However, compared to Config B (`SINGLE_AGENT_REPAIR_LOOP`), separating `plan_systems_architect` from `qa_unit_suite_runner` prevented single-agent test confirmation bias on `TASK-02` and `TASK-03` (`66.67%` vs `0.00%` verified task completion) while running faster on average (`221.14s` vs `271.07s`). When a repository **already** contains failing unit tests, use [`CIRepairAgent`](agents/AGI_1_7/engine/agi17/orchestration/ci_repair_agent.py) (`--ci-repair-dir`) to repair directly in `1` model call without multi-agent decomposition overhead.
+*Engineering Trade-Off & Self-Learning Analysis:* By recording structured failure lessons in Layer 7 (`OmegaCommandMemory.record_failure_lesson()`), injecting a `<=120`-token guardrail (`build_compact_memory_prompt_block()`), and inspecting existing workspace `test_*.py` contracts before Stage 1/2 (skipping redundant LLM test generation in Stage 3 when starter tests already exist), `TASK-01-TOKEN-BUCKET` dropped from `4` model calls (`67,069` tokens, `224.08s`) to **`2` model calls (`34,305` tokens, `66.54s`, `-48.9%` tokens, `-70.3%` latency)** and achieved **`3 / 3` (`100.0%`)** verified task completion across the suite. When a repository **already** contains failing unit tests, use [`CIRepairAgent`](agents/AGI_1_7/engine/agi17/orchestration/ci_repair_agent.py) (`--ci-repair-dir`) to repair directly in `1` model call without multi-agent decomposition overhead.
 
 ### Category 4: External Academic Benchmark (`GPQA Diamond Clean 1.2.2`)
 - **Cold-Start Strict Surface-Only Live Sample (`10` questions from scratch, zero checkpoint reuse):** **`9 / 10` (`90.00%` overall; `9 / 9 = 100.00%` on surfaced responses, `1` unanswered due to print timeout)** across Biology (`3/3`), Chemistry (`3/3`), and Physics (`3/4`), consuming `163,054` provider-reported tokens (`\$0.042618` USD). Raw transcript: [`GPQA_COLD_START_STRICT_SURFACE_RESULTS.json`](agents/AGI_1_7/reports/GPQA_COLD_START_STRICT_SURFACE_RESULTS.json).

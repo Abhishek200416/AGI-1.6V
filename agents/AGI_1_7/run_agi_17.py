@@ -153,6 +153,11 @@ def main() -> int:
         default=None,
         help="Run the focused Python CI-Repair Agent on the specified workspace directory (reproduces failing tests in disposable sandbox, generates minimal patch, verifies tests, outputs PR payload)",
     )
+    parser.add_argument(
+        "--apply-approved-patch",
+        action="store_true",
+        help="Explicitly approve writing the verified CI-Repair patch to the target workspace (default stages candidate patch in sandbox only)",
+    )
     parser.add_argument("--save-execution-log", default=None, help="Optional path to save full JSON execution trace")
     parser.add_argument(
         "--detach",
@@ -182,18 +187,20 @@ def main() -> int:
             workspace_dir=args.ci_repair_dir,
             module_filename=args.module_filename,
             issue_description=args.prompt or "Fix failing Python unit tests with minimal diff.",
+            write_patch_to_workspace=bool(args.apply_approved_patch),
         )
         if args.save_execution_log:
             out_p = Path(args.save_execution_log)
             out_p.parent.mkdir(parents=True, exist_ok=True)
             out_p.write_text(json.dumps(repair_res, indent=2, default=str), encoding="utf-8")
         print(json.dumps(repair_res, indent=2, default=str), flush=True)
-        return 0 if repair_res.get("status") in ("REPAIRED_AND_VERIFIED", "ALREADY_PASSING") else 1
+        return 0 if repair_res.get("terminal_outcome") == "SUCCEEDED_AND_VERIFIED" or repair_res.get("status") in ("REPAIRED_AND_VERIFIED", "ALREADY_PASSING") else 1
 
     if args.profile_only or not args.prompt:
         profile = adapter.profiler.build_full_profile()
         out_payload = {
             "runtime": "AGI 1.7.0 — OMEGA COMMAND",
+            "terminal_outcome": "PROFILE_ONLY_OK",
             "startup": startup,
             "capability_profile_summary": {
                 "logical_cores": profile["cpu_and_compute"]["logical_processors"],
@@ -222,14 +229,15 @@ def main() -> int:
         out_p = Path(args.save_execution_log)
         out_p.parent.mkdir(parents=True, exist_ok=True)
         out_p.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+    exit_code = 0 if result.get("terminal_outcome") == "SUCCEEDED_AND_VERIFIED" else 1
     _update_detached_pid_file(
         args.detached_pid_file,
         "DETACHED_COMPLETED",
-        str(result.get("final_state", "UNKNOWN")),
-        0 if result.get("final_state") == "SUCCEEDED" else 1,
+        str(result.get("terminal_outcome") or result.get("final_state", "UNKNOWN")),
+        exit_code,
     )
     print(json.dumps(result, indent=2, default=str), flush=True)
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

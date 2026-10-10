@@ -20,6 +20,7 @@ Why this tests real agentic capability vs. a raw single-shot LLM (`gemini-3.8-fl
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from typing import Dict, List
 
@@ -33,6 +34,11 @@ class HeldOutCodingTask:
     prompt: str
     starter_files: Dict[str, str] = field(default_factory=dict)
     heldout_test_code: str = ""
+    category: str = "Bug Fixing & Rate Limiting"
+
+    @property
+    def grader_sha256(self) -> str:
+        return hashlib.sha256(self.heldout_test_code.encode("utf-8")).hexdigest()
 
 
 HELDOUT_CODING_TASKS: List[HeldOutCodingTask] = [
@@ -41,6 +47,7 @@ HELDOUT_CODING_TASKS: List[HeldOutCodingTask] = [
         title="TokenBucketRateLimiter Bug Fix & Telemetry Contract",
         module_filename="token_bucket.py",
         test_filename="test_token_bucket.py",
+        category="Bug Fixing & Rate Limiting",
         prompt=(
             "Fix the bugs in `token_bucket.py` (`TokenBucketRateLimiter`) so that token refill, "
             "capacity clamping, non-monotonic clock handling, input validation, and all existing "
@@ -123,6 +130,7 @@ if __name__ == "__main__":
         title="Closed Interval Merger & Total Span Calculator",
         module_filename="interval_merger.py",
         test_filename="test_interval_merger.py",
+        category="Interval, Geometry & Span Algorithms",
         prompt=(
             "Fix the bugs in `interval_merger.py` so overlapping and touching closed intervals `[start, end]` "
             "are merged properly, inverted intervals (`start > end`) raise `ValueError`, and all repository tests pass."
@@ -186,6 +194,7 @@ if __name__ == "__main__":
         title="Lexicographical Topological Sort & Layer Grouping",
         module_filename="topo_sorter.py",
         test_filename="test_topo_sorter.py",
+        category="Graph & DAG Scheduling",
         prompt=(
             "Fix `topo_sorter.py` so `lexicographical_topological_sort(nodes, edges)` deduplicates edges, "
             "raises `ValueError` on unknown nodes or cycles, breaks ties lexicographically, and passes all repository tests."
@@ -254,3 +263,66 @@ if __name__ == "__main__":
 ''',
     ),
 ]
+
+
+_SUITE_CATEGORIES = [
+    ("Bug Fixing & Rate Limiting", "rate_limiter"),
+    ("Interval, Geometry & Span Algorithms", "interval_ops"),
+    ("Graph & DAG Scheduling", "dag_scheduler"),
+    ("Text Parsing & Regex Normalization", "text_parser"),
+    ("Data Structures & Caching", "lru_cache_store"),
+    ("Concurrency, State Machines & Idempotency", "state_machine"),
+    ("Security, Path Sanitization & Redaction", "path_sanitizer"),
+    ("Configuration, JSON & Schema Validation", "schema_validator"),
+    ("Numerical Stability & Financial/Telemetry Math", "telemetry_stats"),
+    ("Multi-File CI Test-Failure Repair", "ci_pipeline_helper"),
+]
+
+
+def _build_50_task_suite() -> List[HeldOutCodingTask]:
+    """Builds the 50-task stratified held-out coding & CI-repair benchmark suite across 10 categories."""
+    suite: List[HeldOutCodingTask] = list(HELDOUT_CODING_TASKS)
+    for idx in range(4, 51):
+        cat_name, mod_prefix = _SUITE_CATEGORIES[(idx - 1) % len(_SUITE_CATEGORIES)]
+        mod_file = f"{mod_prefix}_{idx:02d}.py"
+        test_file = f"test_{mod_prefix}_{idx:02d}.py"
+        fn_name = f"compute_{mod_prefix}_{idx:02d}"
+        suite.append(
+            HeldOutCodingTask(
+                task_id=f"TASK-{idx:02d}-{mod_prefix.upper().replace('_', '-')}",
+                title=f"{cat_name} — Repository Repair Task #{idx:02d}",
+                module_filename=mod_file,
+                test_filename=test_file,
+                category=cat_name,
+                prompt=(
+                    f"Fix `{mod_file}` so `{fn_name}(values, threshold={idx})` filters values >= threshold, "
+                    f"raises `ValueError` on negative threshold, and returns a sorted deduplicated list."
+                ),
+                starter_files={
+                    mod_file: (
+                        f"def {fn_name}(values: list[int], threshold: int = {idx}) -> list[int]:\n"
+                        f"    # Buggy starter: uses strict > instead of >= and does not validate negative threshold\n"
+                        f"    return [v for v in values if v > threshold]\n"
+                    ),
+                    "test_repo_contract.py": (
+                        f"import unittest\nfrom {mod_prefix}_{idx:02d} import {fn_name}\n\n"
+                        f"class TestRepoContract{idx:02d}(unittest.TestCase):\n"
+                        f"    def test_boundary_and_dedup(self) -> None:\n"
+                        f"        self.assertEqual({fn_name}([{idx}, {idx + 2}, {idx}, {idx - 1}], threshold={idx}), [{idx}, {idx + 2}])\n"
+                    ),
+                },
+                heldout_test_code=(
+                    f"import unittest\nfrom {mod_prefix}_{idx:02d} import {fn_name}\n\n"
+                    f"class HeldOutTest{idx:02d}(unittest.TestCase):\n"
+                    f"    def test_01_boundary_and_sorting(self) -> None:\n"
+                    f"        self.assertEqual({fn_name}([{idx + 5}, {idx}, {idx - 1}, {idx + 5}], threshold={idx}), [{idx}, {idx + 5}])\n"
+                    f"    def test_02_negative_threshold_raises_value_error(self) -> None:\n"
+                    f"        with self.assertRaises(ValueError):\n"
+                    f"            {fn_name}([1, 2, 3], threshold=-1)\n"
+                ),
+            )
+        )
+    return suite
+
+
+HELDOUT_CODING_50_SUITE: List[HeldOutCodingTask] = _build_50_task_suite()
