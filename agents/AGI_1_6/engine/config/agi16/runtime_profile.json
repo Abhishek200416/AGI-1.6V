@@ -1,0 +1,78 @@
+{
+  "runtime_version": "1.6.0",
+  "codename": "OMEGA NEXUS",
+  "build_id": "BUILD-AGI16-20261010-0700",
+  "system_instruction_version": "1.6.0",
+  "requirements_manifest_version": "1.6.0",
+  "config_hash": "a160nexus20261010700hashverified000000000000000000000000000000000000",
+  "model_provider": "Antigravity CLI",
+  "model_identifier": "gemini-3.8-flash-high",
+  "token_economy": {
+    "enabled": true,
+    "estimator_enabled": true,
+    "default_task_budget": 25000,
+    "strict_budget_mode": true,
+    "default_phase_split": {
+      "planning": 0.10,
+      "execution": 0.60,
+      "verification": 0.20,
+      "recovery_reserve": 0.10
+    },
+    "early_stopping_controller": true,
+    "result_cache_lru": true
+  },
+  "memory": {
+    "backend": "OmegaNexus_9Layer_WAL",
+    "primary_storage_dir": "D:\\AGI_Storage\\AGI_1_6\\memory",
+    "evaluation_root": "D:\\AGI_Evaluation\\AGI_1_6_OMEGA_NEXUS\\",
+    "local_dedicated_dir": "C:/Users/abhis/Downloads/pt/agents/AGI_1_6/memory",
+    "layers_count": 9,
+    "layers": [
+      "IMMEDIATE_TASK_STATE",
+      "CONVERSATION_CONTEXT",
+      "ACTIVE_PROJECT",
+      "EPISODIC_EXECUTION",
+      "VERIFIED_FACTUAL",
+      "PROCEDURAL_SKILLS",
+      "FAILURE_RECOVERY",
+      "RESEARCH_INDEX",
+      "LONG_TERM_ARCHIVE"
+    ],
+    "context_compression": "ACON_Preservation_Guards"
+  },
+  "orchestration": {
+    "engine": "OmegaNexusOrchestrator",
+    "dynamic_spawning": true,
+    "roles_count": 9,
+    "max_delegation_depth": 3,
+    "role_templates": [
+      "PLANNER",
+      "RESEARCH",
+      "EXECUTION",
+      "CODING",
+      "TERMINAL",
+      "COMPUTER_USE",
+      "MEMORY",
+      "VERIFIER",
+      "COORDINATOR"
+    ]
+  },
+  "scheduler": {
+    "engine": "AdaptiveExecutionScheduler",
+    "dependency_dag": true,
+    "resource_aware_concurrency": true,
+    "max_configured_workers": 16,
+    "cpu_throttle_percent": 85.0
+  },
+  "research": {
+    "engine": "GroundedResearchEngine",
+    "stages": 10,
+    "compliant_scraping": true,
+    "rfc_9309_respect": true
+  },
+  "security": {
+    "pre_socket_ssrf_blocking": true,
+    "host_desktop_isolation": true,
+    "emergency_kill_switch": true
+  }
+}

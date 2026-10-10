@@ -1,0 +1,30 @@
+{
+  "manifest_version": "1.6.0",
+  "codename": "OMEGA NEXUS",
+  "created_at": "2026-10-10T07:00:00Z",
+  "foundation_model": "gemini-3.8-flash-high",
+  "runtime_invariants": {
+    "version": "1.6.0",
+    "directive_0_strict": true,
+    "memory_layers": 9,
+    "token_economy": true,
+    "adaptive_orchestration": true,
+    "external_drive_persistence": true
+  },
+  "required_components": [
+    "AdaptiveTokenEconomy",
+    "BudgetEstimator",
+    "TokenUsageLedger",
+    "EarlyStoppingController",
+    "OmegaNexusMemory",
+    "AdaptiveContextManager",
+    "OmegaNexusOrchestrator",
+    "AdaptiveExecutionScheduler",
+    "GroundedResearchEngine",
+    "TerminalExecutionAdapter",
+    "BrowserExecutionAdapter",
+    "ComputerUseAdapter",
+    "EvidenceVerifier",
+    "VersionedExperimentManager"
+  ]
+}

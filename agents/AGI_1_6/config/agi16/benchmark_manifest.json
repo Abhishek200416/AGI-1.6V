@@ -1,0 +1,31 @@
+{
+  "manifest_name": "AGI 1.6 External Benchmark Campaign",
+  "version": "1.6.0",
+  "foundation_model": "gemini-3.8-flash-high",
+  "benchmarks": [
+    {
+      "benchmark_id": "GPQA_DIAMOND_CLEAN_189",
+      "version": "1.2.2",
+      "total_questions": 189,
+      "protocol": "closed-book, single-attempt, isolated grader",
+      "dataset_path": "scripts/gpqa_diamond_clean_189.json",
+      "status": "SCHEDULED_PHASE_5"
+    },
+    {
+      "benchmark_id": "TERMINAL_BENCH_2_0",
+      "version": "2.0.0",
+      "framework": "Harbor",
+      "protocol": "containerized shell execution, official reward grader",
+      "tasks_catalog": "harbor-framework/terminal-bench-2",
+      "status": "SCHEDULED_PHASE_5"
+    },
+    {
+      "benchmark_id": "OSWORLD_V2_1",
+      "version": "2.1.0",
+      "framework": "xlang-ai/OSWorld-V2",
+      "total_tasks": 108,
+      "protocol": "isolated GUI desktop, screenshot perception, ground-truth assertion",
+      "status": "SCHEDULED_PHASE_5"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "migration_version": "1.6.0",
+  "from_version": "1.5.0",
+  "to_version": "1.6.0",
+  "applied_at": "2026-10-10T07:00:00Z",
+  "status": "APPLIED",
+  "reversible": true,
+  "rollback_target": "1.5.0",
+  "changes": [
+    "Integrated AdaptiveTokenEconomy with pre-flight budgeting and usage ledger",
+    "Transitioned from 500 flat memory strata to 9-Layer Partitioned Memory Engine with ACON context compression",
+    "Introduced OmegaNexusOrchestrator with dynamic role-bounded worker spawning",
+    "Replaced fixed concurrency with AdaptiveExecutionScheduler checking host CPU/RAM headroom",
+    "Upgraded GroundedResearchEngine with 10-stage verifiable evidence pipeline",
+    "Established isolated execution adapters (Terminal, Browser, ComputerUse, EvidenceVerifier)",
+    "Added VersionedExperimentManager for closed-loop capability adaptation"
+  ]
+}

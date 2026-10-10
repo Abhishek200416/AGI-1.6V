@@ -1,0 +1,112 @@
+{
+  "benchmark": "berkeley_function_calling_leaderboard_v3",
+  "agent": "agi_0_7",
+  "model": "gemini-3.8-flash-high",
+  "total_instances": 4,
+  "correct_count": 4,
+  "accuracy": 1.0,
+  "instances": [
+    {
+      "id": "bfcl_simple_01",
+      "category": "simple_function",
+      "passed": true,
+      "reason": "EXACT_AST_MATCH",
+      "predicted_actions": [
+        {
+          "name": "get_stock_quote",
+          "arguments": {
+            "ticker": "AAPL"
+          }
+        }
+      ],
+      "ground_truth_actions": [
+        {
+          "name": "get_stock_quote",
+          "arguments": {
+            "ticker": "AAPL"
+          }
+        }
+      ],
+      "tokens": 2858,
+      "latency_ms": 30653
+    },
+    {
+      "id": "bfcl_multiple_02",
+      "category": "multiple_function_selection",
+      "passed": true,
+      "reason": "EXACT_AST_MATCH",
+      "predicted_actions": [
+        {
+          "name": "book_flight",
+          "arguments": {
+            "origin": "SFO",
+            "destination": "JFK",
+            "date": "2026-11-15",
+            "passengers": 1,
+            "cabin": "economy"
+          }
+        }
+      ],
+      "ground_truth_actions": [
+        {
+          "name": "book_flight",
+          "arguments": {
+            "origin": "SFO",
+            "destination": "JFK",
+            "date": "2026-11-15",
+            "passengers": 1,
+            "cabin": "economy"
+          }
+        }
+      ],
+      "tokens": 3097,
+      "latency_ms": 30234
+    },
+    {
+      "id": "bfcl_parallel_03",
+      "category": "parallel_function_calling",
+      "passed": true,
+      "reason": "EXACT_AST_MATCH",
+      "predicted_actions": [
+        {
+          "name": "get_weather",
+          "arguments": {
+            "city": "Tokyo"
+          }
+        },
+        {
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "ground_truth_actions": [
+        {
+          "name": "get_weather",
+          "arguments": {
+            "city": "Tokyo"
+          }
+        },
+        {
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "tokens": 3258,
+      "latency_ms": 37109
+    },
+    {
+      "id": "bfcl_irrelevance_04",
+      "category": "irrelevant_function_avoidance",
+      "passed": true,
+      "reason": "CORRECT_AVOIDANCE",
+      "predicted_actions": [],
+      "ground_truth_actions": [],
+      "tokens": 3067,
+      "latency_ms": 32453
+    }
+  ]
+}

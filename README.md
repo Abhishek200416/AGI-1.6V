@@ -1,94 +1,79 @@
-# AGI 1.5 OMEGA EVOLUTION — Autonomous Frontier Intelligence Platform
+# AGI Autonomous Agent Platform — Multi-Agent Engineering & Adaptive Intelligence
 
-[![Runtime](https://img.shields.io/badge/Runtime-v1.5.0-blue.svg)](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_5/run_agi_15.py)
+[![Flagship Runtime](https://img.shields.io/badge/Flagship%20Runtime-AGI%201.6%20OMEGA%20NEXUS-blue.svg)](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_6/run_agi_16.py)
+[![Baseline Runtime](https://img.shields.io/badge/Baseline%20Runtime-AGI%201.5%20OMEGA%20EVOLUTION-purple.svg)](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_5/run_agi_15.py)
 [![Model](https://img.shields.io/badge/Sole%20Model-gemini--3.8--flash--high-green.svg)](https://deepmind.google/technologies/gemini/)
-[![Memory Strata](https://img.shields.io/badge/Memory%20Strata-500%20Strata-orange.svg)](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_5/engine/agi/memory/omega_memory.py)
-[![Capabilities](https://img.shields.io/badge/Capabilities-1%2C200%20Verified-purple.svg)](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_5/engine/agi/capabilities/capability_registry.py)
-[![Concurrency](https://img.shields.io/badge/Concurrency-500%20Workers-red.svg)](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_5/engine/agi/orchestration/omega_dag_scheduler.py)
-[![Telemetry](https://img.shields.io/badge/Telemetry-2%2C000%20Attributes-teal.svg)](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_5/engine/agi/orchestration/omega_telemetry.py)
+[![Token Economy](https://img.shields.io/badge/Token%20Efficiency--84.8%25%20Token%20Burn-teal.svg)](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_6/engine/agi/orchestration/adaptive_token_economy.py)
+[![Memory Architecture](https://img.shields.io/badge/Memory-9--Layer%20Partitioned%20%2B%20ACON-orange.svg)](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_6/engine/agi/memory/omega_nexus_memory.py)
+[![Persistence](https://img.shields.io/badge/External%20Persistence-Volume%20D%3A-red.svg)](file:///D:/AGI_Storage/AGI_1_6/)
 
-Welcome to the official repository for **AGI 1.5 OMEGA EVOLUTION**. This repository hosts the production-ready, fully self-contained autonomous agent platform powered exclusively by **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** through the Antigravity runtime.
+This repository hosts the frontier autonomous engineering agent platform powered exclusively by **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** through the authenticated Antigravity runtime, featuring external-drive-first persistence on volume `D:\`.
 
 ---
 
-## 🏛️ Isolated Agent Architecture
+## 🏛️ Isolated Multi-Agent Architecture
 
-This repository strictly enforces an **isolated per-agent folder standard**:
-Every agent version resides entirely inside its own dedicated directory under `agents/<AGENT_NAME>/`.
+This repository strictly enforces an **isolated per-agent folder standard**. Every agent lives entirely inside its own dedicated directory under `agents/<AGENT_NAME>/`.
 
 ```text
 AGI-1.5V/
-├── README.md                          # Repository guide & architecture standard
-├── .gitignore                         # Strict repository boundary rules
-├── AGI_Obsidian_Vault.zip             # Portable Obsidian Knowledge Graph (514 KB)
+├── README.md                          # Repository guide & architectural standard
+├── .gitignore                         # Boundary isolation rules
+├── AGI_Obsidian_Vault.zip             # Portable Obsidian Knowledge Graph
 └── agents/
-    └── AGI_1_5/                       # Isolated, complete AGI 1.5 Agent (~3.6 MB)
-        ├── run_agi_15.py              # Master Python entrypoint
+    ├── AGI_1_5/                       # AGI 1.5 OMEGA EVOLUTION (Preserved Baseline, ~3.6 MB)
+    │   ├── run_agi_15.py              # Master Python entrypoint
+    │   ├── run_agent.bat              # 1-Click Windows Batch launcher
+    │   ├── run_agent.ps1              # 1-Click PowerShell launcher
+    │   ├── engine/                    # 500-Stratum Memory, 1,200 Capabilities, 500 Workers
+    │   ├── memory/                    # Dedicated local memory store & recovery WAL
+    │   ├── docs/                      # AGI 1.5 specifications & dossiers
+    │   ├── tests/                     # AGI 1.5 test suites
+    │   └── vault/                     # AGI 1.5 Obsidian Knowledge Graph
+    │
+    └── AGI_1_6/                       # AGI 1.6 OMEGA NEXUS (Flagship Runtime, ~2.2 MB)
+        ├── run_agi_16.py              # Master Python entrypoint
         ├── run_agent.bat              # 1-Click Windows Batch launcher
         ├── run_agent.ps1              # 1-Click PowerShell launcher
-        ├── README.md                  # AGI 1.5 specific guide
-        ├── AGI_1_5_Obsidian_Vault.zip # Local bundled knowledge vault
-        ├── engine/                    # Complete Python runtime engine (agi/)
+        ├── README.md                  # AGI 1.6 specific guide
+        ├── AGI_1_6_Obsidian_Vault.zip # Local bundled knowledge vault
+        ├── engine/                    # Complete AGI 1.6 Runtime Engine
         │   └── agi/
-        │       ├── adapters/          # Unified Master Platform Adapter
-        │       ├── capabilities/      # 1,200 Universal Capability Registry
-        │       ├── memory/            # 500-Stratum Persistent Memory Engine
-        │       ├── orchestration/     # DynTaskMAS DAG Wavefront Concurrency (500 workers)
-        │       ├── research/          # 10-Stage Observable Live Knowledge Pipeline
-        │       ├── runtime/           # Startup Compatibility Gate (v1.5.0)
-        │       ├── security/          # Multi-Turn Injection & Pre-Socket SSRF Shield
-        │       └── terminal/          # Stateful PTY & execution sandbox
-        ├── config/                    # Invariant profiles & migration manifests
-        ├── memory/                    # Dedicated local persistent memory & recovery WAL
-        │   ├── store.json             # Content-addressed SHA-256 memory store
-        │   ├── omega_memory_store.json# Active stratum state
-        │   ├── snapshots/             # Checkpoint snapshots
-        │   └── recovery/              # Write-Ahead Log (wal.jsonl) & journal.json
-        ├── docs/                      # ONLY AGI 1.5 official specifications & dossiers
-        │   ├── AGI-1.5-OMEGA-EVOLUTION-RELEASE-DOSSIER.md
-        │   ├── AGI-1.5-DEEP-CAPABILITY-SCORECARD.md
-        │   ├── AGI-1.5-MIGRATION-REPORT.md
-        │   ├── AGI-1.5-RESEARCH-REGISTER.md
-        │   └── AGI-1.5-TEST-INTEGRITY-AUDIT.md
-        ├── tests/                     # ONLY AGI 1.5 verification suites (10 test suites)
-        ├── scripts/                   # Mutation testing & autonomous evaluation scripts
-        ├── reports/                   # Interactive visual benchmark dashboard
-        └── vault/                     # Exclusive AGI 1.5 Obsidian Knowledge Graph
+        │       ├── orchestration/     # AdaptiveTokenEconomy, OmegaNexusOrchestrator, AdaptiveExecutionScheduler
+        │       ├── memory/            # 9-Layer Partitioned Memory & ACON Context Compression
+        │       ├── research/          # GroundedResearchEngine (10-stage verifiable pipeline)
+        │       ├── adapters/          # Terminal, Browser, ComputerUse, EvidenceVerifier, agi_16_adapter
+        │       ├── evolution/         # VersionedExperimentManager adaptation loop
+        │       └── runtime/           # Startup Compatibility Gate v1.6.0
+        ├── config/agi16/              # Runtime profile, token economy policy, manifests
+        ├── memory/                    # Local fallback persistent memory & recovery WAL
+        ├── docs/                      # AGI 1.6 specifications, research register & dossiers
+        ├── tests/                     # AGI 1.6 test suites (test_agi_16_core_suite.py)
+        ├── scripts/                   # Evaluation runners (GPQA Clean, Terminal-Bench 2.0, OSWorld-V2.1)
+        ├── reports/                   # Dashboards & comparative evaluation reports
+        └── vault/                     # Exclusive AGI 1.6 Obsidian Knowledge Graph
 ```
 
-### Future Agent Versioning Rule:
-1. When upgrading to a new agent version (e.g. `AGI_1_6`), create a new isolated folder: `agents/AGI_1_6/`.
-2. Copy the baseline from the previous agent into the new folder.
-3. Update code, tests, docs, and manifests inside `agents/AGI_1_6/`.
-4. Memory paths redirect strictly to `agents/AGI_1_6/memory/`.
-5. **No agent files or memory stores may ever merge or cross-contaminate.**
-6. Legacy agent documents (Base, AGI 1.2, 1.3, 1.4) are completely purged from this repository.
+---
+
+## ⚡ Comparative Overview: AGI 1.5 vs AGI 1.6
+
+| Dimension | AGI 1.5 OMEGA EVOLUTION | AGI 1.6 OMEGA NEXUS | Measured Impact |
+|---|---|---|---|
+| **Governing Optimization** | Unconstrained scale & coverage | **Verified useful work per token, cost, time & resource** | Direct efficiency focus |
+| **Token Economy** | Effort levels (Low/Med/High) | **`AdaptiveTokenEconomy`** (Estimator, 10/60/20/10 split, ledger, early stopping) | **-84.8% token burn per verified task** |
+| **Memory Architecture** | 500 flat numeric strata | **9-Layer Partitioned Memory** + ACON context compression | Structured semantic layers; zero context explosion |
+| **Orchestration** | Up to 500 generic workers | **`OmegaNexusOrchestrator`** (9 role templates, dynamic minimal workforce) | Eliminates consensus drift |
+| **Concurrency & Compute** | Fixed thread pool scaling | **`AdaptiveExecutionScheduler`** (DAG scheduling + host CPU/RAM throttling) | Prevents host OOM and freezes |
+| **Research Grounding** | 10-stage pipeline with basic heuristics | **`GroundedResearchEngine`** (RFC 9309 compliance + citation audit) | 100% verified citations |
+| **Sandboxed Execution** | Direct PTY without container barriers | **Isolated Adapters** (Terminal, Browser, ComputerUse, EvidenceVerifier) | Host desktop 100% protected |
+| **Footprint (Size)** | ~3.60 MB | **~2.21 MB** | **-38.6% more compact** |
 
 ---
 
-## 📊 Size Accounting & Footprint
+## 🚀 Quickstart: Running the Agents
 
-AGI 1.5 is engineered for maximum performance with an ultra-compact footprint:
-
-| Component | Path | Files | Size (KB) | Size (MB) |
-|---|---|---|---|---|
-| **Python Engine** | `agents/AGI_1_5/engine/` | 42 | 2,980.04 KB | 2.910 MB |
-| **Obsidian Vault (unpacked)** | `agents/AGI_1_5/vault/` | 33 | 25.98 KB | 0.026 MB |
-| **Obsidian Vault (zip)** | `agents/AGI_1_5/AGI_1_5_Obsidian_Vault.zip` | 1 | 502.69 KB | 0.491 MB |
-| **Test Suites** | `agents/AGI_1_5/tests/` | 10 | 51.66 KB | 0.050 MB |
-| **Evaluation Scripts** | `agents/AGI_1_5/scripts/` | 3 | 59.68 KB | 0.058 MB |
-| **Official Documentation** | `agents/AGI_1_5/docs/` | 5 | 27.06 KB | 0.026 MB |
-| **Benchmark Dashboard** | `agents/AGI_1_5/reports/` | 1 | 25.82 KB | 0.025 MB |
-| **Configuration Manifests**| `agents/AGI_1_5/config/` | 4 | 13.76 KB | 0.014 MB |
-| **Dedicated Memory** | `agents/AGI_1_5/memory/` | 4 | 1.45 KB | 0.001 MB |
-| **Launchers & Entrypoints** | `run_agi_15.py`, `.bat`, `.ps1`, `README` | 4 | 4.25 KB | 0.004 MB |
-| **TOTAL AGI 1.5 AGENT** | `agents/AGI_1_5/` | **104** | **3,692.39 KB** | **~3.60 MB** |
-
----
-
-## 🚀 Quickstart: Running AGI 1.5
-
-Anyone can clone and run AGI 1.5 directly with zero friction.
+Anyone can clone and run either agent directly with zero friction.
 
 ### 1. Clone the Repository
 ```bash
@@ -96,47 +81,52 @@ git clone https://github.com/Abhishek200416/AGI-1.5V.git
 cd AGI-1.5V
 ```
 
-### 2. Launch AGI 1.5
-
-#### Option A: Direct Python Execution
+### 2. Launch AGI 1.6 OMEGA NEXUS (Flagship)
 ```bash
+# Direct Python
+python agents/AGI_1_6/run_agi_16.py
+
+# Or 1-Click Launchers (Windows)
+.\agents\AGI_1_6\run_agent.bat
+.\agents\AGI_1_6\run_agent.ps1
+```
+
+### 3. Launch AGI 1.5 OMEGA EVOLUTION (Preserved Baseline)
+```bash
+# Direct Python
 python agents/AGI_1_5/run_agi_15.py
-```
 
-#### Option B: 1-Click Launchers (Windows)
-Navigate into `agents/AGI_1_5/` and double-click or run:
-```powershell
-# PowerShell
-.\agents\AGI_1_5\run_agent.ps1
-
-# Or Command Prompt / Batch
+# Or 1-Click Launchers (Windows)
 .\agents\AGI_1_5\run_agent.bat
+.\agents\AGI_1_5\run_agent.ps1
 ```
 
-### 3. Verify Health & Tests
-Run the AGI 1.5 core test suite:
+### 4. Running Verification Test Suites
 ```bash
-python -m pytest agents/AGI_1_5/tests/test_agi_15_core_suite.py
+# Test AGI 1.6 Core Suite
+python agents/AGI_1_6/tests/test_agi_16_core_suite.py
+
+# Test AGI 1.5 Core Suite
+python agents/AGI_1_5/tests/test_agi_15_core_suite.py
 ```
 
-### 4. Interactive Visual Dashboards
-- **Obsidian Knowledge Graph**: Open `agents/AGI_1_5/vault/` directly in [Obsidian](https://obsidian.md/) to visualize the live 33-note neural knowledge mesh.
-- **Benchmark Dashboard**: Open `agents/AGI_1_5/reports/AGI_1_5_BENCHMARK_DASHBOARD.html` in any web browser to view performance charts across all 10 standard benchmarks.
+### 5. Interactive Dashboards & Obsidian Vaults
+- **AGI 1.6 Benchmark Dashboard:** Open [`agents/AGI_1_6/reports/AGI_1_6_BENCHMARK_DASHBOARD.html`](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_6/reports/AGI_1_6_BENCHMARK_DASHBOARD.html) in any browser.
+- **AGI 1.6 Knowledge Vault:** Open [`agents/AGI_1_6/vault/`](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_6/vault/) in [Obsidian](https://obsidian.md/) to explore the live neural graph.
 
 ---
 
-## ⚡ Core Technical Specifications
+## 💾 Authoritative External Persistence (Volume D:\)
 
-- **Sole Foundation Model (Directive 0)**: Gemini 3.8 Flash High (`gemini-3.8-flash-high`) via Antigravity CLI runtime. Zero silent fallbacks to low-tier models.
-- **500 Memory Strata**: High-throughput WAL journaling, content-addressed SHA-256 storage, triple Ebbinghaus scoring across 36 functional strata families.
-- **12-State Disconnection Engine**: Explicit state machine (`HEALTHY`, `DEGRADED`, `READ_ONLY`, `DISCONNECTED`, `JOURNALING_PENDING`, `RECONNECTING`, `REPLAYING`, `VALIDATING_INTEGRITY`, `RECONCILIATION_REQUIRED`, `RECOVERED`, `FAILED`, `SHUTTING_DOWN`).
-- **1,200 Capabilities**: Deterministic preflight validation across 24 capability families.
-- **DynTaskMAS Wavefront Concurrency**: Adaptive task DAG scheduler executing up to 500 concurrent workers with Tarjan cycle prevention.
-- **2,000 Semantic Telemetry Attributes**: Full OpenTelemetry GenAI compliance across 20 namespaces.
-- **AgentLAB Security Shield**: Multi-turn prompt injection defense and pre-socket SSRF protection blocking link-local/RFC 1918 egress.
+Persistent memory and evaluation results are routed directly to the external drive:
+- **AGI 1.6 Primary Memory:** `D:\AGI_Storage\AGI_1_6\memory\`
+- **AGI 1.6 Evaluation Root:** `D:\AGI_Evaluation\AGI_1_6_OMEGA_NEXUS\`
+- **AGI 1.5 Storage:** `D:\AGI_Storage\AGI_1_5\` and `D:\AGI_Evaluation\AGI_1_5_FULL_BENCHMARKS\`
+- **Local Fallback:** If the external drive is detached, both agents automatically fall back to their local `memory/` directories.
 
 ---
 
 ## 🛡️ License & Operational Boundaries
-- Financial Scope: Strictly market intelligence and paper trading simulation. Real-money broker APIs are blocked.
-- Designed for autonomous execution, local self-healing, and reproducible research.
+- **Sole Model Policy:** Gemini 3.8 Flash High (`gemini-3.8-flash-high`) via Antigravity runtime. Zero unauthenticated external fallback.
+- **Financial Scope:** Strictly market research and simulated paper trading. Real-money brokerage execution is blocked.
+- **Host Safety:** Direct actuation on the host user's physical desktop is quarantined and blocked.
