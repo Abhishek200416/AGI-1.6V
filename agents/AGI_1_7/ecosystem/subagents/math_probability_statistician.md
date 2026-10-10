@@ -4,6 +4,10 @@ description: "Probability & Bayesian Inference Specialist (Mathematics & Symboli
 family: "Mathematics & Symbolic Reasoning"
 resource_class: "MEDIUM"
 max_token_budget: 12000
+mainAgent: false
+subagent: true
+hidden: true
+embedded_in: "AGI 1.7"
 ---
 
 # Probability & Bayesian Inference Specialist (`math_probability_statistician`)
@@ -15,4 +19,4 @@ max_token_budget: 12000
 - **Max Token Budget**: `12000`
 - **Max Wall-Clock Seconds**: `180s`
 
-Embedded inside **AGI 1.7 — OMEGA COMMAND** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json`). Automatically routed by `CapabilityRouter` and instantiated by `SpecialistFactory` with zero manual setup.
+Embedded inside **AGI 1.7 — OMEGA COMMAND** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json`). Automatically routed by `CapabilityRouter` and instantiated by `SpecialistFactory` with zero external UI clutter.

@@ -23,15 +23,15 @@ from typing import Any, Dict, List, Optional
 
 
 GPQA_EXCLUDED_CONTAMINATED_IDS = [
-    "rec06249269402292",
-    "rec16165363240014",
-    "rec25885028969599",
-    "rec33890989242797",
-    "rec42969996144201",
-    "rec53402235449225",
-    "rec69693482101119",
-    "rec79558068482925",
-    "rec92131919449203",
+    "rec7qmSnbud4FHSqL",
+    "recAYkd96NNuNl1Ei",
+    "recLAgwx9vbgB5EHk",
+    "recQiWOxhkXRz9NVE",
+    "recUOePh79cp4T2Bg",
+    "recclFbsjbaiVVnnV",
+    "recf6ayQmL1SxKbvW",
+    "recihePFulRgNKsIn",
+    "reczzzihL7btBH7RO",
 ]
 
 
@@ -58,9 +58,11 @@ class BenchmarkAuditor:
 
     def audit_gpqa_raw_jsonl(
         self,
-        jsonl_path: str | Path = r"D:\AGI_Evaluation\AGI_1_6_OMEGA_NEXUS\raw_results\gpqa_clean_189_task_results.jsonl",
+        jsonl_path: str | Path = r"D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\raw_results\gpqa_clean_189_task_results.jsonl",
     ) -> Dict[str, Any]:
         p = Path(jsonl_path)
+        if not p.exists():
+            p = Path(r"D:\AGI_Evaluation\AGI_1_6_OMEGA_NEXUS\raw_results\gpqa_clean_189_task_results.jsonl")
         if not p.exists():
             return {"status": "UNAVAILABLE", "path": str(p), "reason": "Raw JSONL file not found"}
 

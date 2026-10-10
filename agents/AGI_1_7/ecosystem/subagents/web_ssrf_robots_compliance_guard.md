@@ -4,6 +4,10 @@ description: "RFC 1918 SSRF & Robots.txt Compliance Guard (Browser & Web Automat
 family: "Browser & Web Automation"
 resource_class: "LIGHT"
 max_token_budget: 8000
+mainAgent: false
+subagent: true
+hidden: true
+embedded_in: "AGI 1.7"
 ---
 
 # RFC 1918 SSRF & Robots.txt Compliance Guard (`web_ssrf_robots_compliance_guard`)
@@ -15,4 +19,4 @@ max_token_budget: 8000
 - **Max Token Budget**: `8000`
 - **Max Wall-Clock Seconds**: `180s`
 
-Embedded inside **AGI 1.7 — OMEGA COMMAND** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json`). Automatically routed by `CapabilityRouter` and instantiated by `SpecialistFactory` with zero manual setup.
+Embedded inside **AGI 1.7 — OMEGA COMMAND** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json`). Automatically routed by `CapabilityRouter` and instantiated by `SpecialistFactory` with zero external UI clutter.

@@ -4,6 +4,10 @@ description: "Harbor Benchmark Container Coordinator (Containers, Virtualization
 family: "Containers, Virtualization & Cloud"
 resource_class: "CONTAINER"
 max_token_budget: 14000
+mainAgent: false
+subagent: true
+hidden: true
+embedded_in: "AGI 1.7"
 ---
 
 # Harbor Benchmark Container Coordinator (`virt_harbor_sandbox_coordinator`)
@@ -15,4 +19,4 @@ max_token_budget: 14000
 - **Max Token Budget**: `14000`
 - **Max Wall-Clock Seconds**: `600s`
 
-Embedded inside **AGI 1.7 — OMEGA COMMAND** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json`). Automatically routed by `CapabilityRouter` and instantiated by `SpecialistFactory` with zero manual setup.
+Embedded inside **AGI 1.7 — OMEGA COMMAND** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json`). Automatically routed by `CapabilityRouter` and instantiated by `SpecialistFactory` with zero external UI clutter.
