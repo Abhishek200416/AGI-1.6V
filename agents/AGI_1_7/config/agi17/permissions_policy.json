@@ -1,0 +1,31 @@
+{
+  "policy_version": "1.7.0",
+  "host_desktop_protection": {
+    "allow_host_gui_actuation": false,
+    "require_isolated_container_or_vm_for_gui": true,
+    "max_allowed_host_gui_injections": 0
+  },
+  "financial_safety": {
+    "allow_real_money_brokerage": false,
+    "mode": "SIMULATED_PAPER_TRADING_AND_RESEARCH_ONLY",
+    "quarantine_live_brokerage_keys": true
+  },
+  "network_and_ssrf_protection": {
+    "block_rfc1918_private_ranges": true,
+    "block_link_local_metadata_169_254": true,
+    "block_loopback_on_external_web_fetch": true,
+    "allow_loopback_for_local_control_inbox": true
+  },
+  "destructive_operations_guard": {
+    "allow_git_push_without_authorization": false,
+    "allow_git_reset_hard": false,
+    "allow_baseline_agi15_agi16_modification": false,
+    "allow_live_docker_vhdx_move": false,
+    "allow_camera_microphone_personal_device_open": false
+  },
+  "secret_redaction": {
+    "scrub_prompts": true,
+    "scrub_logs_and_dashboard": true,
+    "isolate_benchmark_gold_keys": true
+  }
+}

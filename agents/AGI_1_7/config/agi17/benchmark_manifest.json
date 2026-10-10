@@ -1,0 +1,43 @@
+{
+  "manifest_version": "1.7.0",
+  "benchmarks": {
+    "gpqa_diamond_clean": {
+      "name": "GPQA Diamond Clean",
+      "release_version": "1.2.2",
+      "upstream_overlay_repo": "https://github.com/adamallcock/gpqa-diamond-clean",
+      "upstream_base_repo": "https://github.com/idavidrein/gpqa",
+      "expected_question_count": 189,
+      "source_items_count": 198,
+      "excluded_items_count": 9,
+      "dataset_path": "D:\\AGI_Evaluation\\AGI_1_5_FULL_BENCHMARKS\\datasets\\gpqa_diamond_clean\\data\\cleaned.jsonl",
+      "cleaned_jsonl_sha256": "c04c551a71da14d802841ec1a5dd3aa83fbcbe22e89b4cd6c6aef3c690c00e8d",
+      "exclusions_sha256": "d51f84fe1df413b062b3ce1b8c7f93ecd1f29484711e9019bdd1d019c25292a5",
+      "source_csv_sha256": "41d1213cd7a4998605a26c2798500652572007161b3a92817ba46b35befcd305",
+      "option_shuffle_seed_formula": "42 + item_idx",
+      "protocol": "closed_book_single_attempt_isolated_cwd",
+      "isolated_cwd": "D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND\\isolated_cwd"
+    },
+    "terminal_bench_2_0": {
+      "name": "Terminal-Bench 2.0",
+      "release_version": "terminal-bench@2.0",
+      "upstream_repo": "https://github.com/harbor-framework/terminal-bench-2",
+      "harness_repo": "https://github.com/harbor-framework/harbor",
+      "expected_task_count": 89,
+      "dataset_path": "D:\\AGI_Evaluation\\datasets\\terminal-bench-2.0\\terminal-bench",
+      "harbor_python_env": "D:\\AGI_Evaluation\\AGI_1_5_FULL_BENCHMARKS\\environments\\harbor_env",
+      "grader": "official_harbor_container_verifier"
+    },
+    "osworld_v2_1": {
+      "name": "OSWorld-V2.1",
+      "release_version": "osworld-v2.1",
+      "upstream_repo": "https://github.com/xlang-ai/OSWorld-V2",
+      "expected_task_count": 108,
+      "repo_path": "D:\\AGI_Evaluation\\AGI_1_6_OMEGA_NEXUS\\OSWorld-V2",
+      "release_manifest_path": "D:\\AGI_Evaluation\\AGI_1_6_OMEGA_NEXUS\\OSWorld-V2\\benchmark_releases\\osworld-v2.1.json",
+      "vm_image_path": "D:\\AGI_Evaluation\\AGI_1_6_OMEGA_NEXUS\\OSWorld-V2\\docker_vm_data\\osworld-v2-ubuntu-x86.qcow2",
+      "expected_vm_zip_bytes": 14891811084,
+      "expected_vm_zip_sha256": "14b08aa7ba6c023ecb91d46de8df5de32af4d1d6bd75ea925519caf9677fc8b3",
+      "host_desktop_actuation_allowed": false
+    }
+  }
+}

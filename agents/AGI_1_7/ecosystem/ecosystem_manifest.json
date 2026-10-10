@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.7.0",
+  "codename": "AGI 1.7 \u2014 OMEGA COMMAND Unified 100-Specialist Ecosystem",
+  "sole_model": "gemini-3.8-flash-high",
+  "counts": {
+    "embeddedSpecialistContracts": 100,
+    "specialistFamilies": 16,
+    "embeddedSubagents": 100,
+    "embeddedSkills": 74,
+    "embeddedPlugins": 11,
+    "embeddedMcpServers": 21
+  },
+  "family_distribution": {
+    "Planning & Architecture": 6,
+    "Research & Evidence Synthesis": 8,
+    "Mathematics & Symbolic Reasoning": 6,
+    "Physics & Physical Sciences": 6,
+    "Chemistry & Molecular Sciences": 5,
+    "Biology & Biomedical Sciences": 5,
+    "Software Engineering": 10,
+    "Terminal, Shell & OS Operations": 8,
+    "Containers, Virtualization & Cloud": 6,
+    "Browser & Web Automation": 6,
+    "Desktop & Computer Use": 6,
+    "Data, Storage & Databases": 6,
+    "Testing, QA & Verification": 8,
+    "Security, Permissions & Safety": 6,
+    "Performance, Token & Resource Optimization": 4,
+    "Release, Governance & Reporting": 4
+  }
+}

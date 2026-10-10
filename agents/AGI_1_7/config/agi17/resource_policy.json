@@ -1,0 +1,50 @@
+{
+  "policy_version": "1.7.0",
+  "capacity_separation": {
+    "MAX_AGENT_SPECIALIZATIONS": 100,
+    "MAX_LOGICAL_CHILD_TASKS": 100,
+    "MAX_ACTIVE_EXECUTIONS_DEFAULT": 4,
+    "MAX_ACTIVE_EXECUTIONS_MIN": 1,
+    "MAX_ACTIVE_EXECUTIONS_MAX": 8
+  },
+  "host_safety_reserves": {
+    "windows_os_reserve_ram_mb": 1024.0,
+    "ide_antigravity_reserve_ram_mb": 512.0,
+    "docker_wsl_reserve_ram_mb": 512.0,
+    "recovery_reserve_ram_mb": 256.0,
+    "min_free_physical_ram_mb": 1200.0,
+    "min_free_commit_mb": 1500.0,
+    "max_cpu_utilization_percent": 85.0,
+    "hysteresis_cooldown_sec": 5.0,
+    "cpu_resume_threshold_percent": 70.0,
+    "ram_resume_threshold_mb": 1600.0,
+    "min_c_drive_free_gb": 5.0,
+    "min_d_drive_free_gb": 20.0
+  },
+  "queue_bounds": {
+    "deterministic_queue_max": 100,
+    "model_api_queue_max": 100,
+    "cpu_heavy_queue_max": 32,
+    "ram_heavy_queue_max": 16,
+    "docker_terminal_queue_max": 32,
+    "gui_vm_queue_max": 8,
+    "browser_web_queue_max": 32,
+    "download_build_queue_max": 16
+  },
+  "concurrency_limits_by_class": {
+    "active_llm_requests": 4,
+    "active_local_subprocesses": 4,
+    "active_docker_tasks": 2,
+    "active_vm_tasks": 1,
+    "concurrent_browsers": 2
+  },
+  "timeouts_and_retries": {
+    "startup_timeout_sec": 15.0,
+    "model_response_timeout_sec": 180.0,
+    "tool_execution_timeout_sec": 120.0,
+    "job_timeout_sec": 3600.0,
+    "max_retries_transient": 2,
+    "backoff_base_sec": 1.0,
+    "backoff_max_sec": 15.0
+  }
+}

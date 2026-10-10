@@ -1,0 +1,64 @@
+{
+  "policy_version": "1.7.0",
+  "foundation_model": "gemini-3.8-flash-high",
+  "accounting_rules": {
+    "distinguish_telemetry_source": true,
+    "allowed_sources": [
+      "PROVIDER_REPORTED",
+      "CLI_REPORTED",
+      "LOCALLY_ESTIMATED",
+      "UNAVAILABLE"
+    ],
+    "normalize_cumulative_session_counters": true,
+    "do_not_double_count_thinking_tokens_in_output": true,
+    "record_failed_call_elapsed_and_usage": true,
+    "pricing_status": "UNVERIFIED_EXTERNAL_BILLING_SCHEDULE_LABEL_AS_ESTIMATE_ONLY",
+    "estimated_reference_rates_usd_per_1k": {
+      "input_tokens": 0.000125,
+      "output_tokens": 0.000375,
+      "note": "Reference estimate only; never reported as actual provider billing."
+    }
+  },
+  "tier_policies": {
+    "SIMPLE": {
+      "max_total_tokens": 2500,
+      "max_input_tokens_per_call": 1500,
+      "max_output_tokens_per_call": 1000,
+      "max_model_requests": 1,
+      "max_tool_calls": 2,
+      "max_duration_sec": 30.0,
+      "recovery_reserve_ratio": 0.10,
+      "allow_subagent_fanout": false
+    },
+    "STANDARD": {
+      "max_total_tokens": 12000,
+      "max_input_tokens_per_call": 4000,
+      "max_output_tokens_per_call": 3000,
+      "max_model_requests": 4,
+      "max_tool_calls": 8,
+      "max_duration_sec": 180.0,
+      "recovery_reserve_ratio": 0.15,
+      "allow_subagent_fanout": false
+    },
+    "COMPLEX": {
+      "max_total_tokens": 45000,
+      "max_input_tokens_per_call": 8000,
+      "max_output_tokens_per_call": 4000,
+      "max_model_requests": 12,
+      "max_tool_calls": 25,
+      "max_duration_sec": 600.0,
+      "recovery_reserve_ratio": 0.15,
+      "allow_subagent_fanout": true
+    },
+    "CAMPAIGN": {
+      "max_total_tokens": 1500000,
+      "max_input_tokens_per_call": 6000,
+      "max_output_tokens_per_call": 4500,
+      "max_model_requests": 250,
+      "max_tool_calls": 500,
+      "max_duration_sec": 14400.0,
+      "recovery_reserve_ratio": 0.10,
+      "allow_subagent_fanout": true
+    }
+  }
+}

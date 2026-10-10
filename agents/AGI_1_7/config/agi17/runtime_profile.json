@@ -1,0 +1,33 @@
+{
+  "agent_name": "AGI 1.7 — OMEGA COMMAND",
+  "runtime_version": "1.7.0",
+  "codename": "OMEGA COMMAND",
+  "foundation_model": "gemini-3.8-flash-high",
+  "directive_0_sole_model_policy": true,
+  "allow_silent_model_fallback": false,
+  "cli_binary_path": "%LOCALAPPDATA%\\agy\\bin\\agy.exe",
+  "isolated_benchmark_cwd": "D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND\\isolated_cwd",
+  "storage_roots": {
+    "primary_storage_dir": "D:\\AGI_Storage\\AGI_1_7",
+    "primary_evaluation_dir": "D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND",
+    "local_fallback_dir": "agents/AGI_1_7/local_fallback_storage"
+  },
+  "orchestration_limits": {
+    "max_agent_specializations": 100,
+    "max_logical_child_tasks": 100,
+    "max_delegation_depth": 3,
+    "max_messages_per_task": 50,
+    "default_small_task_direct_execution": true
+  },
+  "memory_policy": {
+    "layers_count": 10,
+    "mandatory_retrieve_before_planning": true,
+    "preserve_exact_evidence_on_compression": true,
+    "acon_max_chars_default": 1200
+  },
+  "quantum_compute_policy": {
+    "enabled": false,
+    "status": "DISABLED_NO_PRACTICAL_ADVANTAGE_FOR_LLM_ORCHESTRATION",
+    "require_verified_hardware_and_classical_baseline": true
+  }
+}

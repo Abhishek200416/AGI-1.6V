@@ -59,4 +59,15 @@ external/
 /index.html
 /run_v3_tests.js
 /agents/AGI_1_5/
+/agents/AGI_1_6/
 /AGI_Obsidian_Vault.zip
+/dataset/
+/calc.ps1
+/check*.js
+/extract*.ps1
+/fetch.ps1
+/gpqa*
+/hf*.ps1
+/matched*.txt
+/scratch_cip*.py
+

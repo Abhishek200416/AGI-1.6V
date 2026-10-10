@@ -1,0 +1,18 @@
+---
+name: plan_dependency_analyzer
+description: "Acyclic Dependency Analyzer (Planning & Architecture) — Capabilities: dag_cycle_detection, critical_path_computation, wavefront_scheduling"
+family: "Planning & Architecture"
+resource_class: "LIGHT"
+max_token_budget: 8000
+---
+
+# Acyclic Dependency Analyzer (`plan_dependency_analyzer`)
+
+- **Family**: Planning & Architecture
+- **Execution Mode**: `IN_PROCESS_TOOL_WORKER`
+- **Primary Capabilities**: dag_cycle_detection, critical_path_computation, wavefront_scheduling
+- **Required Tools**: dependency_manager, graph_analyzer
+- **Max Token Budget**: `8000`
+- **Max Wall-Clock Seconds**: `180s`
+
+Embedded inside **AGI 1.7 — OMEGA COMMAND** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json`). Automatically routed by `CapabilityRouter` and instantiated by `SpecialistFactory` with zero manual setup.
