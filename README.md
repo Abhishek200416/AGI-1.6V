@@ -310,18 +310,21 @@ python agents/AGI_1_7/scripts/demo_real_multi_agent_code_fix.py
 ```
 *Full execution trace with model prompts, responses, token counts, stderr tracebacks, and SQLite state transitions:* [`agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json`](agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json)
 
-### 4. Run AGI 1.7 — OMEGA COMMAND
+### 4. Run AGI 1.7 — OMEGA COMMAND (Foreground or Detached Background Mode)
 ```powershell
 # Run live hardware capability profile & startup crash reconciliation
 python agents/AGI_1_7/run_agi_17.py --profile-only
 
-# Execute a multi-specialist mission (automatically routes across the 100 embedded specialists)
+# Execute a multi-specialist mission in the foreground
 python agents/AGI_1_7/run_agi_17.py --title "System Audit" --prompt "Decompose and execute a full architecture, security, and test verification."
+
+# Execute in OS-Detached Background Mode (KEEPS RUNNING EVEN IF YOU CLOSE ANTIGRAVITY IDE!)
+python agents/AGI_1_7/run_agi_17.py --detach --task-id MISSION-BG-001 --title "Overnight Audit" --prompt "Run full multi-specialist verification and save report."
 ```
 
 ### 5. Send Live Mid-Run Instructions (`agi17ctl.py`) Without Restarting
 ```powershell
-python agents/AGI_1_7/scripts/agi17ctl.py send --type ADD_CHILD_TASK --target-task-id MISSION-001 --payload-json "{\"title\": \"Extra Security Check\", \"description\": \"Run SSRF and credential scan\"}"
+python agents/AGI_1_7/scripts/agi17ctl.py send --type ADD_CHILD_TASK --target-task-id MISSION-BG-001 --payload-json "{\"title\": \"Extra Security Check\", \"description\": \"Run SSRF and credential scan\"}"
 ```
 
 ### 6. Run the Complete Deterministic Verification Suite (`49` Tests, Offline-Capable)
@@ -331,7 +334,18 @@ python -m unittest agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py agents/AGI
 
 ---
 
-## 🔍 6. Engineering Architecture, Honest Scope & Technical FAQ
+## 🔄 6. Does AGI 1.7 Keep Working If You Close the Antigravity IDE?
+
+**Yes — depending on how you start the mission, AGI 1.7 supports both Continuous Detached Background Execution and Zero-Loss SQLite WAL Crash Recovery:**
+
+| Execution Mode | How It Is Started | What Happens When You Close the Antigravity IDE Window? | Where Logs & State Are Saved |
+| :--- | :--- | :--- | :--- |
+| **🟢 Mode 1: Detached Background Daemon (`--detach`)** | `python agents/AGI_1_7/run_agi_17.py --detach --task-id <ID> --prompt "..."` | **Keeps working 100% continuously in the background even after you close Antigravity IDE.** Uses Windows `CREATE_NEW_PROCESS_GROUP \| CREATE_NO_WINDOW` (or POSIX `start_new_session=True`) so the worker process is completely decoupled from the IDE window and calls `agy.exe --model gemini-3.8-flash-high` headlessly until completion. | • Live Log: `D:\AGI_Storage\AGI_1_7\logs\detached\<task_id>.log`<br/>• PID Manifest: `<task_id>.pid.json`<br/>• SQLite DB: `agi17_tasks.db` |
+| **🟡 Mode 2: Interactive Chat Session Inside Antigravity UI** | Typing directly inside the Antigravity IDE chat panel without `--detach` | **The interactive UI chat pauses when you close the IDE window, but `0%` of your task state or memory is lost.** Every completed subtask, SHA-256 checkpoint, and 10-layer memory record is already committed to SQLite WAL on `D:\`. When you reopen Antigravity or run `run_agi_17.py`, `DurableTaskManager.reconcile_after_restart()` automatically recovers interrupted `RUNNING` / `VERIFYING` tasks from their last verified checkpoint. | • SQLite Task DB: `D:\AGI_Storage\AGI_1_7\state\agi17_tasks.db`<br/>• Checkpoints: `D:\AGI_Storage\AGI_1_7\checkpoints\`<br/>• 10-Layer Memory: `omega_memory.db` |
+
+---
+
+## 🔍 7. Engineering Architecture, Honest Scope & Technical FAQ
 
 See [`agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md`](agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md) for the complete technical walkthrough:
 
@@ -342,4 +356,5 @@ See [`agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md`](agents/AGI_1_7/doc
    - **GPQA Diamond Clean 1.2.2 (`189 / 189 = 100.00%`, `4.61 mins`, `321,031` net task tokens):** Evaluated on the 189-question cleaned subset (`198` source minus `9` official [`gpqa-diamond-clean v1.2.2`](https://github.com/adamallcock/gpqa-diamond-clean) exclusions) and independently scored against the ground-truth answer key ([`AGI_1_7_GPQA_CLEAN_189_REPORT.md`](agents/AGI_1_7/reports/AGI_1_7_GPQA_CLEAN_189_REPORT.md)).
    - **Terminal-Bench 2.0 & OSWorld-V2.1 Honest Scope:** Audited in [`benchmark_auditor.py`](agents/AGI_1_7/engine/agi17/evaluation/benchmark_auditor.py)—`chess-best-move` (`reward = 1.0`) was verified in an official Harbor container (`1` container task + `4` local script tasks), and `369/369` OSWorld-V2.1 JSON manifests were schema-audited while live Ubuntu VM GUI execution remains `PENDING_VM_IMAGE` (`0/369`).
 4. **Privacy, Credentials & License:** Prompts sent to `ModelAdapter.invoke()` are transmitted over HTTPS to Google's Gemini backend inside an `isolated_cwd` (preventing automatic workspace file leakage), while SQLite task stores, checkpoints, and 10-layer memory stay local. Released under the **MIT License** ([`LICENSE`](LICENSE)) using the Python standard library (`0` leaked secrets across all `1,279` git-tracked files).
+
 

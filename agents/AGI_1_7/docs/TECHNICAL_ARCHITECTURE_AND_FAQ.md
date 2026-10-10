@@ -107,3 +107,16 @@ To avoid any ambiguity between internal engineering assertions and external acad
 - **License:** Released under the **MIT License** ([`LICENSE`](../../../LICENSE)).
 - **Dependencies:** The entire AGI 1.7 core runtime (`agents/AGI_1_7/engine/agi17/`) is built on the **Python 3.10+ Standard Library** (`sqlite3`, `ctypes`, `subprocess`, `threading`, `concurrent.futures`, `hashlib`, `json`, `urllib`, `ipaddress`, `unittest`) with zero proprietary third-party library lock-in.
 - **Credential & Secret Audit:** All `1,279` git-tracked files have been scanned for API keys (`AIza*`, `sk-*`, `ghp_*`), private keys, and personal credentials (`0` hits).
+
+---
+
+## 8. Does AGI 1.7 Keep Working After Closing the Antigravity IDE Window?
+
+- **Mode 1 — Detached Background Execution (`--detach` in [`run_agi_17.py`](../run_agi_17.py)) -> YES, Continues Running Uninterrupted:**
+  - When launched with `python agents/AGI_1_7/run_agi_17.py --detach --task-id <ID> --title "..." --prompt "..."`, AGI 1.7 spawns inside an independent OS process group (`CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW` on Windows, `start_new_session=True` on POSIX).
+  - Closing the Antigravity IDE GUI window **does not stop** this worker process. It continues orchestrating subtasks, invoking `agy.exe --model gemini-3.8-flash-high` headlessly, updating SQLite WAL (`agi17_tasks.db`), and streaming logs to `D:\AGI_Storage\AGI_1_7\logs\detached\<task_id>.log` (and `<task_id>.pid.json`).
+  - While it runs in the background, you can still inspect its progress or inject mid-run commands from any terminal via `python agents/AGI_1_7/scripts/agi17ctl.py`.
+- **Mode 2 — Interactive UI Chat Inside Antigravity IDE -> Pauses on Window Close, Recovers `100%` of State via SQLite WAL:**
+  - If you are chatting directly inside the Antigravity IDE chat window without `--detach`, closing the IDE window pauses the interactive UI session.
+  - Because every subtask state transition, SHA-256 checkpoint, and 10-layer memory record is persisted to SQLite WAL (`agi17_tasks.db` and `omega_memory.db`), **zero completed work is lost**. On next startup, [`DurableTaskManager.reconcile_after_restart()`](../engine/agi17/task_control/task_manager.py) automatically reconciles any interrupted `RUNNING` / `VERIFYING` tasks from their last verified SHA-256 checkpoint.
+
