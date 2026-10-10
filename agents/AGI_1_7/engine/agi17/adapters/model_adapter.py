@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import re
 import shutil
 import threading
@@ -136,6 +137,7 @@ class ModelResponse:
     cost_usd: float
     cumulative_mission_cost_usd: float
     attempts: int = 1
+    attempt_ledger: List[Dict[str, Any]] = field(default_factory=list)
     is_mock: bool = False
     notification_id: Optional[str] = None
     stdout_log_path: Optional[str] = None
@@ -366,6 +368,7 @@ class ModelAdapter:
             cost_usd=res_dict["cost_usd"],
             cumulative_mission_cost_usd=res_dict["cumulative_mission_cost_usd"],
             attempts=res_dict["attempts"],
+            attempt_ledger=res_dict.get("attempt_ledger", []),
             is_mock=res_dict.get("is_mock", False),
             notification_id=res_dict.get("notification_id"),
             stdout_log_path=res_dict.get("stdout_log_path"),
@@ -449,12 +452,14 @@ class ModelAdapter:
                 self._cumulative_mission_cost_usd = round(self._cumulative_mission_cost_usd + call_cost, 6)
                 cum_cost = self._cumulative_mission_cost_usd
             duration_sec = float(mock_out.get("duration_sec", 0.001))
+            mock_status = mock_out.get("status", "SUCCEEDED")
+            mock_exit = mock_out.get("exit_code", 0)
             return {
                 "task_id": task_id,
                 "agent_id": agent_id,
                 "model": self.SOLE_MODEL,
-                "status": mock_out.get("status", "SUCCEEDED"),
-                "exit_code": mock_out.get("exit_code", 0),
+                "status": mock_status,
+                "exit_code": mock_exit,
                 "timed_out": bool(mock_out.get("timed_out", False)),
                 "duration_sec": duration_sec,
                 "latency_ms": round(duration_sec * 1000.0, 2),
@@ -473,6 +478,16 @@ class ModelAdapter:
                 "cost_usd": call_cost,
                 "cumulative_mission_cost_usd": cum_cost,
                 "attempts": 1,
+                "attempt_ledger": [
+                    {
+                        "attempt": 1,
+                        "status": mock_status,
+                        "exit_code": mock_exit,
+                        "timed_out": bool(mock_out.get("timed_out", False)),
+                        "duration_sec": duration_sec,
+                        "notification_id": mock_out.get("notification_id"),
+                    }
+                ],
                 "is_mock": True,
                 "notification_id": mock_out.get("notification_id"),
                 "stdout_log_path": mock_out.get("stdout_log_path"),
@@ -503,6 +518,7 @@ class ModelAdapter:
         max_attempts = max(1, 1 + int(self.config.max_retries))
         notif = None
         attempts_made = 0
+        attempt_ledger: List[Dict[str, Any]] = []
         for attempt_idx in range(max_attempts):
             attempts_made = attempt_idx + 1
             proc_task_id = f"{child_task_id or task_id}-MODEL-A{attempts_made}"
@@ -521,14 +537,27 @@ class ModelAdapter:
             finally:
                 self.governor.release_slot(queue_type="model_call")
 
+            attempt_ledger.append(
+                {
+                    "attempt": attempts_made,
+                    "proc_task_id": proc_task_id,
+                    "status": notif.final_status,
+                    "exit_code": notif.exit_code,
+                    "timed_out": notif.timed_out or notif.idle_timed_out,
+                    "duration_sec": notif.duration_sec,
+                    "notification_id": notif.notification_id,
+                }
+            )
+
             if notif.timed_out or notif.idle_timed_out:
                 self.governor.report_timeout_or_quota_pressure()
 
             if notif.final_status == "SUCCEEDED" and notif.exit_code == 0:
                 break
             if attempt_idx + 1 < max_attempts:
-                backoff = self.config.base_backoff_sec * (2 ** attempt_idx)
-                time.sleep(backoff)
+                base_wait = self.config.base_backoff_sec * (2 ** attempt_idx)
+                jitter = random.uniform(0.0, 0.25 * base_wait)
+                time.sleep(base_wait + jitter)
 
         assert notif is not None
         full_stdout = ""
@@ -617,6 +646,7 @@ class ModelAdapter:
             "cost_usd": call_cost,
             "cumulative_mission_cost_usd": cum_cost,
             "attempts": attempts_made,
+            "attempt_ledger": attempt_ledger,
             "is_mock": False,
             "notification_id": notif.notification_id,
             "stdout_log_path": notif.stdout_log_path,

@@ -154,7 +154,8 @@ class AGI17Adapter:
         module_filename: str,
         test_pattern: str = "test_*.py",
         issue_description: str = "Fix failing Python unit tests with minimal diff.",
-        write_patch_to_workspace: bool = True,
+        write_patch_to_workspace: bool = False,
+        apply_approved_patch: bool = False,
     ) -> Dict[str, Any]:
         """Executes the focused Python CI-Repair product workflow inside a disposable sandbox."""
         res = self.ci_repair_agent.repair_workspace(
@@ -163,6 +164,7 @@ class AGI17Adapter:
             test_pattern=test_pattern,
             issue_description=issue_description,
             write_patch_to_workspace=write_patch_to_workspace,
+            apply_approved_patch=apply_approved_patch,
         )
         return res.to_dict()
 

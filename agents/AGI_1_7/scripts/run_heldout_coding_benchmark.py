@@ -32,7 +32,11 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agents.AGI_1_7.benchmarks.heldout_coding_suite import HELDOUT_CODING_TASKS, HeldOutCodingTask
+from agents.AGI_1_7.benchmarks.heldout_coding_suite import (
+    HELDOUT_CODING_50_SUITE,
+    HELDOUT_CODING_TASKS,
+    HeldOutCodingTask,
+)
 from agents.AGI_1_7.engine.agi17.adapters.agi_17_adapter import AGI17Adapter
 from agents.AGI_1_7.engine.agi17.adapters.model_adapter import redact_sensitive_text
 from agents.AGI_1_7.engine.agi17.orchestration.hierarchical_orchestrator import (
@@ -77,6 +81,8 @@ def _get_cli_version(agy_path: Path) -> str:
 
 
 def _populate_starter_workspace(ws_dir: Path, task: HeldOutCodingTask) -> None:
+    if ws_dir.exists():
+        shutil.rmtree(ws_dir, ignore_errors=True)
     ws_dir.mkdir(parents=True, exist_ok=True)
     for rel_name, content in task.starter_files.items():
         (ws_dir / rel_name).write_text(content, encoding="utf-8")
@@ -322,7 +328,7 @@ def evaluate_agi17_orchestrated(
 ) -> Dict[str, Any]:
     _populate_starter_workspace(ws_dir, task)
     t0 = time.time()
-    mission_id = f"AGI17-{task.task_id}"
+    mission_id = f"AGI17-{task.task_id}-{int(t0)}"
     orch_res = adapter.execute_mission(
         title=f"Held-Out Coding Benchmark: {task.title}",
         prompt=task.prompt,
@@ -381,6 +387,7 @@ def evaluate_agi17_orchestrated(
         "task_id": task.task_id,
         "mission_id": mission_id,
         "orchestrator_final_state": orch_res.get("final_state"),
+        "terminal_outcome": orch_res.get("terminal_outcome"),
         "duration_sec": round(time.time() - t0, 4),
         "model_calls": model_calls,
         "initial_self_test_failed": initial_self_test_failed,
@@ -404,6 +411,7 @@ def evaluate_agi17_orchestrated(
                 "schema_validation_passed": ch.get("schema_validation_passed"),
                 "artifact_verification_passed": ch.get("artifact_verification_passed"),
                 "task_correctness_verified": ch.get("task_correctness_verified"),
+                "memory_guardrails_injected": ch.get("artifacts", {}).get("memory_guardrails_injected", False),
                 "fallback_used": ch.get("artifacts", {}).get("fallback_used", False),
                 "ecosystem_coordination": ch.get("artifacts", {}).get("ecosystem_coordination"),
             }
@@ -442,18 +450,27 @@ def _compute_candidate_metrics(results_per_task: List[Dict[str, Any]], key: str)
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="3-Way Held-Out Coding Benchmark: Config A vs Config B vs Config C")
-    parser.add_argument("--max-tasks", type=int, default=3, help="Number of held-out coding tasks to run (1..3)")
+    parser.add_argument("--max-tasks", type=int, default=3, help="Number of held-out coding tasks to run (1..50)")
     parser.add_argument("--max-budget-usd", type=float, default=0.25, help="Maximum pre-flight USD budget ceiling")
     parser.add_argument(
         "--only-config-b",
         action="store_true",
         help="Run live Config B (Single-Agent Repair Loop) and merge with existing Config A & Config C records",
     )
+    parser.add_argument(
+        "--re-evaluate-config-c-task",
+        default=None,
+        help="Re-evaluate a specific task ID on Config C (AGI 1.7) after self-learning memory & adaptive test reuse updates",
+    )
     args = parser.parse_args()
 
-    selected_tasks = HELDOUT_CODING_TASKS[: max(1, min(args.max_tasks, len(HELDOUT_CODING_TASKS)))]
-    configs_to_run = ["B"] if args.only_config_b else ["A", "B", "C"]
-    preflight = estimate_preflight_budget(len(selected_tasks), configs_to_run, args.max_budget_usd)
+    selected_tasks = HELDOUT_CODING_50_SUITE[: max(1, min(args.max_tasks, len(HELDOUT_CODING_50_SUITE)))]
+    if args.re_evaluate_config_c_task:
+        configs_to_run = ["C"]
+        preflight = estimate_preflight_budget(1, configs_to_run, args.max_budget_usd)
+    else:
+        configs_to_run = ["B"] if args.only_config_b else ["A", "B", "C"]
+        preflight = estimate_preflight_budget(len(selected_tasks), configs_to_run, args.max_budget_usd)
     print("PRE-FLIGHT BUDGET ESTIMATE:", json.dumps(preflight, indent=2), flush=True)
 
     bench_root = REPO_ROOT / "agents" / "AGI_1_7" / "heldout_benchmark_workspace"
@@ -467,30 +484,62 @@ def main() -> int:
 
     raw_out = REPO_ROOT / "agents" / "AGI_1_7" / "reports" / "HELDOUT_CODING_BENCHMARK_RAW_RESULTS.json"
     existing_by_task: Dict[str, Dict[str, Any]] = {}
-    if args.only_config_b and raw_out.exists():
+    old_data: Dict[str, Any] = {}
+    if raw_out.exists():
         old_data = json.loads(raw_out.read_text(encoding="utf-8"))
         for item in old_data.get("task_level_results", []):
             existing_by_task[item["task_id"]] = item
 
+    # Seed persistent self-learning lesson from prior TASK-01 failure if re-evaluating Config C
+    if args.re_evaluate_config_c_task:
+        adapter.memory.record_failure_lesson(
+            task_id="PRIOR-AGI17-TASK-01-TOKEN-BUCKET",
+            module_name="token_bucket.py",
+            failing_assertion="AttributeError: 'TokenBucketRateLimiter' object has no attribute 'snapshot'",
+            root_cause="Initial specification omitted repository test contract snapshot(now) and strict ValueError checks on capacity/refill_rate/tokens <= 0.",
+            minimal_patch_rule=(
+                "For token_bucket.py (TokenBucketRateLimiter): validate capacity > 0, refill_rate > 0 in __init__ and tokens > 0 in try_acquire (raise ValueError); "
+                "use >= for exact boundary acquisition; clamp non-monotonic clock elapsed=max(0.0, now - last_timestamp); "
+                "implement snapshot(now) returning {'available': available_tokens(now), 'capacity': self.capacity, 'refill_rate': self.refill_rate}."
+            ),
+        )
+
     results_per_task: List[Dict[str, Any]] = []
+    pre_self_improvement_record: Dict[str, Any] = {}
     for idx, task in enumerate(selected_tasks):
-        print(f"[{idx + 1}/{len(selected_tasks)}] Evaluating {task.task_id} ({task.title})...", flush=True)
         base_ws = bench_root / "candidates" / "raw_base_model" / task.task_id
         single_ws = bench_root / "candidates" / "single_agent_repair" / task.task_id
         agi17_ws = bench_root / "candidates" / "agi17_orchestrated" / task.task_id
 
-        if args.only_config_b and task.task_id in existing_by_task:
+        if args.re_evaluate_config_c_task:
+            if task.task_id == args.re_evaluate_config_c_task:
+                print(f"[RE-EVAL CONFIG C] Running self-improved AGI 1.7 on {task.task_id}...", flush=True)
+                if task.task_id in existing_by_task:
+                    pre_self_improvement_record[task.task_id] = existing_by_task[task.task_id].get("agi_1_7_omega_command")
+                base_res = existing_by_task[task.task_id]["raw_base_model"]
+                single_res = existing_by_task[task.task_id]["single_agent_repair_loop"]
+                agi17_res = evaluate_agi17_orchestrated(adapter, task, agi17_ws)
+            else:
+                base_res = existing_by_task[task.task_id]["raw_base_model"]
+                single_res = existing_by_task[task.task_id]["single_agent_repair_loop"]
+                agi17_res = existing_by_task[task.task_id]["agi_1_7_omega_command"]
+        elif args.only_config_b and task.task_id in existing_by_task:
+            print(f"[{idx + 1}/{len(selected_tasks)}] Evaluating Config B on {task.task_id}...", flush=True)
             base_res = existing_by_task[task.task_id]["raw_base_model"]
             agi17_res = existing_by_task[task.task_id]["agi_1_7_omega_command"]
+            single_res = evaluate_single_agent_repair_loop(adapter, task, single_ws)
         else:
+            print(f"[{idx + 1}/{len(selected_tasks)}] Evaluating {task.task_id} ({task.title})...", flush=True)
             base_res = evaluate_raw_base_model(adapter, task, base_ws)
             agi17_res = evaluate_agi17_orchestrated(adapter, task, agi17_ws)
+            single_res = evaluate_single_agent_repair_loop(adapter, task, single_ws)
 
-        single_res = evaluate_single_agent_repair_loop(adapter, task, single_ws)
         results_per_task.append(
             {
                 "task_id": task.task_id,
                 "title": task.title,
+                "category": task.category,
+                "grader_sha256": task.grader_sha256,
                 "raw_base_model": base_res,
                 "single_agent_repair_loop": single_res,
                 "agi_1_7_omega_command": agi17_res,
@@ -512,6 +561,11 @@ def main() -> int:
     summary_payload = {
         "benchmark_name": "AGI 1.7 3-Way Held-Out Reproducible Coding Benchmark (Config A vs B vs C)",
         "executed_at_epoch": time.time(),
+        "suite_inventory": {
+            "total_suite_tasks": len(HELDOUT_CODING_50_SUITE),
+            "categories_count": 10,
+            "live_evaluated_tasks": len(selected_tasks),
+        },
         "preflight_budget_estimate": preflight,
         "cli_and_model_metadata": {
             "cli_binary": redact_sensitive_text(str(adapter.model_adapter.agy_path)),
@@ -524,6 +578,7 @@ def main() -> int:
         },
         "tasks_evaluated": len(selected_tasks),
         "scoreboard": scoreboard,
+        "self_learning_improvement_comparison": pre_self_improvement_record,
         "task_level_results": results_per_task,
     }
 

@@ -242,13 +242,105 @@ class TestProductionHardeningSprint(unittest.TestCase):
             issue_description="Fix add() returning a - b instead of a + b",
         )
         self.assertEqual(res.status, "REPAIRED_AND_VERIFIED")
+        self.assertEqual(res.terminal_outcome, "SUCCEEDED_AND_VERIFIED")
         self.assertEqual(res.attempts_used, 1)
         self.assertTrue(res.tests_verified_in_sandbox)
+        self.assertTrue(res.test_files_unmodified_verified)
+        self.assertFalse(res.patch_applied_to_workspace)
+        self.assertEqual((ws / "adder.py").read_text(encoding="utf-8"), "def add(a: int, b: int) -> int:\n    return a - b\n")
         self.assertTrue(res.syntax_check_passed)
         self.assertIn("-    return a - b", res.unified_diff)
         self.assertIn("+    return a + b", res.unified_diff)
         self.assertTrue(res.pull_request_payload["requires_human_approval"])
         self.assertTrue(res.pull_request_payload["auto_push_blocked_by_gate"])
+
+        # Now verify explicit patch approval writes to workspace
+        res_approved = agent.repair_workspace(
+            workspace_dir=ws,
+            module_filename="adder.py",
+            issue_description="Fix add() returning a - b instead of a + b",
+            apply_approved_patch=True,
+        )
+        self.assertTrue(res_approved.patch_applied_to_workspace)
+        self.assertIn("return a + b", (ws / "adder.py").read_text(encoding="utf-8"))
+
+    def test_13_self_learning_failure_memory_and_compact_guardrails(self) -> None:
+        from agents.AGI_1_7.engine.agi17.memory.omega_command_memory import OmegaCommandMemory
+
+        mem = OmegaCommandMemory(primary_dir=self.temp_dir / "mem", mirror_dir=self.temp_dir / "mem_mirror")
+        lesson = mem.record_failure_lesson(
+            task_id="T-FAIL-01",
+            module_name="token_bucket.py",
+            failing_assertion="AttributeError: 'TokenBucketRateLimiter' object has no attribute 'snapshot'",
+            root_cause="Missing snapshot(now) telemetry method required by repository contract",
+            minimal_patch_rule="Implement snapshot(now) returning {'available', 'capacity', 'refill_rate'} and validate capacity > 0.",
+        )
+        self.assertTrue(lesson["stored"])
+        self.assertEqual(lesson["layer"], "FAILURE_PATTERNS_AND_PLAYBOOKS")
+        ret = mem.retrieve_before_planning("T-NEXT-01", "Fix token_bucket.py TokenBucketRateLimiter")
+        self.assertIn("[GUARDRAIL token_bucket.py]", ret["compact_guardrails_prompt_block"])
+        self.assertLessEqual(len(ret["compact_guardrails_prompt_block"]), 480)
+
+    def test_14_task_manager_idempotency_key_deduplication(self) -> None:
+        from agents.AGI_1_7.engine.agi17.task_control.task_manager import DurableTaskManager
+
+        tm = DurableTaskManager(
+            db_path=self.temp_dir / "tasks.db",
+            events_jsonl_path=self.temp_dir / "events.jsonl",
+            checkpoints_dir=self.temp_dir / "chk",
+        )
+        t1 = tm.create_task(title="Idempotent Job", description="Run once", idempotency_key="IDEMP-KEY-001")
+        t2 = tm.create_task(title="Idempotent Job Duplicate", description="Run once", idempotency_key="IDEMP-KEY-001")
+        self.assertEqual(t1["task_id"], t2["task_id"])
+
+    def test_15_capability_maturity_breakdown_and_50_task_suite(self) -> None:
+        from agents.AGI_1_7.benchmarks.heldout_coding_suite import HELDOUT_CODING_50_SUITE
+        from agents.AGI_1_7.ecosystem.agent_registry.ecosystem_coordinator import EcosystemCoordinator
+
+        coord = EcosystemCoordinator()
+        maturity = coord.get_capability_maturity_breakdown(verified_task_contributions=3)
+        self.assertEqual(maturity["tier_1_declared_capabilities"]["specialist_contracts"], 100)
+        self.assertEqual(maturity["tier_3_configured_integrations"]["families_mapped"], 16)
+        self.assertEqual(maturity["tier_5_verified_task_contributions"], 3)
+
+        self.assertEqual(len(HELDOUT_CODING_50_SUITE), 50)
+        categories = {t.category for t in HELDOUT_CODING_50_SUITE}
+        self.assertEqual(len(categories), 10)
+        for task in HELDOUT_CODING_50_SUITE:
+            self.assertEqual(len(task.grader_sha256), 64)
+
+    def test_16_production_sandbox_policy_and_terminal_outcomes(self) -> None:
+        from agents.AGI_1_7.engine.agi17.orchestration.hierarchical_orchestrator import HierarchicalOrchestrator, SubtaskSpec
+        from agents.AGI_1_7.engine.agi17.task_control.task_manager import DurableTaskManager
+
+        prod_pol = SandboxPolicy.production(docker_image="nonexistent-local-image:0.0.0")
+        self.assertTrue(prod_pol.require_container_isolation)
+        self.assertEqual(prod_pol.isolation_mode, "docker")
+
+        tm = DurableTaskManager(
+            db_path=self.temp_dir / "orch_tasks.db",
+            events_jsonl_path=self.temp_dir / "orch_events.jsonl",
+            checkpoints_dir=self.temp_dir / "orch_chk",
+        )
+        orch = HierarchicalOrchestrator(task_manager=tm)
+        # Fast-path without independent test verification -> SUCCEEDED_UNVERIFIED
+        res_unverified = orch.execute_mission(title="Quick Note", prompt="Summarize status")
+        self.assertEqual(res_unverified["terminal_outcome"], "SUCCEEDED_UNVERIFIED")
+
+        # Hierarchical DAG with failing verification -> FAILED
+        res_failed = orch.execute_mission(
+            title="Failing DAG",
+            prompt="Run failing verification",
+            subtasks=[
+                SubtaskSpec(
+                    title="Fail Step",
+                    description="Returns verification_passed=False",
+                    executor_fn=lambda _c, _p: {"verification_passed": False, "reason": "simulated_test_failure"},
+                )
+            ],
+            force_hierarchical=True,
+        )
+        self.assertEqual(res_failed["terminal_outcome"], "FAILED")
 
 
 if __name__ == "__main__":

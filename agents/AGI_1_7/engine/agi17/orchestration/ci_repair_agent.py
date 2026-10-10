@@ -29,8 +29,10 @@ from ..adapters.model_adapter import ModelAdapter, ModelProviderConfig, redact_s
 from ..process_supervision.sandbox_runner import (
     DisposableSandboxRunner,
     HighImpactApprovalGate,
+    PathTraversalViolationError,
     SandboxPolicy,
     scan_untrusted_content,
+    validate_relative_sandbox_path,
 )
 from .hierarchical_orchestrator import _extract_python_code, _is_valid_python_syntax
 
@@ -51,6 +53,7 @@ class CIRepairResult:
 
     repair_id: str
     status: str  # "REPAIRED_AND_VERIFIED" | "ALREADY_PASSING" | "REPAIR_FAILED" | "BLOCKED_BY_SECURITY"
+    terminal_outcome: str  # "SUCCEEDED_AND_VERIFIED" | "FAILED" | "BLOCKED_BY_POLICY"
     workspace_dir: str
     target_module: str
     test_pattern: str
@@ -59,6 +62,8 @@ class CIRepairResult:
     attempts_used: int
     syntax_check_passed: bool
     tests_verified_in_sandbox: bool
+    test_files_unmodified_verified: bool
+    patch_applied_to_workspace: bool
     isolation_backend: str
     original_sha256: str
     patched_sha256: str
@@ -106,7 +111,12 @@ class CIRepairAgent:
     def _collect_workspace_py_files(ws_dir: Path) -> Dict[str, str]:
         files_map: Dict[str, str] = {}
         for py_file in sorted(ws_dir.glob("*.py")):
+            if py_file.is_symlink():
+                raise PathTraversalViolationError(
+                    f"Symlink file rejected in CI-Repair workspace: '{py_file.name}'"
+                )
             if py_file.is_file():
+                validate_relative_sandbox_path(ws_dir, py_file.name)
                 files_map[py_file.name] = py_file.read_text(encoding="utf-8", errors="replace")
         return files_map
 
@@ -134,20 +144,30 @@ class CIRepairAgent:
         module_filename: str,
         test_pattern: str = "test_*.py",
         issue_description: str = "Fix failing Python unit tests with minimal diff.",
-        write_patch_to_workspace: bool = True,
+        write_patch_to_workspace: bool = False,
+        apply_approved_patch: bool = False,
         repair_id: Optional[str] = None,
     ) -> CIRepairResult:
-        """Reproduces failing tests in the sandbox, synthesizes a minimal patch, verifies in sandbox, and builds a PR payload."""
+        """Reproduces failing tests in the sandbox, synthesizes a minimal patch, verifies in sandbox, and builds a PR payload.
+
+        By default (`write_patch_to_workspace=False` and `apply_approved_patch=False`), candidate patches
+        are staged and verified strictly inside the disposable sandbox without mutating the user's working tree.
+        """
         t0 = time.perf_counter()
         rid = repair_id or f"CI-REPAIR-{int(time.time() * 1000)}"
         ws = Path(workspace_dir).resolve()
-        module_path = ws / module_filename
+        module_path = validate_relative_sandbox_path(ws, module_filename)
         if not module_path.is_file():
             raise FileNotFoundError(f"Target Python module not found: {module_path}")
 
         original_code = module_path.read_text(encoding="utf-8")
         original_sha = hashlib.sha256(original_code.encode("utf-8")).hexdigest()
         py_files = self._collect_workspace_py_files(ws)
+        test_file_hashes_before = {
+            k: hashlib.sha256(v.encode("utf-8")).hexdigest()
+            for k, v in py_files.items()
+            if k != module_filename
+        }
 
         # 1. Pre-scan workspace files for prompt injection or dangerous code
         all_warnings: List[str] = []
@@ -165,6 +185,7 @@ class CIRepairAgent:
             return CIRepairResult(
                 repair_id=rid,
                 status="ALREADY_PASSING",
+                terminal_outcome="SUCCEEDED_AND_VERIFIED",
                 workspace_dir=redact_sensitive_text(str(ws)),
                 target_module=module_filename,
                 test_pattern=test_pattern,
@@ -173,6 +194,8 @@ class CIRepairAgent:
                 attempts_used=0,
                 syntax_check_passed=True,
                 tests_verified_in_sandbox=True,
+                test_files_unmodified_verified=True,
+                patch_applied_to_workspace=False,
                 isolation_backend=initial_sbx.isolation_backend,
                 original_sha256=original_sha,
                 patched_sha256=original_sha,
@@ -204,6 +227,7 @@ class CIRepairAgent:
         total_cost = 0.0
         repaired_ok = False
         best_code = original_code
+        test_files_unmodified = True
 
         for attempt in range(1, self.budget.max_repair_attempts + 1):
             if total_tokens >= self.budget.max_tokens or total_cost >= self.budget.max_cost_usd:
@@ -252,6 +276,12 @@ class CIRepairAgent:
 
             candidate_files = dict(py_files)
             candidate_files[module_filename] = candidate_code
+            # Verify test files remain 100% unmodified
+            for tf_name, tf_sha in test_file_hashes_before.items():
+                cur_sha = hashlib.sha256(candidate_files.get(tf_name, "").encode("utf-8")).hexdigest()
+                if cur_sha != tf_sha:
+                    test_files_unmodified = False
+
             sbx_res = self.sandbox_runner.run_python_unittest_sandbox(
                 files=candidate_files,
                 test_pattern=test_pattern,
@@ -271,14 +301,20 @@ class CIRepairAgent:
                 }
             )
             current_code = candidate_code
-            if sbx_res.passed:
+            if sbx_res.passed and test_files_unmodified:
                 repaired_ok = True
                 best_code = candidate_code
                 break
             current_failure_output = (sbx_res.stderr or sbx_res.stdout).strip()
 
-        if repaired_ok and write_patch_to_workspace:
-            module_path.write_text(best_code, encoding="utf-8")
+        should_apply = bool(write_patch_to_workspace or apply_approved_patch)
+        patch_applied = False
+        if repaired_ok and should_apply:
+            current_disk_sha = hashlib.sha256(module_path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+            best_sha = hashlib.sha256(best_code.encode("utf-8")).hexdigest()
+            if current_disk_sha != best_sha:
+                module_path.write_text(best_code, encoding="utf-8")
+                patch_applied = True
 
         final_code = best_code if repaired_ok else original_code
         patched_sha = hashlib.sha256(final_code.encode("utf-8")).hexdigest()
@@ -302,6 +338,9 @@ class CIRepairAgent:
             "title": f"fix({module_filename}): automated CI test-failure repair ({rid})",
             "target_module": module_filename,
             "verified_in_sandbox": repaired_ok,
+            "test_files_unmodified_verified": test_files_unmodified,
+            "patch_staged_only": not patch_applied,
+            "patch_applied_to_workspace": patch_applied,
             "isolation_backend": final_sbx.isolation_backend,
             "diff_lines_changed": changed_line_count,
             "requires_human_approval": True,
@@ -311,6 +350,7 @@ class CIRepairAgent:
         return CIRepairResult(
             repair_id=rid,
             status="REPAIRED_AND_VERIFIED" if repaired_ok else "REPAIR_FAILED",
+            terminal_outcome="SUCCEEDED_AND_VERIFIED" if repaired_ok else "FAILED",
             workspace_dir=redact_sensitive_text(str(ws)),
             target_module=module_filename,
             test_pattern=test_pattern,
@@ -319,6 +359,8 @@ class CIRepairAgent:
             attempts_used=len(attempt_history),
             syntax_check_passed=_is_valid_python_syntax(final_code),
             tests_verified_in_sandbox=repaired_ok,
+            test_files_unmodified_verified=test_files_unmodified,
+            patch_applied_to_workspace=patch_applied,
             isolation_backend=final_sbx.isolation_backend,
             original_sha256=original_sha,
             patched_sha256=patched_sha,
