@@ -1,0 +1,518 @@
+{
+  "benchmark_name": "AGI 1.7 Held-Out Reproducible Coding Benchmark",
+  "executed_at_epoch": 1791663351.5038354,
+  "cli_and_model_metadata": {
+    "cli_binary": "C:\\Users\\abhis\\AppData\\Local\\agy\\bin\\agy.exe",
+    "cli_version": "1.3.3",
+    "model_identifier": "gemini-3.8-flash-high",
+    "effort_level": "high"
+  },
+  "tasks_evaluated": 3,
+  "scoreboard": {
+    "raw_base_model_single_shot": {
+      "tasks_completed": "0/3",
+      "task_completion_rate_pct": 0.0,
+      "heldout_unit_tests_passed": "4/7",
+      "unit_test_pass_rate_pct": 57.14,
+      "total_tokens": 38365,
+      "total_cost_usd": 0.011823
+    },
+    "agi_1_7_omega_command": {
+      "tasks_completed": "2/3",
+      "task_completion_rate_pct": 66.67,
+      "heldout_unit_tests_passed": "8/9",
+      "unit_test_pass_rate_pct": 88.89,
+      "total_tokens": 218552,
+      "total_cost_usd": 0.060927,
+      "any_fallback_used": false
+    }
+  },
+  "task_level_results": [
+    {
+      "task_id": "TASK-01-TOKEN-BUCKET",
+      "title": "TokenBucketRateLimiter Bug Fix & Telemetry Contract",
+      "raw_base_model": {
+        "candidate": "RAW_BASE_MODEL_SINGLE_SHOT",
+        "task_id": "TASK-01-TOKEN-BUCKET",
+        "model": "gemini-3.8-flash-high",
+        "duration_sec": 90.927,
+        "model_calls": 1,
+        "fallback_used": false,
+        "written_file": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\raw_base_model\\TASK-01-TOKEN-BUCKET\\token_bucket.py",
+        "file_sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+        "token_usage": {
+          "accounting_mode": "LOCAL_ESTIMATE",
+          "input_tokens": 331,
+          "output_tokens": 0,
+          "thinking_tokens": 0,
+          "total_tokens": 331
+        },
+        "estimated_cost_usd": 5e-05,
+        "heldout_grading": {
+          "exit_code": 1,
+          "task_completed_verified": false,
+          "duration_sec": 0.2567,
+          "tests_ran": 1,
+          "tests_passed": 0,
+          "failures": 0,
+          "errors": 1,
+          "stdout": "",
+          "stderr": "Could not find platform independent libraries <prefix>\nheldout_grade_test_token_bucket (unittest.loader._FailedTest.heldout_grade_test_token_bucket) ... ERROR\n\n======================================================================\nERROR: heldout_grade_test_token_bucket (unittest.loader._FailedTest.heldout_grade_test_token_bucket)\n----------------------------------------------------------------------\nImportError: Failed to import test module: heldout_grade_test_token_bucket\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\unittest\\loader.py\", line 137, in loadTestsFromName\n    module = __import__(module_name)\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\raw_base_model\\TASK-01-TOKEN-BUCKET\\heldout_grade_test_token_bucket.py\", line 2, in <module>\n    from token_bucket import TokenBucketRateLimiter\nImportError: cannot import name 'TokenBucketRateLimiter' from 'token_bucket' (C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\raw_base_model\\TASK-01-TOKEN-BUCKET\\token_bucket.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n"
+        }
+      },
+      "agi_1_7_omega_command": {
+        "candidate": "AGI_1_7_OMEGA_COMMAND",
+        "task_id": "TASK-01-TOKEN-BUCKET",
+        "mission_id": "AGI17-TASK-01-TOKEN-BUCKET",
+        "orchestrator_final_state": "FAILED",
+        "duration_sec": 224.0768,
+        "model_calls": 4,
+        "initial_self_test_failed": true,
+        "failed_attempts_before_repair": [
+          {
+            "child_task_id": "AGI17-TASK-01-TOKEN-BUCKET-SUB-003",
+            "attempt": 1,
+            "exit_code": 1,
+            "stderr_excerpt": "y_and_snapshot_dict)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\agi17_orchestrated\\TASK-01-TOKEN-BUCKET\\test_repo_contract.py\", line 10, in test_repo_requires_exact_boundary_and_snapshot_dict\n    snap = limiter.snapshot(now=7.5)\n           ^^^^^^^^^^^^^^^^\nAttributeError: 'TokenBucketRateLimiter' object has no attribute 'snapshot'\n\n----------------------------------------------------------------------\nRan 26 tests in 0.002s\n\nFAILED (errors=1)\n"
+          }
+        ],
+        "self_healing_repair_triggered": true,
+        "fallback_summary": {
+          "any_fallback_used": false,
+          "fallback_count": 0,
+          "fallback_events": []
+        },
+        "written_file": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\agi17_orchestrated\\TASK-01-TOKEN-BUCKET\\token_bucket.py",
+        "file_sha256": "b3cfb8f0a6e55a72179a38ce8ba62f12ae5cca46cfeac6cb13cf8df1efe0d8d2",
+        "token_usage": {
+          "input_tokens": 49478,
+          "output_tokens": 17591,
+          "thinking_tokens": 12483,
+          "total_tokens": 67069
+        },
+        "estimated_cost_usd": 0.017976,
+        "heldout_grading": {
+          "exit_code": 1,
+          "task_completed_verified": false,
+          "duration_sec": 0.3574,
+          "tests_ran": 3,
+          "tests_passed": 2,
+          "failures": 0,
+          "errors": 1,
+          "stdout": "",
+          "stderr": "Could not find platform independent libraries <prefix>\ntest_01_validation_errors (heldout_grade_test_token_bucket.HeldOutTestTokenBucket.test_01_validation_errors) ... ok\ntest_02_exact_capacity_boundary_and_refill (heldout_grade_test_token_bucket.HeldOutTestTokenBucket.test_02_exact_capacity_boundary_and_refill) ... ok\ntest_03_non_monotonic_clock_and_snapshot_contract (heldout_grade_test_token_bucket.HeldOutTestTokenBucket.test_03_non_monotonic_clock_and_snapshot_contract) ... ERROR\n\n======================================================================\nERROR: test_03_non_monotonic_clock_and_snapshot_contract (heldout_grade_test_token_bucket.HeldOutTestTokenBucket.test_03_non_monotonic_clock_and_snapshot_contract)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\agi17_orchestrated\\TASK-01-TOKEN-BUCKET\\heldout_grade_test_token_bucket.py\", line 26, in test_03_non_monotonic_clock_and_snapshot_contract\n    snap = limiter.snapshot(now=12.0)\n           ^^^^^^^^^^^^^^^^\nAttributeError: 'TokenBucketRateLimiter' object has no attribute 'snapshot'\n\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nFAILED (errors=1)\n"
+        },
+        "child_results_summary": {
+          "AGI17-TASK-01-TOKEN-BUCKET-SUB-001": {
+            "agent_id": "plan_systems_architect",
+            "status": "SUCCEEDED",
+            "schema_validation_passed": true,
+            "artifact_verification_passed": null,
+            "task_correctness_verified": null,
+            "fallback_used": false,
+            "ecosystem_coordination": {
+              "agency_profile_matched": "architect",
+              "mcp_servers_bound": [
+                "sequential-thinking",
+                "ponytail",
+                "gsd",
+                "codegraphcontext"
+              ],
+              "plugins_applied": [
+                "ponytail",
+                "prompt-master"
+              ],
+              "skills_applied": [
+                "ponytail",
+                "gsd-spec-phase",
+                "gsd-plan-phase",
+                "gsd-discuss-phase"
+              ]
+            }
+          },
+          "AGI17-TASK-01-TOKEN-BUCKET-SUB-002": {
+            "agent_id": "swe_python_runtime_engineer",
+            "status": "SUCCEEDED",
+            "schema_validation_passed": true,
+            "artifact_verification_passed": true,
+            "task_correctness_verified": null,
+            "fallback_used": false,
+            "ecosystem_coordination": {
+              "agency_profile_matched": "backend-engineer",
+              "mcp_servers_bound": [
+                "ponytail",
+                "context7",
+                "sequential-thinking",
+                "codegraphcontext",
+                "filesystem"
+              ],
+              "plugins_applied": [
+                "ponytail",
+                "coderabbit",
+                "google-antigravity-sdk"
+              ],
+              "skills_applied": [
+                "ponytail",
+                "ponytail-review",
+                "gsd-execute-phase",
+                "code-review"
+              ]
+            }
+          },
+          "AGI17-TASK-01-TOKEN-BUCKET-SUB-003": {
+            "agent_id": "qa_unit_suite_runner",
+            "status": "FAILED",
+            "schema_validation_passed": true,
+            "artifact_verification_passed": true,
+            "task_correctness_verified": false,
+            "fallback_used": false,
+            "ecosystem_coordination": {
+              "agency_profile_matched": "e2e-test-engineer",
+              "mcp_servers_bound": [
+                "sequential-thinking",
+                "ponytail",
+                "gsd",
+                "playwright"
+              ],
+              "plugins_applied": [
+                "coderabbit",
+                "ponytail"
+              ],
+              "skills_applied": [
+                "gsd-add-tests",
+                "gsd-verify-work",
+                "gsd-code-review",
+                "code-review",
+                "ponytail-review"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "TASK-02-INTERVAL-MERGER",
+      "title": "Closed Interval Merger & Total Span Calculator",
+      "raw_base_model": {
+        "candidate": "RAW_BASE_MODEL_SINGLE_SHOT",
+        "task_id": "TASK-02-INTERVAL-MERGER",
+        "model": "gemini-3.8-flash-high",
+        "duration_sec": 34.6445,
+        "model_calls": 1,
+        "fallback_used": false,
+        "written_file": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\raw_base_model\\TASK-02-INTERVAL-MERGER\\interval_merger.py",
+        "file_sha256": "3dc97dd1a0421122d4c66d0814dbcf6f51ff75d5d15af549114a1c19f55e7e0f",
+        "token_usage": {
+          "accounting_mode": "PROVIDER_REPORTED",
+          "input_tokens": 12256,
+          "output_tokens": 3714,
+          "thinking_tokens": 3481,
+          "total_tokens": 15970
+        },
+        "estimated_cost_usd": 0.004067,
+        "heldout_grading": {
+          "exit_code": 1,
+          "task_completed_verified": false,
+          "duration_sec": 0.1667,
+          "tests_ran": 3,
+          "tests_passed": 2,
+          "failures": 0,
+          "errors": 1,
+          "stdout": "",
+          "stderr": "Could not find platform independent libraries <prefix>\ntest_01_touching_and_point_intervals (heldout_grade_test_interval_merger.HeldOutTestIntervalMerger.test_01_touching_and_point_intervals) ... ok\ntest_02_inverted_interval_raises_value_error (heldout_grade_test_interval_merger.HeldOutTestIntervalMerger.test_02_inverted_interval_raises_value_error) ... ok\ntest_03_total_covered_length (heldout_grade_test_interval_merger.HeldOutTestIntervalMerger.test_03_total_covered_length) ... ERROR\n\n======================================================================\nERROR: test_03_total_covered_length (heldout_grade_test_interval_merger.HeldOutTestIntervalMerger.test_03_total_covered_length)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\raw_base_model\\TASK-02-INTERVAL-MERGER\\heldout_grade_test_interval_merger.py\", line 17, in test_03_total_covered_length\n    self.assertEqual(interval_merger.total_covered_length([]), 0)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: module 'interval_merger' has no attribute 'total_covered_length'\n\n----------------------------------------------------------------------\nRan 3 tests in 0.001s\n\nFAILED (errors=1)\n"
+        }
+      },
+      "agi_1_7_omega_command": {
+        "candidate": "AGI_1_7_OMEGA_COMMAND",
+        "task_id": "TASK-02-INTERVAL-MERGER",
+        "mission_id": "AGI17-TASK-02-INTERVAL-MERGER",
+        "orchestrator_final_state": "SUCCEEDED",
+        "duration_sec": 219.2501,
+        "model_calls": 4,
+        "initial_self_test_failed": true,
+        "failed_attempts_before_repair": [
+          {
+            "child_task_id": "AGI17-TASK-02-INTERVAL-MERGER-SUB-003",
+            "attempt": 1,
+            "exit_code": 1,
+            "stderr_excerpt": "---------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\agi17_orchestrated\\TASK-02-INTERVAL-MERGER\\test_repo_contract.py\", line 7, in test_touching_and_total_covered_length\n    merged = interval_merger.merge_overlapping_intervals([(1, 3), (3, 5), (8, 10)])\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: module 'interval_merger' has no attribute 'merge_overlapping_intervals'\n\n----------------------------------------------------------------------\nRan 2 tests in 0.004s\n\nFAILED (errors=2)\n"
+          }
+        ],
+        "self_healing_repair_triggered": true,
+        "fallback_summary": {
+          "any_fallback_used": false,
+          "fallback_count": 0,
+          "fallback_events": []
+        },
+        "written_file": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\agi17_orchestrated\\TASK-02-INTERVAL-MERGER\\interval_merger.py",
+        "file_sha256": "c6e826a7aa1cdf4d8a528833153dfaf8d6569a669690423df93b53e60b338f02",
+        "token_usage": {
+          "input_tokens": 45669,
+          "output_tokens": 15883,
+          "thinking_tokens": 12152,
+          "total_tokens": 61552
+        },
+        "estimated_cost_usd": 0.01638,
+        "heldout_grading": {
+          "exit_code": 0,
+          "task_completed_verified": true,
+          "duration_sec": 0.1105,
+          "tests_ran": 3,
+          "tests_passed": 3,
+          "failures": 0,
+          "errors": 0,
+          "stdout": "",
+          "stderr": "Could not find platform independent libraries <prefix>\ntest_01_touching_and_point_intervals (heldout_grade_test_interval_merger.HeldOutTestIntervalMerger.test_01_touching_and_point_intervals) ... ok\ntest_02_inverted_interval_raises_value_error (heldout_grade_test_interval_merger.HeldOutTestIntervalMerger.test_02_inverted_interval_raises_value_error) ... ok\ntest_03_total_covered_length (heldout_grade_test_interval_merger.HeldOutTestIntervalMerger.test_03_total_covered_length) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n"
+        },
+        "child_results_summary": {
+          "AGI17-TASK-02-INTERVAL-MERGER-SUB-001": {
+            "agent_id": "plan_systems_architect",
+            "status": "SUCCEEDED",
+            "schema_validation_passed": true,
+            "artifact_verification_passed": null,
+            "task_correctness_verified": null,
+            "fallback_used": false,
+            "ecosystem_coordination": {
+              "agency_profile_matched": "architect",
+              "mcp_servers_bound": [
+                "sequential-thinking",
+                "ponytail",
+                "gsd",
+                "codegraphcontext"
+              ],
+              "plugins_applied": [
+                "ponytail",
+                "prompt-master"
+              ],
+              "skills_applied": [
+                "ponytail",
+                "gsd-spec-phase",
+                "gsd-plan-phase",
+                "gsd-discuss-phase"
+              ]
+            }
+          },
+          "AGI17-TASK-02-INTERVAL-MERGER-SUB-002": {
+            "agent_id": "swe_python_runtime_engineer",
+            "status": "SUCCEEDED",
+            "schema_validation_passed": true,
+            "artifact_verification_passed": true,
+            "task_correctness_verified": null,
+            "fallback_used": false,
+            "ecosystem_coordination": {
+              "agency_profile_matched": "backend-engineer",
+              "mcp_servers_bound": [
+                "ponytail",
+                "context7",
+                "sequential-thinking",
+                "codegraphcontext",
+                "filesystem"
+              ],
+              "plugins_applied": [
+                "ponytail",
+                "coderabbit",
+                "google-antigravity-sdk"
+              ],
+              "skills_applied": [
+                "ponytail",
+                "ponytail-review",
+                "gsd-execute-phase",
+                "code-review"
+              ]
+            }
+          },
+          "AGI17-TASK-02-INTERVAL-MERGER-SUB-003": {
+            "agent_id": "qa_unit_suite_runner",
+            "status": "SUCCEEDED",
+            "schema_validation_passed": true,
+            "artifact_verification_passed": true,
+            "task_correctness_verified": true,
+            "fallback_used": false,
+            "ecosystem_coordination": {
+              "agency_profile_matched": "e2e-test-engineer",
+              "mcp_servers_bound": [
+                "sequential-thinking",
+                "ponytail",
+                "gsd",
+                "playwright"
+              ],
+              "plugins_applied": [
+                "coderabbit",
+                "ponytail"
+              ],
+              "skills_applied": [
+                "gsd-add-tests",
+                "gsd-verify-work",
+                "gsd-code-review",
+                "code-review",
+                "ponytail-review"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "TASK-03-DAG-TOPO-SORT",
+      "title": "Lexicographical Topological Sort & Layer Grouping",
+      "raw_base_model": {
+        "candidate": "RAW_BASE_MODEL_SINGLE_SHOT",
+        "task_id": "TASK-03-DAG-TOPO-SORT",
+        "model": "gemini-3.8-flash-high",
+        "duration_sec": 75.1108,
+        "model_calls": 1,
+        "fallback_used": false,
+        "written_file": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\raw_base_model\\TASK-03-DAG-TOPO-SORT\\topo_sorter.py",
+        "file_sha256": "8b681d7a8ea1230aa1cda9b56060b879f3d0f53f73c88f50ed630b3e9a919139",
+        "token_usage": {
+          "accounting_mode": "PROVIDER_REPORTED",
+          "input_tokens": 12294,
+          "output_tokens": 9770,
+          "thinking_tokens": 9440,
+          "total_tokens": 22064
+        },
+        "estimated_cost_usd": 0.007706,
+        "heldout_grading": {
+          "exit_code": 1,
+          "task_completed_verified": false,
+          "duration_sec": 0.1347,
+          "tests_ran": 3,
+          "tests_passed": 2,
+          "failures": 0,
+          "errors": 1,
+          "stdout": "",
+          "stderr": "Could not find platform independent libraries <prefix>\ntest_01_lexicographical_tie_breaking_and_duplicate_edges (heldout_grade_test_topo_sorter.HeldOutTestTopoSorter.test_01_lexicographical_tie_breaking_and_duplicate_edges) ... ok\ntest_02_cycle_and_unknown_node_raise_value_error (heldout_grade_test_topo_sorter.HeldOutTestTopoSorter.test_02_cycle_and_unknown_node_raise_value_error) ... ok\ntest_03_topological_generations (heldout_grade_test_topo_sorter.HeldOutTestTopoSorter.test_03_topological_generations) ... ERROR\n\n======================================================================\nERROR: test_03_topological_generations (heldout_grade_test_topo_sorter.HeldOutTestTopoSorter.test_03_topological_generations)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\raw_base_model\\TASK-03-DAG-TOPO-SORT\\heldout_grade_test_topo_sorter.py\", line 19, in test_03_topological_generations\n    topo_sorter.topological_generations([\"z\", \"a\", \"m\"], [(\"a\", \"m\"), (\"z\", \"m\")]),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: module 'topo_sorter' has no attribute 'topological_generations'\n\n----------------------------------------------------------------------\nRan 3 tests in 0.001s\n\nFAILED (errors=1)\n"
+        }
+      },
+      "agi_1_7_omega_command": {
+        "candidate": "AGI_1_7_OMEGA_COMMAND",
+        "task_id": "TASK-03-DAG-TOPO-SORT",
+        "mission_id": "AGI17-TASK-03-DAG-TOPO-SORT",
+        "orchestrator_final_state": "SUCCEEDED",
+        "duration_sec": 220.1015,
+        "model_calls": 4,
+        "initial_self_test_failed": true,
+        "failed_attempts_before_repair": [
+          {
+            "child_task_id": "AGI17-TASK-03-DAG-TOPO-SORT-SUB-003",
+            "attempt": 1,
+            "exit_code": 1,
+            "stderr_excerpt": "\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\agi17_orchestrated\\TASK-03-DAG-TOPO-SORT\\test_repo_contract.py\", line 12, in test_lexicographical_order_and_parallel_waves\n    self.assertEqual(topo_sorter.topological_generations(nodes, edges), [[\"a\", \"b\"], [\"c\"], [\"d\"]])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: module 'topo_sorter' has no attribute 'topological_generations'\n\n----------------------------------------------------------------------\nRan 19 tests in 0.003s\n\nFAILED (errors=1)\n"
+          }
+        ],
+        "self_healing_repair_triggered": true,
+        "fallback_summary": {
+          "any_fallback_used": false,
+          "fallback_count": 0,
+          "fallback_events": []
+        },
+        "written_file": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\heldout_benchmark_workspace\\candidates\\agi17_orchestrated\\TASK-03-DAG-TOPO-SORT\\topo_sorter.py",
+        "file_sha256": "dd5fd101f2acb056d053ac15c1f829526816a708f7a7a608b7cb8160128267e0",
+        "token_usage": {
+          "input_tokens": 60861,
+          "output_tokens": 29070,
+          "thinking_tokens": 25131,
+          "total_tokens": 89931
+        },
+        "estimated_cost_usd": 0.026571,
+        "heldout_grading": {
+          "exit_code": 0,
+          "task_completed_verified": true,
+          "duration_sec": 0.1406,
+          "tests_ran": 3,
+          "tests_passed": 3,
+          "failures": 0,
+          "errors": 0,
+          "stdout": "",
+          "stderr": "Could not find platform independent libraries <prefix>\ntest_01_lexicographical_tie_breaking_and_duplicate_edges (heldout_grade_test_topo_sorter.HeldOutTestTopoSorter.test_01_lexicographical_tie_breaking_and_duplicate_edges) ... ok\ntest_02_cycle_and_unknown_node_raise_value_error (heldout_grade_test_topo_sorter.HeldOutTestTopoSorter.test_02_cycle_and_unknown_node_raise_value_error) ... ok\ntest_03_topological_generations (heldout_grade_test_topo_sorter.HeldOutTestTopoSorter.test_03_topological_generations) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n"
+        },
+        "child_results_summary": {
+          "AGI17-TASK-03-DAG-TOPO-SORT-SUB-001": {
+            "agent_id": "plan_systems_architect",
+            "status": "SUCCEEDED",
+            "schema_validation_passed": true,
+            "artifact_verification_passed": null,
+            "task_correctness_verified": null,
+            "fallback_used": false,
+            "ecosystem_coordination": {
+              "agency_profile_matched": "architect",
+              "mcp_servers_bound": [
+                "sequential-thinking",
+                "ponytail",
+                "gsd",
+                "codegraphcontext"
+              ],
+              "plugins_applied": [
+                "ponytail",
+                "prompt-master"
+              ],
+              "skills_applied": [
+                "ponytail",
+                "gsd-spec-phase",
+                "gsd-plan-phase",
+                "gsd-discuss-phase"
+              ]
+            }
+          },
+          "AGI17-TASK-03-DAG-TOPO-SORT-SUB-002": {
+            "agent_id": "swe_python_runtime_engineer",
+            "status": "SUCCEEDED",
+            "schema_validation_passed": true,
+            "artifact_verification_passed": true,
+            "task_correctness_verified": null,
+            "fallback_used": false,
+            "ecosystem_coordination": {
+              "agency_profile_matched": "backend-engineer",
+              "mcp_servers_bound": [
+                "ponytail",
+                "context7",
+                "sequential-thinking",
+                "codegraphcontext",
+                "filesystem"
+              ],
+              "plugins_applied": [
+                "ponytail",
+                "coderabbit",
+                "google-antigravity-sdk"
+              ],
+              "skills_applied": [
+                "ponytail",
+                "ponytail-review",
+                "gsd-execute-phase",
+                "code-review"
+              ]
+            }
+          },
+          "AGI17-TASK-03-DAG-TOPO-SORT-SUB-003": {
+            "agent_id": "qa_unit_suite_runner",
+            "status": "SUCCEEDED",
+            "schema_validation_passed": true,
+            "artifact_verification_passed": true,
+            "task_correctness_verified": true,
+            "fallback_used": false,
+            "ecosystem_coordination": {
+              "agency_profile_matched": "e2e-test-engineer",
+              "mcp_servers_bound": [
+                "sequential-thinking",
+                "ponytail",
+                "gsd",
+                "playwright"
+              ],
+              "plugins_applied": [
+                "coderabbit",
+                "ponytail"
+              ],
+              "skills_applied": [
+                "gsd-add-tests",
+                "gsd-verify-work",
+                "gsd-code-review",
+                "code-review",
+                "ponytail-review"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

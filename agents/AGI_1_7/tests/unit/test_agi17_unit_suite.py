@@ -435,6 +435,46 @@ class TestAGI17UnitSuite(unittest.TestCase):
             with self.assertRaises(SSRFBlockedError):
                 GroundedResearchEngine.validate_url_ssrf_safe(blocked_url)
 
+    # 25. EcosystemCoordinator inventory & active railings (Ponytail, Context7, Sequential Thinking, CodeRabbit, GSD, Agency)
+    def test_25_ecosystem_coordinator_inventory_and_railings(self) -> None:
+        from agents.AGI_1_7.ecosystem.agent_registry.ecosystem_coordinator import EcosystemCoordinator
+
+        coord = EcosystemCoordinator()
+        inv = coord.get_inventory_summary()
+        self.assertEqual(inv["embedded_specialists_count"], 100)
+        self.assertEqual(inv["agency_profiles_bridged_count"], 76)
+        self.assertEqual(inv["mcp_servers_count"], 21)
+        self.assertEqual(inv["plugin_suites_count"], 11)
+        self.assertEqual(inv["workflow_skills_count"], 74)
+        for core_mcp in ("ponytail", "context7", "sequential-thinking", "gsd", "playwright"):
+            self.assertIn(core_mcp, inv["mcp_servers"])
+
+        factory = SpecialistFactory()
+        arch_rail = coord.build_coordination_railings(factory.get_contract("plan_systems_architect"))
+        self.assertEqual(arch_rail["agency_profile_matched"], "architect")
+        self.assertIn("ponytail", arch_rail["mcp_servers_bound"])
+        self.assertIn("sequential-thinking", arch_rail["mcp_servers_bound"])
+
+        swe_rail = coord.build_coordination_railings(factory.get_contract("swe_python_runtime_engineer"))
+        self.assertEqual(swe_rail["agency_profile_matched"], "backend-engineer")
+        self.assertIn("context7", swe_rail["mcp_servers_bound"])
+
+        repair_rail = coord.build_coordination_railings(factory.get_contract("swe_patch_minimizer"), is_repair=True)
+        self.assertEqual(repair_rail["agency_profile_matched"], "debugging-engineer")
+        self.assertIn("gsd-debug", repair_rail["skills_applied"])
+
+    # 26. Strict surface-only GPQA answer extraction (zero thinking-transcript recovery by default)
+    def test_26_gpqa_strict_surface_answer_extraction(self) -> None:
+        from agents.AGI_1_7.scripts.run_gpqa_clean_189_agi17 import extract_choice
+
+        ans_ok = extract_choice("Step-by-step derivation complete.\n<choice>C</choice>")
+        self.assertEqual(ans_ok, "C")
+
+        # Empty surface output MUST return None under strict surface grading
+        ans_empty = extract_choice("")
+        self.assertIsNone(ans_empty)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+

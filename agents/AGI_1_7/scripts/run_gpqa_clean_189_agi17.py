@@ -270,8 +270,18 @@ def prepare_and_verify_dataset() -> Tuple[List[Dict[str, Any]], Dict[str, Dict[s
     return candidate_items, private_gold_key, dataset_info
 
 
-def evaluate_candidate_item_blind(cand: Dict[str, Any], timeout_sec: int = 180, force_live: bool = False) -> Dict[str, Any]:
-    """Presents a single blind question to AGI 1.7 (gemini-3.8-flash-high) without gold answer key."""
+def evaluate_candidate_item_blind(
+    cand: Dict[str, Any],
+    timeout_sec: int = 180,
+    force_live: bool = False,
+    allow_transcript_recovery: bool = False,
+) -> Dict[str, Any]:
+    """Presents a single blind question to AGI 1.7 (gemini-3.8-flash-high) without gold answer key.
+
+    Strict Grading Rule: By default (`allow_transcript_recovery=False`), only the surfaced
+    `stdout` response string is parsed for `<choice>A|B|C|D</choice>`. Answers are never
+    recovered from internal thinking transcripts unless explicitly enabled for diagnostics.
+    """
     item_idx = cand["item_idx"]
     rec_id = cand["record_id"]
     domain = cand["domain"]
@@ -279,36 +289,6 @@ def evaluate_candidate_item_blind(cand: Dict[str, Any], timeout_sec: int = 180, 
     specialist_id = cand["specialist_id"]
     question = cand["question"]
     choices = cand["choices"]
-
-    # Check if a verified thinking transcript from our Wave 2 run already solved this item (unless --force-all-live is set)
-    if not force_live and rec_id == "recnTTKdBzfuoZ7w7":
-        prev_think = extract_choice_from_transcript_thinking("20a385d9-d947-407e-b1db-a39b09f595ab")
-        if prev_think and prev_think[0] in ("A", "B", "C", "D"):
-            pred_c, think_tail = prev_think
-            return {
-                "agent": "AGI_1_7",
-                "item_idx": item_idx,
-                "record_id": rec_id,
-                "domain": domain,
-                "subdomain": subdomain,
-                "specialist_id": specialist_id,
-                "model": MODEL_IDENTIFIER,
-                "predicted_letter": pred_c,
-                "is_valid": True,
-                "latency_ms": 24300,
-                "wall_ms": 24300,
-                "tokens": 6964,
-                "input_tokens": 2777,
-                "output_tokens": 4187,
-                "thinking_tokens": 4180,
-                "gross_cli_input_tokens": 14227,
-                "gross_cli_total_tokens": 18414,
-                "isolated_cwd_enforced": True,
-                "error": None,
-                "error_category": "NONE",
-                "response": f"{think_tail}\n\n<choice>{pred_c}</choice>",
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            }
 
     prompt = (
         f"You are AGI 1.7 OMEGA COMMAND specialist `{specialist_id}` ({domain} - {subdomain}).\n"
@@ -334,7 +314,6 @@ def evaluate_candidate_item_blind(cand: Dict[str, Any], timeout_sec: int = 180, 
         "--effort",
         "high",
         "--disable-slash-commands",
-        "--dangerously-skip-permissions",
         "--print-timeout",
         f"{timeout_sec}s",
         "--output-format",
@@ -370,6 +349,8 @@ def evaluate_candidate_item_blind(cand: Dict[str, Any], timeout_sec: int = 180, 
                 "specialist_id": specialist_id,
                 "model": MODEL_IDENTIFIER,
                 "predicted_letter": None,
+                "surface_predicted_letter": None,
+                "recovered_from_thinking_transcript": False,
                 "is_valid": False,
                 "latency_ms": wall_ms,
                 "wall_ms": wall_ms,
@@ -402,11 +383,14 @@ def evaluate_candidate_item_blind(cand: Dict[str, Any], timeout_sec: int = 180, 
         net_in = max(est_prompt_tokens, gross_in - STATIC_CLI_BINARY_PREAMBLE_TOKENS) if gross_in > STATIC_CLI_BINARY_PREAMBLE_TOKENS else gross_in
         net_tot = net_in + out_tok
 
-        pred = extract_choice(resp_text) if status == "SUCCESS" else None
-        if not pred and conv_id:
+        surface_pred = extract_choice(resp_text) if status == "SUCCESS" else None
+        pred = surface_pred
+        recovered_from_thinking = False
+        if not pred and allow_transcript_recovery and conv_id:
             think_res = extract_choice_from_transcript_thinking(conv_id)
             if think_res:
                 pred, think_tail = think_res
+                recovered_from_thinking = True
                 resp_text = f"{think_tail}\n\n<choice>{pred}</choice>"
 
         is_valid = pred in ("A", "B", "C", "D")
@@ -420,6 +404,8 @@ def evaluate_candidate_item_blind(cand: Dict[str, Any], timeout_sec: int = 180, 
             "specialist_id": specialist_id,
             "model": MODEL_IDENTIFIER,
             "predicted_letter": pred,
+            "surface_predicted_letter": surface_pred,
+            "recovered_from_thinking_transcript": recovered_from_thinking,
             "is_valid": is_valid,
             "latency_ms": model_dur_ms,
             "wall_ms": wall_ms,
@@ -808,13 +794,102 @@ def grade_and_generate_reports(
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--workers", type=int, default=8, help="Concurrent agy.exe workers per wave")
+    ap.add_argument("--workers", type=int, default=4, help="Concurrent agy.exe workers per wave")
     ap.add_argument("--timeout", type=int, default=180, help="Per-question timeout in seconds")
-    ap.add_argument("--force-all-live", action="store_true", help="Force re-running all 189 items from scratch")
+    ap.add_argument("--force-all-live", action="store_true", help="Force re-running all 189 items from scratch (zero checkpoints)")
+    ap.add_argument("--cold-start-sample-n", type=int, default=0, help="Run a fresh cold-start stratified batch of N items from scratch with strict surface-only grading")
+    ap.add_argument("--record-id", default=None, help="Force re-running a specific GPQA record_id live from scratch")
+    ap.add_argument("--allow-transcript-recovery", action="store_true", help="Allow fallback to internal thinking transcript if surface stdout is empty (default: False)")
     args = ap.parse_args()
 
     t_campaign_start = time.time()
     candidate_items, private_gold_key, dataset_info = prepare_and_verify_dataset()
+
+    if args.cold_start_sample_n > 0:
+        # Select a deterministic stratified sample across Physics, Chemistry, and Biology (including recnTTKdBzfuoZ7w7)
+        by_dom: Dict[str, List[Dict[str, Any]]] = {}
+        for c in candidate_items:
+            by_dom.setdefault(c["domain"], []).append(c)
+        selected: List[Dict[str, Any]] = []
+        # Always include recnTTKdBzfuoZ7w7 first to verify its fresh surface-only response
+        for c in candidate_items:
+            if c["record_id"] == "recnTTKdBzfuoZ7w7":
+                selected.append(c)
+                break
+        dom_names = sorted(by_dom.keys())
+        idx_d = 0
+        while len(selected) < min(args.cold_start_sample_n, len(candidate_items)):
+            d_list = by_dom[dom_names[idx_d % len(dom_names)]]
+            for cand in d_list:
+                if all(s["record_id"] != cand["record_id"] for s in selected):
+                    selected.append(cand)
+                    break
+            idx_d += 1
+
+        fresh_results: List[Dict[str, Any]] = []
+        for cand in selected:
+            rec_id = cand["record_id"]
+            res = evaluate_candidate_item_blind(
+                cand,
+                args.timeout,
+                force_live=True,
+                allow_transcript_recovery=args.allow_transcript_recovery,
+            )
+            gold_let = private_gold_key[rec_id]["correct_letter"]
+            strict_surface_correct = (res.get("surface_predicted_letter") == gold_let) and (
+                res.get("surface_predicted_letter") in ("A", "B", "C", "D")
+            )
+            res["correct_letter"] = gold_let
+            res["strict_surface_correct"] = strict_surface_correct
+            fresh_results.append(res)
+            log_msg(
+                f"  [COLD-START Q {cand['item_idx']+1:03d}/189] ID: {rec_id} | "
+                f"Domain: {cand['domain']:<9} | Specialist: {cand['specialist_id']:<34} | "
+                f"SurfacePred: {res.get('surface_predicted_letter')} (Gold: {gold_let}) | "
+                f"StrictCorrect: {str(strict_surface_correct):<5} | ModelTime: {res.get('latency_ms',0)/1000.0:.1f}s | "
+                f"GrossTokens: {res.get('gross_cli_total_tokens',0)}"
+            )
+
+        wall_sec = round(time.time() - t_campaign_start, 2)
+        strict_correct_n = sum(1 for r in fresh_results if r["strict_surface_correct"])
+        gross_in = sum(int(r.get("gross_cli_input_tokens", 0)) for r in fresh_results)
+        out_tok = sum(int(r.get("output_tokens", 0)) for r in fresh_results)
+        gross_tot = sum(int(r.get("gross_cli_total_tokens", 0)) for r in fresh_results)
+        cold_payload = {
+            "evaluation_mode": "FRESH_FROM_SCRATCH_COLD_START_STRICT_SURFACE_ONLY",
+            "grading_rules": {
+                "checkpoint_reuse_allowed": False,
+                "thinking_transcript_recovery_allowed": False,
+                "surface_stdout_choice_tag_required": True,
+                "empty_or_timeout_graded_as": "UNANSWERED_INCORRECT",
+                "option_permutation_seed": "random.Random(42 + item_idx)",
+                "blind_answer_key_separation": True,
+            },
+            "cli_and_model_metadata": {
+                "cli_binary": AGY_EXE,
+                "cli_version": "1.3.3",
+                "model_identifier": MODEL_IDENTIFIER,
+                "effort_level": "high",
+            },
+            "questions_evaluated_from_scratch": len(fresh_results),
+            "strict_surface_correct": strict_correct_n,
+            "strict_surface_accuracy_pct": round(100.0 * strict_correct_n / max(1, len(fresh_results)), 2),
+            "unanswered_or_timeout": sum(1 for r in fresh_results if r.get("surface_predicted_letter") not in ("A", "B", "C", "D")),
+            "wall_clock_sec": wall_sec,
+            "token_and_cost_summary": {
+                "gross_input_tokens": gross_in,
+                "output_tokens": out_tok,
+                "gross_total_tokens": gross_tot,
+                "estimated_cost_usd": round((gross_in * 0.15 + out_tok * 0.60) / 1_000_000, 6),
+            },
+            "item_results": fresh_results,
+        }
+        out_file = os.path.abspath("agents/AGI_1_7/reports/GPQA_COLD_START_STRICT_SURFACE_RESULTS.json")
+        os.makedirs(os.path.dirname(out_file), exist_ok=True)
+        with open(out_file, "w", encoding="utf-8") as f:
+            json.dump(cold_payload, f, indent=2)
+        print(json.dumps({k: v for k, v in cold_payload.items() if k != "item_results"}, indent=2), flush=True)
+        return 0
 
     blind_records: Dict[str, Dict[str, Any]] = {}
     if os.path.exists(RAW_JSONL) and not args.force_all_live:
@@ -823,7 +898,7 @@ def main() -> int:
                 if line.strip():
                     rec = json.loads(line)
                     rid = rec.get("record_id")
-                    if rid and rec.get("is_valid"):
+                    if rid and rec.get("is_valid") and rid != args.record_id:
                         blind_records[rid] = rec
 
     items_to_run = [c for c in candidate_items if c["record_id"] not in blind_records]
@@ -831,7 +906,12 @@ def main() -> int:
 
     for cand in items_to_run:
         rec_id = cand["record_id"]
-        res = evaluate_candidate_item_blind(cand, args.timeout, force_live=args.force_all_live)
+        res = evaluate_candidate_item_blind(
+            cand,
+            args.timeout,
+            force_live=True,
+            allow_transcript_recovery=args.allow_transcript_recovery,
+        )
         blind_records[rec_id] = res
         gold_let = private_gold_key[rec_id]["correct_letter"]
         is_corr = (res.get("predicted_letter") == gold_let) and res.get("is_valid", False)
@@ -843,19 +923,14 @@ def main() -> int:
             f"NetTokens: {res.get('tokens',0)} (GrossCLI: {res.get('gross_cli_total_tokens',0)})"
         )
 
-    # Total active campaign wall-clock time across Wave 1 (148.4s) + Wave 2 (128.5s effective) = 276.9s (4.62 mins)
-    effective_wall_sec = 276.9 if len(items_to_run) <= 1 else (time.time() - t_campaign_start)
+    effective_wall_sec = round(time.time() - t_campaign_start, 2)
     summary = grade_and_generate_reports(blind_records, private_gold_key, dataset_info, effective_wall_sec)
 
     log_msg("=" * 80)
     log_msg(
         f"[COMPLETE] AGI 1.7 GPQA Diamond Clean 1.2.2 Score: {summary['correct_answers']} / 189 "
         f"({summary['accuracy_pct']:.2f}%) | Unanswered: {summary['unanswered_questions']} | "
-        f"Wall Time: {effective_wall_sec:.1f}s ({effective_wall_sec/60.0:.2f} mins) | "
-        f"Net Prompt+Answer Tokens: {summary['tokens']['net_prompt_plus_answer_text_tokens']:,} "
-        f"({summary['tokens']['net_prompt_plus_answer_per_question']:,.1f}/q) | "
-        f"Net Task Tokens (w/ thinking): {summary['tokens']['net_task_total_tokens']:,} "
-        f"({summary['tokens']['net_average_per_question']:,.1f}/q)"
+        f"Wall Time: {effective_wall_sec:.1f}s ({effective_wall_sec/60.0:.2f} mins)"
     )
     log_msg("=" * 80)
     return 0

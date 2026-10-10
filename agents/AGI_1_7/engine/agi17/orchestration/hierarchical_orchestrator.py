@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from agents.AGI_1_7.ecosystem.agent_registry.agent_contract import AgentContract
+from agents.AGI_1_7.ecosystem.agent_registry.ecosystem_coordinator import EcosystemCoordinator
 from agents.AGI_1_7.ecosystem.agent_registry.specialist_factory import SpecialistFactory
 from ..capabilities.resource_snapshot import LiveResourceMetrics
 from ..memory.omega_command_memory import OmegaCommandMemory
@@ -45,6 +46,7 @@ from .resource_governor import (
 
 import hashlib
 import re
+import sys
 
 
 def _extract_python_code(text: str) -> str:
@@ -53,6 +55,18 @@ def _extract_python_code(text: str) -> str:
     if blocks:
         return max(blocks, key=len).strip() + "\n"
     return text.strip() + "\n"
+
+
+def _is_valid_python_syntax(code_str: str) -> bool:
+    """Returns True if code_str is non-empty and compiles as valid Python syntax."""
+    stripped = code_str.strip()
+    if not stripped:
+        return False
+    try:
+        compile(stripped, "<generated>", "exec")
+        return True
+    except SyntaxError:
+        return False
 
 
 @dataclass
@@ -68,6 +82,7 @@ class SubtaskSpec:
     use_live_model: bool = False
     target_file_path: Optional[str] = None
     repair_target_file: Optional[str] = None
+    fallback_code: Optional[str] = None
     post_write_fault_injector: Optional[Callable[[Path], Dict[str, Any]]] = None
     executor_fn: Optional[Callable[[AgentContract, Dict[str, Any]], Dict[str, Any]]] = None
     verification_command: Optional[List[str]] = None
@@ -100,6 +115,7 @@ class HierarchicalOrchestrator:
         governor: Optional[ResourceGovernor] = None,
         token_controller: Optional[AdaptiveTokenController] = None,
         specialist_factory: Optional[SpecialistFactory] = None,
+        ecosystem_coordinator: Optional[EcosystemCoordinator] = None,
         model_adapter: Optional[Any] = None,
         supervisor: Optional[ProcessSupervisor] = None,
     ) -> None:
@@ -108,8 +124,138 @@ class HierarchicalOrchestrator:
         self.governor = governor or ResourceGovernor()
         self.token_controller = token_controller or AdaptiveTokenController()
         self.specialist_factory = specialist_factory or SpecialistFactory()
+        self.ecosystem_coordinator = ecosystem_coordinator or EcosystemCoordinator()
         self.supervisor = supervisor or ProcessSupervisor(task_manager=self.task_manager)
         self.model_adapter = model_adapter
+
+    def build_code_and_test_subtasks(
+        self,
+        *,
+        title: str,
+        prompt: str,
+        code_task_dir: str | Path,
+        module_filename: str = "token_bucket.py",
+        test_filename: str = "test_token_bucket.py",
+        inject_deliberate_test_failure: bool = False,
+        fallback_module_code: Optional[str] = None,
+        fallback_test_code: Optional[str] = None,
+    ) -> List[SubtaskSpec]:
+        """Builds a 3-specialist live-model coding + unit-testing + self-healing DAG."""
+        ws = Path(code_task_dir).resolve()
+        ws.mkdir(parents=True, exist_ok=True)
+        module_path = ws / module_filename
+        test_path = ws / test_filename
+        module_stem = module_filename[:-3] if module_filename.endswith(".py") else module_filename
+
+        existing_source_block = ""
+        if module_path.exists():
+            try:
+                existing_src = module_path.read_text(encoding="utf-8")
+                if existing_src.strip():
+                    existing_source_block = (
+                        f"\n\nEXISTING `{module_filename}` IN WORKSPACE (inspect and fix/complete as needed):\n"
+                        f"```python\n{existing_src}\n```"
+                    )
+            except Exception:
+                pass
+
+        def _inject_deliberate_fault(_target: Path) -> Dict[str, Any]:
+            if not inject_deliberate_test_failure or not module_path.exists():
+                return {"injected": False}
+            original = module_path.read_text(encoding="utf-8")
+            lines = original.splitlines()
+            mutated_lines: List[str] = []
+            mutation_desc = ""
+            mutated_flag = False
+            for line in lines:
+                stripped = line.lstrip()
+                if not mutated_flag and not stripped.startswith("#") and not stripped.startswith(('"""', "'''")):
+                    if "self.tokens >= tokens" in line:
+                        line = line.replace("self.tokens >= tokens", "self.tokens > tokens", 1)
+                        mutation_desc = "Mutated `self.tokens >= tokens` to strict `>` (breaks exact-capacity token acquisition)"
+                        mutated_flag = True
+                    elif "<=" in line and ("if " in line or "while " in line or "return " in line):
+                        line = line.replace("<=", "<", 1)
+                        mutation_desc = "Mutated executable `<=` boundary comparison to strict `<`"
+                        mutated_flag = True
+                    elif ">=" in line and ("if " in line or "while " in line or "return " in line):
+                        line = line.replace(">=", ">", 1)
+                        mutation_desc = "Mutated executable `>=` boundary comparison to strict `>`"
+                        mutated_flag = True
+                mutated_lines.append(line)
+            if not mutated_flag:
+                mutated_lines.append("raise RuntimeError('Deliberate injected fault')")
+                mutation_desc = "Appended runtime fault trigger"
+            mutated = "\n".join(mutated_lines) + "\n"
+            module_path.write_text(mutated, encoding="utf-8")
+            return {
+                "injected": True,
+                "target_file": str(module_path),
+                "mutation_description": mutation_desc,
+            }
+
+        return [
+            SubtaskSpec(
+                title=f"{title} — Stage 1: Architecture & Edge-Case Specification",
+                description=(
+                    f"Specify the exact Python class/function signatures, type annotations, and edge-case invariants for `{module_filename}`: {prompt} "
+                    f"Keep your specification concise (4-6 bullet points)."
+                    f"{existing_source_block}"
+                ),
+                preferred_specialist_id="plan_systems_architect",
+                depends_on_indices=[],
+                queue_type="model_call",
+                token_budget=16000,
+                use_live_model=True,
+            ),
+            SubtaskSpec(
+                title=f"{title} — Stage 2: Live Model Python Implementation (`{module_filename}`)",
+                description=(
+                    f"Implement the complete Python module `{module_filename}` fulfilling `{prompt}` and the upstream specification. "
+                    f"Return ONLY the complete Python code inside a ```python ... ``` block."
+                    f"{existing_source_block}"
+                ),
+                preferred_specialist_id="swe_python_runtime_engineer",
+                depends_on_indices=[0],
+                queue_type="model_call",
+                token_budget=20000,
+                use_live_model=True,
+                target_file_path=str(module_path),
+                fallback_code=fallback_module_code,
+            ),
+            SubtaskSpec(
+                title=f"{title} — Stage 3: Live Model Unit Test Generation, Execution & Self-Healing (`{test_filename}`)",
+                description=(
+                    f"Write a Python `unittest` suite `{test_filename}` that imports from `{module_stem}` and tests "
+                    f"normal operation, boundary conditions, and exception handling (`ValueError`) as specified in the upstream implementation. "
+                    f"Return ONLY the complete `{test_filename}` code inside a ```python ... ``` block."
+                ),
+                preferred_specialist_id="qa_unit_suite_runner",
+                depends_on_indices=[0, 1],
+                queue_type="model_call",
+                token_budget=24000,
+                use_live_model=True,
+                target_file_path=str(test_path),
+                repair_target_file=str(module_path),
+                fallback_code=fallback_test_code,
+                post_write_fault_injector=_inject_deliberate_fault if inject_deliberate_test_failure else None,
+                verification_command=[
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    str(ws),
+                    "-t",
+                    str(ws),
+                    "-p",
+                    "test_*.py",
+                    "-v",
+                ],
+                verification_cwd=str(ws),
+                repair_specialist_id="swe_patch_minimizer",
+            ),
+        ]
 
     def requires_hierarchical_planning(
         self,
@@ -137,17 +283,32 @@ class HierarchicalOrchestrator:
         subtasks: Optional[Sequence[SubtaskSpec]] = None,
         force_hierarchical: bool = False,
         use_live_model: Optional[bool] = None,
+        code_task_dir: Optional[str | Path] = None,
+        module_filename: str = "token_bucket.py",
+        test_filename: str = "test_token_bucket.py",
+        inject_deliberate_test_failure: bool = False,
         custom_subtask_hook: Optional[Callable[[str, Dict[str, Any]], None]] = None,
         simulated_resource_snapshot: Optional[LiveResourceMetrics] = None,
     ) -> Dict[str, Any]:
         """Executes a mission via Fast Path or Planned Hierarchical Delegation.
 
-        When `self.model_adapter` is attached and `subtasks` are not explicitly
-        stubbed (`subtasks is None`), `use_live_model` defaults to `True` so the
-        normal execution path invokes `ModelAdapter.invoke()` (`gemini-3.8-flash-high`).
+        When `code_task_dir` is provided and `subtasks is None`, automatically builds
+        and runs the complete 3-specialist live-model coding, unit-testing, and
+        self-healing repair workflow.
         """
         started_at = time.time()
         root_id = task_id or f"MISSION-{int(started_at * 1000)}-{uuid.uuid4().hex[:6]}"
+        if code_task_dir is not None and subtasks is None:
+            subtasks = self.build_code_and_test_subtasks(
+                title=title,
+                prompt=prompt,
+                code_task_dir=code_task_dir,
+                module_filename=module_filename,
+                test_filename=test_filename,
+                inject_deliberate_test_failure=inject_deliberate_test_failure,
+            )
+            force_hierarchical = True
+
         effective_live_model = (
             use_live_model
             if use_live_model is not None
@@ -344,9 +505,11 @@ class HierarchicalOrchestrator:
                     indent=2,
                     default=str,
                 )
+            coord = self.ecosystem_coordinator.build_coordination_railings(contract, is_repair=False)
             full_prompt = (
                 f"You are AGI 1.7 Embedded Specialist `{contract.agent_id}` ({contract.display_name}, Family: {contract.family}).\n"
                 f"Primary Capabilities: {', '.join(contract.primary_capabilities)}\n"
+                f"{coord['railings_prompt_block']}\n"
                 f"IMPORTANT: Do NOT call any tools, shell commands, or file views. Respond directly in this turn.\n"
                 f"Task ({child_id}): {payload['task_prompt']}"
                 f"{upstream_summary}"
@@ -362,6 +525,14 @@ class HierarchicalOrchestrator:
             )
             result_dict: Dict[str, Any] = {
                 "execution_origin": "LIVE_MODEL_ADAPTER",
+                "ecosystem_coordination": {
+                    "agency_profile_matched": coord["agency_profile_matched"],
+                    "mcp_servers_bound": coord["mcp_servers_bound"],
+                    "plugins_applied": coord["plugins_applied"],
+                    "skills_applied": coord["skills_applied"],
+                },
+                "fallback_used": False,
+                "fallback_reason": None,
                 "analysis": model_res["response_text"],
                 "model_invoked": model_res["model"],
                 "model_status": model_res["status"],
@@ -376,6 +547,14 @@ class HierarchicalOrchestrator:
                 target_path = Path(sp_spec.target_file_path)
                 target_path.parent.mkdir(parents=True, exist_ok=True)
                 extracted_code = _extract_python_code(model_res["response_text"])
+                if not _is_valid_python_syntax(extracted_code) and sp_spec.fallback_code:
+                    extracted_code = sp_spec.fallback_code
+                    result_dict["fallback_used"] = True
+                    result_dict["fallback_reason"] = (
+                        f"Model response had invalid/empty Python syntax (status={model_res['status']}, "
+                        f"exit_code={model_res['exit_code']}); deterministic fallback applied."
+                    )
+                    result_dict["execution_origin"] = "DETERMINISTIC_FALLBACK_AFTER_MODEL_FAILURE"
                 target_path.write_text(extracted_code, encoding="utf-8")
                 clean_sha256 = hashlib.sha256(target_path.read_bytes()).hexdigest()
                 result_dict["written_file_path"] = str(target_path)
@@ -410,10 +589,28 @@ class HierarchicalOrchestrator:
         )
         broken_code = repair_file.read_text(encoding="utf-8") if repair_file.is_file() else ""
         stderr_trace = failure_details.get("stderr") or failure_details.get("stdout") or str(failure_details)
+        try:
+            repair_contract = self.specialist_factory.get_contract(sp_spec.repair_specialist_id)
+        except Exception:
+            repair_contract = self.specialist_factory.get_contract("swe_patch_minimizer")
+        coord = self.ecosystem_coordinator.build_coordination_railings(repair_contract, is_repair=True)
+        test_files_block = ""
+        if repair_file.is_file() and repair_file.parent.is_dir():
+            test_snippets = []
+            for tf in sorted(repair_file.parent.glob("test_*.py")):
+                try:
+                    test_snippets.append(f"# {tf.name}\n{tf.read_text(encoding='utf-8')}")
+                except Exception:
+                    pass
+            if test_snippets:
+                test_files_block = "\n\nWORKSPACE TEST FILES:\n```python\n" + "\n\n".join(test_snippets) + "\n```"
+
         repair_prompt = (
             f"You are AGI 1.7 Embedded Specialist `{sp_spec.repair_specialist_id}` (Minimal Diff & Root-Cause Patch Engineer).\n"
+            f"{coord['railings_prompt_block']}\n"
             f"IMPORTANT: Do NOT call any tools or shell commands. Return ONLY the complete corrected Python file for `{repair_file.name}` inside a ```python ... ``` block.\n\n"
-            f"BROKEN PYTHON FILE (`{repair_file.name}`):\n```python\n{broken_code}\n```\n\n"
+            f"BROKEN PYTHON FILE (`{repair_file.name}`):\n```python\n{broken_code}\n```"
+            f"{test_files_block}\n\n"
             f"UNITTEST FAILURE OUTPUT (exit_code={failure_details.get('exit_code')}):\n```text\n{stderr_trace}\n```\n\n"
             f"Fix all bugs causing the test failures and return the complete corrected `{repair_file.name}` in a ```python ... ``` fenced code block."
         )
@@ -427,11 +624,28 @@ class HierarchicalOrchestrator:
             tier="COMPLEX",
         )
         patched_code = _extract_python_code(model_res["response_text"])
-        if repair_file.name:
+        fallback_used = False
+        fallback_reason = None
+        if not _is_valid_python_syntax(patched_code) and sp_spec.fallback_code:
+            patched_code = sp_spec.fallback_code
+            fallback_used = True
+            fallback_reason = (
+                f"Repair model response had invalid/empty Python syntax (status={model_res['status']}, "
+                f"exit_code={model_res['exit_code']}); deterministic fallback applied."
+            )
+        if repair_file.name and _is_valid_python_syntax(patched_code):
             repair_file.write_text(patched_code, encoding="utf-8")
         repaired_sha256 = hashlib.sha256(repair_file.read_bytes()).hexdigest() if repair_file.is_file() else None
         return {
-            "execution_origin": "LIVE_MODEL_ADAPTER",
+            "execution_origin": "DETERMINISTIC_FALLBACK_AFTER_MODEL_FAILURE" if fallback_used else "LIVE_MODEL_ADAPTER",
+            "ecosystem_coordination": {
+                "agency_profile_matched": coord["agency_profile_matched"],
+                "mcp_servers_bound": coord["mcp_servers_bound"],
+                "plugins_applied": coord["plugins_applied"],
+                "skills_applied": coord["skills_applied"],
+            },
+            "fallback_used": fallback_used,
+            "fallback_reason": fallback_reason,
             "repair_specialist_id": sp_spec.repair_specialist_id,
             "model_invoked": model_res["model"],
             "model_status": model_res["status"],
@@ -812,6 +1026,28 @@ class HierarchicalOrchestrator:
             source_task_id=root_id,
         )
 
+        fallback_events: List[Dict[str, Any]] = []
+        for cid_key, ch_res in completed_results.items():
+            art = ch_res.get("artifacts") if isinstance(ch_res, dict) else {}
+            if isinstance(art, dict):
+                if art.get("fallback_used"):
+                    fallback_events.append(
+                        {
+                            "child_task_id": cid_key,
+                            "stage": "initial_generation",
+                            "reason": art.get("fallback_reason"),
+                        }
+                    )
+                rep_exec = art.get("repair_execution")
+                if isinstance(rep_exec, dict) and rep_exec.get("fallback_used"):
+                    fallback_events.append(
+                        {
+                            "child_task_id": cid_key,
+                            "stage": "repair_generation",
+                            "reason": rep_exec.get("fallback_reason"),
+                        }
+                    )
+
         return {
             "mission_id": root_id,
             "execution_path": "HIERARCHICAL_DAG",
@@ -819,6 +1055,12 @@ class HierarchicalOrchestrator:
             "logical_children_created": len(final_children),
             "succeeded_children": succeeded_cnt,
             "max_concurrent_workers_used": max_Observed_concurrency,
+            "fallback_summary": {
+                "any_fallback_used": len(fallback_events) > 0,
+                "fallback_count": len(fallback_events),
+                "fallback_events": fallback_events,
+            },
+            "ecosystem_coordination_summary": self.ecosystem_coordinator.get_inventory_summary(),
             "limits_enforced": {
                 "MAX_AGENT_SPECIALIZATIONS": MAX_AGENT_SPECIALIZATIONS,
                 "MAX_LOGICAL_CHILD_TASKS": MAX_LOGICAL_CHILD_TASKS,

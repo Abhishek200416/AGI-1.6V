@@ -1,0 +1,51 @@
+name: AGI 1.7 OMEGA COMMAND — Verification & CI Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  verify-agi-1-7-runtime:
+    name: Verify 100 Specialists, Ecosystem Coordinator & 49 Runtime Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.12"]
+
+    steps:
+      - name: Checkout AGI-1.7V Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Verify 100 Specialist Contracts & Ecosystem Sync (Dry-Run, Zero Home Mutation)
+        run: python agents/AGI_1_7/scripts/sync_ecosystem.py --dry-run
+
+      - name: Verify EcosystemCoordinator Inventory (100 Specialists, 76 Agency Profiles, 21 MCPs, 11 Plugins, 74 Skills)
+        run: |
+          python -c "from agents.AGI_1_7.ecosystem.agent_registry.ecosystem_coordinator import EcosystemCoordinator; c = EcosystemCoordinator(); inv = c.get_inventory_summary(); print(inv); assert inv['embedded_specialists_count'] == 100; assert inv['agency_profiles_bridged_count'] == 76; assert inv['mcp_servers_count'] == 21; assert inv['plugin_suites_count'] == 11; assert inv['workflow_skills_count'] == 74"
+
+      - name: Run AGI 1.7 Unit Test Suite (26 Tests)
+        run: python -m unittest agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py -v
+
+      - name: Run AGI 1.7 Integration Test Suite (16 Tests)
+        run: python -m unittest agents/AGI_1_7/tests/integration/test_agi17_integration_suite.py -v
+
+      - name: Run AGI 1.7 End-to-End Demo Test Suite (7 Tests)
+        run: python -m unittest agents/AGI_1_7/tests/end_to_end/test_agi17_e2e_demos.py -v
+
+      - name: Run Generated Workspace Unit Test Suites (TokenBucket & IntervalMerger)
+        run: |
+          python -m unittest discover -s agents/AGI_1_7/live_code_mission_workspace -t agents/AGI_1_7/live_code_mission_workspace -p "test_*.py" -v
+          python -m unittest discover -s agents/AGI_1_7/demo_workspace/src -t agents/AGI_1_7/demo_workspace/src -p "test_*.py" -v
+
+      - name: Run CLI Startup & Capability Profile Smoke Check
+        run: python agents/AGI_1_7/run_agi_17.py --profile-only

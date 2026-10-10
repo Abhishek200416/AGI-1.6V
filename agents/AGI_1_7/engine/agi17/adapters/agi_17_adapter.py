@@ -5,7 +5,7 @@ Binds all AGI 1.7 — OMEGA COMMAND subsystems into a single cohesive runtime:
   - DurableTaskManager, TaskStore, CheckpointManager, DependencyManager, CommandInbox
   - ProcessSupervisor, StreamParser, CompletionNotifier, RecoveryManager
   - 10-Layer OmegaCommandMemory & ACONCompressor
-  - 100-Specialist SpecialistFactory, CapabilityRouter, RegistryValidator
+  - 100-Specialist SpecialistFactory, CapabilityRouter, RegistryValidator, EcosystemCoordinator
   - ResourceGovernor & HierarchicalOrchestrator
   - AdaptiveTokenController & ProgressService
   - EvidenceVerifier & GroundedResearchEngine
@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
+from agents.AGI_1_7.ecosystem.agent_registry.ecosystem_coordinator import EcosystemCoordinator
 from agents.AGI_1_7.ecosystem.agent_registry.specialist_factory import SpecialistFactory
 from ..capabilities.capability_profiler import CapabilityProfiler
 from ..capabilities.resource_snapshot import ResourceSnapshot
@@ -64,6 +65,7 @@ class AGI17Adapter:
             isolated_benchmark_cwd=self.eval_root / "isolated_cwd",
         )
         self.specialist_factory = SpecialistFactory()
+        self.ecosystem_coordinator = EcosystemCoordinator()
         self.supervisor = ProcessSupervisor(
             task_manager=self.task_manager,
             logs_dir=self.storage_root / "logs" / "processes",
@@ -79,6 +81,7 @@ class AGI17Adapter:
             governor=self.governor,
             token_controller=self.token_controller,
             specialist_factory=self.specialist_factory,
+            ecosystem_coordinator=self.ecosystem_coordinator,
             model_adapter=self.model_adapter,
             supervisor=self.supervisor,
         )
@@ -101,6 +104,7 @@ class AGI17Adapter:
             "reconciliation": reconciled,
             "limits": limits,
             "resource_snapshot": snap,
+            "ecosystem": self.ecosystem_coordinator.get_inventory_summary(),
         }
 
     def build_code_and_test_subtasks(
@@ -112,85 +116,20 @@ class AGI17Adapter:
         module_filename: str = "token_bucket.py",
         test_filename: str = "test_token_bucket.py",
         inject_deliberate_test_failure: bool = False,
+        fallback_module_code: Optional[str] = None,
+        fallback_test_code: Optional[str] = None,
     ) -> list[SubtaskSpec]:
-        """Builds a 3-specialist live-model coding + unit-testing + self-healing DAG."""
-        import sys
-
-        ws = Path(code_task_dir).resolve()
-        ws.mkdir(parents=True, exist_ok=True)
-        module_path = ws / module_filename
-        test_path = ws / test_filename
-
-        def _inject_deliberate_fault(_target: Path) -> Dict[str, Any]:
-            if not inject_deliberate_test_failure or not module_path.exists():
-                return {"injected": False}
-            original = module_path.read_text(encoding="utf-8")
-            # Inject a deterministic boundary/logic defect into the generated module
-            # so unittest Attempt 1 fails with a real AssertionError/ValueError mismatch
-            mutated = original
-            mutation_desc = ""
-            if "self.tokens >= tokens" in mutated:
-                mutated = mutated.replace("self.tokens >= tokens", "self.tokens > tokens", 1)
-                mutation_desc = "Mutated `self.tokens >= tokens` to strict `>` (breaks exact-capacity token acquisition)"
-            elif ">=" in mutated:
-                mutated = mutated.replace(">=", ">", 1)
-                mutation_desc = "Mutated first `>=` boundary comparison to strict `>`"
-            else:
-                mutated = mutated + "\n# Deliberate syntax/runtime assertion fault\nraise RuntimeError('Deliberate injected fault')\n"
-                mutation_desc = "Appended runtime fault trigger"
-            module_path.write_text(mutated, encoding="utf-8")
-            return {
-                "injected": True,
-                "target_file": str(module_path),
-                "mutation_description": mutation_desc,
-            }
-
-        return [
-            SubtaskSpec(
-                title=f"{title} — Stage 1: Architecture & Interface Specification",
-                description=(
-                    f"Specify the exact Python class/function signatures and edge-case invariants for `{module_filename}`: {prompt} "
-                    f"Keep your specification concise (4-6 bullet points)."
-                ),
-                preferred_specialist_id="plan_systems_architect",
-                depends_on_indices=[],
-                queue_type="model_call",
-                token_budget=16000,
-                use_live_model=True,
-            ),
-            SubtaskSpec(
-                title=f"{title} — Stage 2: Live Model Python Implementation (`{module_filename}`)",
-                description=(
-                    f"Implement the complete Python module `{module_filename}` fulfilling `{prompt}` and the upstream specification. "
-                    f"Return ONLY the complete Python code inside a ```python ... ``` block."
-                ),
-                preferred_specialist_id="swe_python_runtime_engineer",
-                depends_on_indices=[0],
-                queue_type="model_call",
-                token_budget=16000,
-                use_live_model=True,
-                target_file_path=str(module_path),
-            ),
-            SubtaskSpec(
-                title=f"{title} — Stage 3: Live Model Unit Test Generation, Execution & Self-Healing (`{test_filename}`)",
-                description=(
-                    f"Write a Python `unittest` suite `{test_filename}` that imports from `{module_filename[:-3]}` and tests "
-                    f"normal operation, exact boundary acquisition (acquiring 100% of capacity), and `ValueError` on invalid inputs. "
-                    f"Return ONLY the complete `{test_filename}` code inside a ```python ... ``` block."
-                ),
-                preferred_specialist_id="qa_unit_suite_runner",
-                depends_on_indices=[0, 1],
-                queue_type="model_call",
-                token_budget=24000,
-                use_live_model=True,
-                target_file_path=str(test_path),
-                repair_target_file=str(module_path),
-                post_write_fault_injector=_inject_deliberate_fault if inject_deliberate_test_failure else None,
-                verification_command=[sys.executable, "-m", "unittest", test_filename, "-v"],
-                verification_cwd=str(ws),
-                repair_specialist_id="swe_patch_minimizer",
-            ),
-        ]
+        """Delegates to `HierarchicalOrchestrator.build_code_and_test_subtasks`."""
+        return self.orchestrator.build_code_and_test_subtasks(
+            title=title,
+            prompt=prompt,
+            code_task_dir=code_task_dir,
+            module_filename=module_filename,
+            test_filename=test_filename,
+            inject_deliberate_test_failure=inject_deliberate_test_failure,
+            fallback_module_code=fallback_module_code,
+            fallback_test_code=fallback_test_code,
+        )
 
     def execute(
         self,
@@ -206,17 +145,7 @@ class AGI17Adapter:
         test_filename: str = "test_token_bucket.py",
         inject_deliberate_test_failure: bool = False,
     ) -> Dict[str, Any]:
-        if code_task_dir is not None and subtasks is None:
-            subtasks = self.build_code_and_test_subtasks(
-                title=title,
-                prompt=prompt,
-                code_task_dir=code_task_dir,
-                module_filename=module_filename,
-                test_filename=test_filename,
-                inject_deliberate_test_failure=inject_deliberate_test_failure,
-            )
-            force_hierarchical = True
-
+        """Executes a mission through `HierarchicalOrchestrator.execute_mission()`."""
         res = self.orchestrator.execute_mission(
             title=title,
             prompt=prompt,
@@ -224,6 +153,12 @@ class AGI17Adapter:
             subtasks=subtasks,
             force_hierarchical=force_hierarchical,
             use_live_model=use_live_model,
+            code_task_dir=code_task_dir,
+            module_filename=module_filename,
+            test_filename=test_filename,
+            inject_deliberate_test_failure=inject_deliberate_test_failure,
         )
         self.progress_service.render_html_dashboard()
         return res
+
+    execute_mission = execute

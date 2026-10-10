@@ -250,6 +250,11 @@ class SpecialistFactory:
         self.router = CapabilityRouter(self.contracts)
         self._by_id: Dict[str, AgentContract] = {c.agent_id: c for c in self.contracts}
 
+    def get_contract(self, agent_id: str) -> AgentContract:
+        if agent_id not in self._by_id:
+            raise KeyError(f"Specialist '{agent_id}' not found in 100-agent registry")
+        return self._by_id[agent_id]
+
     @staticmethod
     def write_registry_file(target_path: str | Path) -> Path:
         contracts = build_default_contracts()

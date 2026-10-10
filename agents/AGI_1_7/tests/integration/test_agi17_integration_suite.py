@@ -458,6 +458,51 @@ class TestAGI17IntegrationSuite(unittest.TestCase):
         self.assertTrue(chk_tasks.passed)
         self.assertTrue(chk_tokens.passed)
 
+    # Test P — Normal execute_mission code_task_dir workflow & explicit fallback reporting
+    def test_P_normal_execute_mission_code_task_dir_and_fallback_reporting(self) -> None:
+        tm, mem, gov, tc, sf, orch = self._build_env()
+        code_dir = self.tmp_path / "code_ws"
+        code_dir.mkdir(parents=True, exist_ok=True)
+        # Build subtasks via build_code_and_test_subtasks and run with deterministic mocked model responses
+        subtasks = orch.build_code_and_test_subtasks(
+            title="Test P Code Workflow",
+            prompt="Implement add_ints(a, b) in adder.py",
+            code_task_dir=code_dir,
+            module_filename="adder.py",
+            test_filename="test_adder.py",
+            inject_deliberate_test_failure=False,
+            fallback_module_code="def add_ints(a: int, b: int) -> int:\n    return a + b\n",
+            fallback_test_code=(
+                "import unittest\nfrom adder import add_ints\n"
+                "class TestAdder(unittest.TestCase):\n"
+                "    def test_add(self):\n        self.assertEqual(add_ints(2, 3), 5)\n"
+            ),
+        )
+        # Override use_live_model=False on stages 1 & 2, and write fallback files to test verification + fallback_summary structure
+        (code_dir / "adder.py").write_text("def add_ints(a: int, b: int) -> int:\n    return a + b\n", encoding="utf-8")
+        (code_dir / "test_adder.py").write_text(
+            "import unittest\nfrom adder import add_ints\n"
+            "class TestAdder(unittest.TestCase):\n"
+            "    def test_add(self):\n        self.assertEqual(add_ints(2, 3), 5)\n",
+            encoding="utf-8",
+        )
+        for st in subtasks:
+            st.use_live_model = False
+        res = orch.execute_mission(
+            title="Test P Code Workflow",
+            prompt="Implement add_ints(a, b) in adder.py",
+            task_id="TEST-P-CODE",
+            subtasks=subtasks,
+            force_hierarchical=True,
+            use_live_model=False,
+        )
+        self.assertEqual(res["final_state"], "SUCCEEDED")
+        self.assertIn("fallback_summary", res)
+        self.assertFalse(res["fallback_summary"]["any_fallback_used"])
+        self.assertIn("ecosystem_coordination_summary", res)
+        self.assertEqual(res["ecosystem_coordination_summary"]["embedded_specialists_count"], 100)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
