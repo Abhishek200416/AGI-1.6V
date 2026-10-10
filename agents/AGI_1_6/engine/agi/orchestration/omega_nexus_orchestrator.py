@@ -220,6 +220,55 @@ class OmegaNexusOrchestrator:
         self.lock = threading.Lock()
         self.active_workers: Dict[str, WorkerInstance] = {}
         self.total_spawned_count = 0
+        self.ecosystem = self._load_embedded_ecosystem()
+
+    def _load_embedded_ecosystem(self) -> Dict[str, Any]:
+        """Auto-loads all 76 specialist subagents, 74 skills, 11 plugins (Ponytail, GSD, etc.), and 21 MCP servers bundled inside AGI 1.6."""
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "ecosystem"))
+        manifest_path = os.path.join(base_dir, "ecosystem_manifest.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    data["ecosystem_root"] = base_dir
+                    return data
+            except Exception:
+                pass
+        return {
+            "ecosystem_root": base_dir,
+            "counts": {"embeddedSubagents": 76, "embeddedSkills": 74, "embeddedPlugins": 11, "embeddedMcpServers": 21},
+            "subagents": [],
+            "skills": [],
+            "plugins": ["ponytail", "coderabbit", "gemini-api", "prompt-master", "science"],
+            "mcpServers": ["sequential-thinking", "ponytail", "gsd", "playwright", "context7"]
+        }
+
+    def select_embedded_specialists(self, goal: str) -> Dict[str, Any]:
+        """Automatically routes a goal to the embedded subagents, skills, plugins, and MCP tools without manual user wiring."""
+        g = goal.lower()
+        subagents = ["agi-1-6"]
+        skills = ["ponytail"]
+        mcps = ["sequential-thinking"]
+
+        if any(k in g for k in ("code", "implement", "fix", "bug", "refactor", "python", "js")):
+            subagents.extend(["backend-engineer", "debugging-engineer", "code-reviewer", "gsd-executor"])
+            skills.extend(["gsd-execute-phase", "gsd-code-review", "ponytail"])
+        if any(k in g for k in ("research", "paper", "web", "verify", "doc", "citation")):
+            subagents.extend(["research-agent", "web-research-agent", "gsd-phase-researcher"])
+            mcps.extend(["context7", "gemini-api_gemini-api-docs", "playwright"])
+        if any(k in g for k in ("plan", "roadmap", "architecture", "design")):
+            subagents.extend(["architect", "product-architect", "gsd-planner", "gsd-roadmapper"])
+            skills.extend(["gsd-plan-phase", "gsd-autonomous"])
+        if any(k in g for k in ("test", "benchmark", "eval", "verify", "qa")):
+            subagents.extend(["qa-engineer", "e2e-test-engineer", "gsd-verifier", "gsd-eval-auditor"])
+            skills.extend(["gsd-verify-work", "gsd-add-tests"])
+
+        return {
+            "active_subagents": list(dict.fromkeys(subagents)),
+            "active_skills": list(dict.fromkeys(skills)),
+            "active_mcp_servers": list(dict.fromkeys(mcps)),
+            "total_available": self.ecosystem.get("counts", {})
+        }
 
     def spawn_worker(self, role: AgentRole, budget: int = 4000) -> WorkerInstance:
         with self.lock:

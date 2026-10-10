@@ -1,0 +1,1 @@
+{"name":"list_graphs","description":"List all available graphs in the FalkorDB instance. Each graph typically corresponds to an indexed repository. Use the graph names with the 'graph_name' parameter in other tools.","parameters":{"properties":{},"type":"object"}}

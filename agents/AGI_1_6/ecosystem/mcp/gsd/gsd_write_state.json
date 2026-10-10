@@ -1,0 +1,1 @@
+{"name":"gsd_write_state","description":"Write a .planning state file (interface point 5).","parameters":{"properties":{"content":{"description":"File content.","type":"string"},"path":{"description":"Absolute path under .planning/.","type":"string"}},"required":["path","content"],"type":"object"}}

@@ -48,3 +48,9 @@
 - [[OSWorld-V2.1 Desktop Sandbox Isolation]]
 - [[Mutation Testing Self-Validation (100% Kill Rate)]]
 - [[112,735 Unique Test Suite]]
+
+## 09 - Embedded Ecosystem (76 Subagents + Ponytail + GSD + 21 MCPs)
+- [[76 Embedded Specialist Subagents]]
+- [[Ponytail Lazy Senior Engine]]
+- [[GSD (Get Shit Done) Autonomous Suite]]
+- [[Sequential Thinking & 21 MCP Servers]]

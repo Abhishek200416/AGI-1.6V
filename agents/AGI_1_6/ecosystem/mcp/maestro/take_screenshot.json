@@ -1,0 +1,1 @@
+{"name":"take_screenshot","description":"Take a screenshot of the current device screen","parameters":{"properties":{"device_id":{"description":"The ID of the device to take a screenshot from","type":"string"}},"required":["device_id"],"type":"object"}}

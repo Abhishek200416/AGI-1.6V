@@ -1,0 +1,1 @@
+{"name":"gsd_read_state","description":"Read a .planning state file (interface point 5).","parameters":{"properties":{"path":{"description":"Absolute path under .planning/.","type":"string"}},"required":["path"],"type":"object"}}

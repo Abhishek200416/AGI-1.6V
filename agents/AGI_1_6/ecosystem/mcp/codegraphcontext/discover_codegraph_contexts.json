@@ -1,0 +1,1 @@
+{"name":"discover_codegraph_contexts","description":"Discover .codegraphcontext folders.","parameters":{"properties":{"max_depth":{"default":1,"type":"integer"},"repo_path":{"type":"string"}},"type":"object"}}

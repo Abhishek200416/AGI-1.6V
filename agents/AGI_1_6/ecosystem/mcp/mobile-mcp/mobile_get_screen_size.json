@@ -1,0 +1,1 @@
+{"name":"mobile_get_screen_size","description":"Get the screen size of the mobile device in pixels","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","properties":{"device":{"description":"The device identifier to use. Use mobile_list_available_devices to find which devices are available to you.","type":"string"}},"required":["device"],"type":"object"}}

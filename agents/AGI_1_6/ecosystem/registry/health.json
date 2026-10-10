@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "registryVersion": "4.0.0",
+  "lastVerified": "2026-10-09T00:30:00Z",
+  "operatingSystem": "Universal Autonomous Engineering Intelligence Operating System — V4",
+  "rootOrchestrator": "orchestration-agent-v4",
+  "subsystems": {
+    "worldStateEngine": {
+      "status": "HEALTHY",
+      "statePath": ".agents/v4/state/world-state.json",
+      "stateSections": 18,
+      "incrementalUpdatesEnabled": true
+    },
+    "eventBus": {
+      "status": "HEALTHY",
+      "supportedEventTypes": 32,
+      "telemetryStream": ".agents/v4/events/event-stream.jsonl",
+      "activeListeners": 12
+    },
+    "durableExecution": {
+      "status": "HEALTHY",
+      "checkpointStorage": ".agents/v4/checkpoints/",
+      "destructiveReplayGuards": true
+    },
+    "modelRouter": {
+      "status": "HEALTHY",
+      "availableModels": 6,
+      "dynamicFallbackEnabled": true
+    },
+    "staticAgents": {
+      "status": "HEALTHY",
+      "totalRegistered": 75,
+      "verifiedOnDisk": 75,
+      "missingFiles": 0
+    },
+    "mcpServers": {
+      "status": "HEALTHY",
+      "activeCount": 9,
+      "degradedCount": 0,
+      "circuitBreakersActive": true,
+      "unsafeToolsEliminated": true
+    },
+    "externalAdapters": {
+      "status": "HEALTHY_WITH_DEGRADATION_AWARENESS",
+      "validatedCount": 4,
+      "rejectedCount": 3,
+      "dockerRuntimeState": {
+        "installed": true,
+        "daemonRunning": false,
+        "impact": "OpenHands & SWE-agent automatically degrade to native specialist + Aider fallback."
+      }
+    },
+    "skillsCatalog": {
+      "status": "HEALTHY",
+      "activeCount": 2022,
+      "quarantinedCount": 37,
+      "quarantineSecured": true
+    },
+    "observability": {
+      "status": "HEALTHY",
+      "metricSources": ["host_os", "process", "mcp_ping", "task_latency"],
+      "noInventedTelemetry": true
+    },
+    "approvalFirewall": {
+      "status": "HEALTHY",
+      "guardedActionTypes": 9,
+      "enforcement": "BLOCKING"
+    },
+    "healthLoop": {
+      "status": "HEALTHY",
+      "watchIntervalMs": 5000,
+      "autoDegradationEnabled": true
+    }
+  }
+}

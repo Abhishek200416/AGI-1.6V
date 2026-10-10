@@ -1,0 +1,1 @@
+{"name":"get_contexts","description":"Returns available automation contexts and the currently active one. Use before switch_context to discover NATIVE_APP and WEBVIEW_* targets. Mobile-only.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","properties":{},"type":"object"}}

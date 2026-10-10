@@ -1,0 +1,1 @@
+{"name":"list_indexed_repositories","description":"List all indexed repositories.","parameters":{"properties":{"graph_name":{"description":"Optional: Name of the FalkorDB graph to query. Each indexed repository can have its own graph. Use 'list_graphs' to see available graphs. Defaults to the server's configured graph name.","type":"string"}},"type":"object"}}

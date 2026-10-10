@@ -1,0 +1,1 @@
+{"name":"search_registry_bundles","description":"Search registry bundles.","parameters":{"properties":{"query":{"type":"string"},"unique_only":{"default":false,"type":"boolean"}},"type":"object"}}

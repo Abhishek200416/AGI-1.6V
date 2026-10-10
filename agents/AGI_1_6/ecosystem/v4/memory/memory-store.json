@@ -1,0 +1,16 @@
+[
+  {
+    "id": "mem-mv1duq9v-au10",
+    "scope": "PROJECT",
+    "key": "target-k8s-namespace",
+    "content": "production-payments-v4",
+    "tags": [
+      "kubernetes",
+      "deployment"
+    ],
+    "confidence": 0.99,
+    "source": "orchestration-agent-v4",
+    "createdAt": "2026-10-09T19:53:17.443Z",
+    "expiresAt": null
+  }
+]

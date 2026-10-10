@@ -1,0 +1,1 @@
+{"name":"check_job_status","description":"Check the status and progress of a background job.","parameters":{"properties":{"job_id":{"description":"Job ID from a previous tool call","type":"string"}},"required":["job_id"],"type":"object"}}

@@ -1,0 +1,1 @@
+{"name":"unwatch_directory","description":"Stop watching a directory.","parameters":{"properties":{"repo_path":{"type":"string"}},"required":["repo_path"],"type":"object"}}

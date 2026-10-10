@@ -1,0 +1,6 @@
+{
+  "name": "prompt-master",
+  "version": "1.8.0",
+  "description": "Generates optimized prompts for AI tools using the prompt-master skill.",
+  "repository": "https://github.com/nidhinjs/prompt-master"
+}

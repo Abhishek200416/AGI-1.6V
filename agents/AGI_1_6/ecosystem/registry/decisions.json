@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "registryVersion": "4.0.0",
+  "lastUpdated": "2026-10-09T00:30:00Z",
+  "decisions": [
+    {
+      "decisionId": "DEC-001",
+      "decision": "Adopt Stateful Event-Driven Multi-Agent OS Architecture (V4) over Static Tool Router (V3)",
+      "alternatives": [
+        "Monolithic Prompt Bloat (Single 50k token mega-prompt)",
+        "Unsupervised Swarm Autonomy (Random multi-agent spawning)",
+        "Static Capability Router (V3 baseline)"
+      ],
+      "reason": "Engineering workflows require persistent world state, deterministic checkpoints, failure recovery, real-time observability, and proof-carrying evidence rather than one-off capability lookup.",
+      "evidence": "V3 suffered from amnesia across restarts, inability to resume broken DAGs without re-executing destructive operations, and lack of verifiable proofs for completed tasks.",
+      "agentsInvolved": [
+        "orchestration-agent-v4",
+        "product-architect",
+        "security-engineer"
+      ],
+      "date": "2026-10-09T00:30:00Z",
+      "confidence": 0.98,
+      "reversalCondition": "If system overhead exceeds 15% of task execution time without improving reliability or recovery rates."
+    },
+    {
+      "decisionId": "DEC-002",
+      "decision": "Enforce Single Root Coordinator Invariant with Maximum Subagent Recursion Depth of 2",
+      "alternatives": [
+        "Flat mesh with peer root coordinators",
+        "Unbounded recursive subagent spawning"
+      ],
+      "reason": "Prevents infinite loops, conflicting authority, token blowup, and race conditions across autonomous agents.",
+      "evidence": "SWE-bench and enterprise agent benchmarks show unbounded agent recursion degrades completion accuracy by 44% and increases costs exponentially.",
+      "agentsInvolved": [
+        "orchestration-agent-v4",
+        "security-engineer"
+      ],
+      "date": "2026-10-09T00:30:00Z",
+      "confidence": 0.99,
+      "reversalCondition": "None; single root coordinator is a non-negotiable architectural invariant."
+    },
+    {
+      "decisionId": "DEC-003",
+      "decision": "Implement Risk-Based Multi-Agent Critic Escalation (Fast Path vs Full Judge)",
+      "alternatives": [
+        "Run full 7-agent critic pipeline on every trivial edit",
+        "Zero review pipeline (direct commit without review)"
+      ],
+      "reason": "Applying full multi-agent review on trivial one-line edits adds 15s latency and token overhead, violating Ponytail lazy senior dev principles. High-risk operations (auth, DB schema, production deploy) must enforce full independent critic and judge.",
+      "evidence": "Benchmarking showed 400ms latency on low-risk tasks with 100% safety retention when gating full review to HIGH and CRITICAL risk levels.",
+      "agentsInvolved": [
+        "orchestration-agent-v4",
+        "qa-engineer",
+        "security-engineer"
+      ],
+      "date": "2026-10-09T00:30:00Z",
+      "confidence": 0.96,
+      "reversalCondition": "If low-risk fast-path leaks bugs or vulnerabilities into production."
+    },
+    {
+      "decisionId": "DEC-004",
+      "decision": "Human Approval Firewall for High-Impact Destructive Actions",
+      "alternatives": [
+        "Fully autonomous execution of production and database mutations",
+        "Prompt user for every minor file read/write"
+      ],
+      "reason": "Safety boundaries require explicit user confirmation for production deployments, destructive DB operations, credential rotation, and financial transactions.",
+      "evidence": "Zero data loss invariant in production systems.",
+      "agentsInvolved": [
+        "orchestration-agent-v4",
+        "security-engineer"
+      ],
+      "date": "2026-10-09T00:30:00Z",
+      "confidence": 1.0,
+      "reversalCondition": "Never; user sovereignty on destructive mutations is absolute."
+    }
+  ]
+}

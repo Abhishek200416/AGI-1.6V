@@ -1,0 +1,1 @@
+{"name":"switch_context","description":"Switch active graph context. Refuses while any indexing job is PENDING or RUNNING — wait for check_job_status / list_jobs, then retry.","parameters":{"properties":{"context_path":{"type":"string"},"save":{"default":true,"type":"boolean"}},"required":["context_path"],"type":"object"}}

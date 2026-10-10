@@ -1,0 +1,1 @@
+{"name":"search_uiux","description":"Search UI UX Pro Max database","parameters":{"properties":{"query":{"type":"string"}},"required":["query"],"type":"object"}}

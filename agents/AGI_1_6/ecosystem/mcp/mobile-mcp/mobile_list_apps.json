@@ -1,0 +1,1 @@
+{"name":"mobile_list_apps","description":"List all the installed apps on the device","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","properties":{"device":{"description":"The device identifier to use. Use mobile_list_available_devices to find which devices are available to you.","type":"string"}},"required":["device"],"type":"object"}}

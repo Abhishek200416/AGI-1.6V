@@ -1,0 +1,1 @@
+{"name":"hide_keyboard","description":"Dismisses the on-screen keyboard on mobile. Call after text entry when the keyboard obscures elements. No-op if already hidden. Mobile-only.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","properties":{},"type":"object"}}

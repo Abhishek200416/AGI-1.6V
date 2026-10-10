@@ -1,0 +1,1 @@
+{"name":"list_jobs","description":"List all background jobs and their current status.","parameters":{"properties":{},"type":"object"}}

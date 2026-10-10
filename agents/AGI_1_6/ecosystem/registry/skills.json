@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "registryVersion": "2.0.0",
+  "lastVerified": "2026-10-08T23:30:00Z",
+  "summary": {
+    "totalInstalledSkills": 2022,
+    "totalQuarantinedSkills": 37,
+    "activePluginClusters": 8,
+    "gsdWorkflowSkills": 38
+  },
+  "clusters": [
+    {
+      "cluster": "ponytail",
+      "source": "plugins/ponytail",
+      "status": "ACTIVE",
+      "philosophy": "Lazy senior dev mode: YAGNI, shortest working diff, standard library first, zero bloat",
+      "skills": [
+        "ponytail-audit",
+        "ponytail-debt",
+        "ponytail-gain",
+        "ponytail-help",
+        "ponytail-review"
+      ]
+    },
+    {
+      "cluster": "coderabbit",
+      "source": "plugins/coderabbit",
+      "status": "ACTIVE",
+      "description": "Adversarial PR and code reviews, automated fix applications",
+      "skills": [
+        "code-review",
+        "autofix"
+      ]
+    },
+    {
+      "cluster": "firebase",
+      "source": "plugins/firebase",
+      "status": "ACTIVE",
+      "description": "Comprehensive Firebase ecosystem operations and architecture",
+      "skills": [
+        "firebase-basics",
+        "firebase-auth-basics",
+        "firebase-app-hosting-basics",
+        "firebase-data-connect",
+        "firebase-hosting-basics",
+        "firebase-remote-config-basics",
+        "firebase-crashlytics",
+        "firebase-security-rules-auditor",
+        "firebase-ai-logic-basics",
+        "extension-to-functions-codebase",
+        "xcode-project-setup"
+      ]
+    },
+    {
+      "cluster": "gemini-api",
+      "source": "plugins/gemini-api",
+      "status": "ACTIVE",
+      "description": "Official Google Gemini SDK, Live API, and Omni Flash workflows",
+      "skills": [
+        "gemini-api-dev",
+        "gemini-live-api-dev",
+        "gemini-omni-flash-api"
+      ]
+    },
+    {
+      "cluster": "data-agent-kit",
+      "source": "plugins/data-agent-kit-plugin",
+      "status": "ACTIVE",
+      "description": "Google Cloud data engineering, BigQuery, Bigtable, dbt, Dataform, Spark",
+      "skills": [
+        "bigquery-sql",
+        "bigquery-bigframes",
+        "bigquery-ai-ml",
+        "bigquery-data-transfer-service",
+        "bigtable-basics",
+        "dataform-bigquery",
+        "dbt-bigquery",
+        "data-autocleaning",
+        "enforcing-resource-attribution",
+        "google-cloud-auth-verification",
+        "gcp-data-pipelines",
+        "gcp-pipeline-orchestration",
+        "gcp-managed-airflow-dag-authoring",
+        "gcp-managed-airflow-migrations",
+        "gcp-managed-airflow-recommendations",
+        "gcp-composer-troubleshooting",
+        "gcp-spark-troubleshooting"
+      ]
+    },
+    {
+      "cluster": "science",
+      "source": "plugins/science",
+      "status": "ACTIVE",
+      "description": "Life sciences, structural biology, cheminformatics, medical literature",
+      "skills": [
+        "alphafold-database-fetch-and-analyze",
+        "alphagenome-variant-impact-score",
+        "chembl-database",
+        "clinical-trials-database",
+        "clinvar-database",
+        "dbsnp-database",
+        "embl-ebi-ols",
+        "encode-ccres-database",
+        "ensembl-database",
+        "foldseek-structural-search",
+        "gnomad-database",
+        "gtex-database",
+        "human-protein-atlas-database",
+        "interpro-database",
+        "jaspar-database",
+        "literature-search-arxiv",
+        "literature-search-biorxiv",
+        "literature-search-europepmc",
+        "literature-search-openalex",
+        "ncbi-sequence-fetch",
+        "openfda-database",
+        "opentargets-database",
+        "pdb-database",
+        "predictingthepast",
+        "protein-sequence-msa",
+        "protein-sequence-similarity-search",
+        "pubchem-database",
+        "pubmed-database",
+        "pymol",
+        "quickgo-database",
+        "reactome-database",
+        "string-database",
+        "ucsc-conservation-and-tfbs",
+        "unibind-database",
+        "uniprot-database",
+        "uv",
+        "credentials"
+      ]
+    },
+    {
+      "cluster": "android-cli",
+      "source": "plugins/android-cli-plugin",
+      "status": "ACTIVE",
+      "description": "Android CLI, virtual device management, and UI automation",
+      "skills": [
+        "android-cli"
+      ]
+    },
+    {
+      "cluster": "prompt-master",
+      "source": "plugins/prompt-master",
+      "status": "ACTIVE",
+      "description": "Targeted AI prompt engineering and optimization",
+      "skills": [
+        "prompt-master"
+      ]
+    },
+    {
+      "cluster": "gsd-lifecycle",
+      "source": "skills/gsd",
+      "status": "ACTIVE",
+      "description": "Complete Spec-Driven Development (SDD) planning, execution, and verification cycle",
+      "skills": [
+        "gsd-new-project",
+        "gsd-plan-phase",
+        "gsd-execute-phase",
+        "gsd-verify-work",
+        "gsd-code-review",
+        "gsd-audit-fix",
+        "gsd-secure-phase",
+        "gsd-ui-phase",
+        "gsd-ui-review",
+        "gsd-ai-integration-phase",
+        "gsd-eval-review",
+        "gsd-add-tests",
+        "gsd-debug",
+        "gsd-ship",
+        "gsd-progress",
+        "gsd-dom-verifier",
+        "gsd-mempalace-recall",
+        "gsd-mempalace-capture"
+      ]
+    }
+  ],
+  "quarantinedSkills": [
+    {
+      "name": "broken_windows-privilege-escalation",
+      "quarantinePath": "~/.agents/quarantine/broken_windows-privilege-escalation",
+      "risk": "CRITICAL",
+      "reason": "Host security risk: Unauthorized privilege escalation exploit scripts."
+    },
+    {
+      "name": "privilege-escalation-methods",
+      "quarantinePath": "~/.agents/quarantine/privilege-escalation-methods",
+      "risk": "CRITICAL",
+      "reason": "Security violation: Offensive security privilege escalation scripts."
+    },
+    {
+      "name": "ssh-penetration-testing",
+      "quarantinePath": "~/.agents/quarantine/ssh-penetration-testing",
+      "risk": "HIGH",
+      "reason": "Security violation: SSH penetration testing scripts without authorization."
+    },
+    {
+      "name": "file-path-traversal",
+      "quarantinePath": "~/.agents/quarantine/file-path-traversal",
+      "risk": "HIGH",
+      "reason": "Security violation: Path traversal scripts."
+    },
+    {
+      "name": "xss-html-injection",
+      "quarantinePath": "~/.agents/quarantine/xss-html-injection",
+      "risk": "HIGH",
+      "reason": "Security violation: Unsanitized script injection payloads."
+    },
+    {
+      "name": "cred-omega",
+      "quarantinePath": "~/.agents/quarantine/cred-omega",
+      "risk": "CRITICAL",
+      "reason": "Security violation: Credential harvesting vulnerability."
+    },
+    {
+      "name": "pentest-commands",
+      "quarantinePath": "~/.agents/quarantine/pentest-commands",
+      "risk": "HIGH",
+      "reason": "Security violation: Uncontrolled penetration testing commands."
+    }
+  ]
+}

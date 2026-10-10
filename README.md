@@ -33,8 +33,15 @@ agents/AGI_1_6/
 ├── memory/                        # Local fallback persistent memory & recovery WAL
 ├── docs/                          # AGI 1.6 specifications, research register & dossiers
 ├── tests/                         # AGI 1.6 core test suite (test_agi_16_core_suite.py)
-├── scripts/                       # Evaluation runners (GPQA Clean, Terminal-Bench 2.0, OSWorld-V2.1)
+├── scripts/                       # Evaluation runners & 1-click ecosystem bootstrapper (sync_ecosystem.py)
 ├── reports/                       # Dashboards & evaluation reports
+├── ecosystem/                     # PRE-WIRED EMBEDDED ECOSYSTEM (Zero manual wiring needed)
+│   ├── ecosystem_manifest.json    # Master index of all embedded capabilities
+│   ├── subagents/                 # All 76 specialist subagents (Architect, Backend, 35 GSD agents, Quant, etc.)
+│   ├── skills/                    # All 74 autonomous workflow skills (GSD Get-Shit-Done suite, Kubernetes)
+│   ├── plugins/                   # All 11 plugin suites (Ponytail, CodeRabbit, Gemini-API, Prompt-Master, Science)
+│   ├── mcp/                       # All 21 MCP server schemas (Sequential-Thinking, Playwright, Context7, GSD, Ponytail)
+│   └── registry/                  # V4 Agent Registry, Model Router & CLI Adapters
 └── vault/                         # Exclusive AGI 1.6 Obsidian Knowledge Graph Vault
     ├── .obsidian/                 # Pre-configured colored graph & layout
     ├── AGI_1_6_Obsidian_Vault.zip # Portable Obsidian Vault bundle

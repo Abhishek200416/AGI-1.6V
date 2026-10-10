@@ -1,0 +1,1 @@
+{"name":"watch_directory","description":"Continuously monitors a directory and keeps graph updated.","parameters":{"properties":{"repo_path":{"description":"Path to repository root","type":"string"}},"required":["repo_path"],"type":"object"}}

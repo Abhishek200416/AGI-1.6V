@@ -1,0 +1,62 @@
+{
+  "name": "Cline",
+  "category": "IDE_CODING_AGENT",
+  "status": "REJECTED_DUPLICATE",
+  "repository": "https://github.com/cline/cline",
+  "license": "Apache-2.0",
+  "version": "3.x",
+  "whenToUse": "Standalone usage inside external VS Code editor sessions outside Antigravity.",
+  "howToInvoke": "Launched as VS Code Extension (`saoudrizwan.claude-dev` / Cline) or headless CLI wrapper.",
+  "requiredDependencies": [
+    "VS Code / Cursor / VSCodium",
+    "Node.js runtime",
+    "API Keys"
+  ],
+  "permissions": [
+    "terminal_exec",
+    "filesystem_write"
+  ],
+  "input": {
+    "type": "object",
+    "required": [
+      "prompt"
+    ],
+    "properties": {
+      "prompt": {
+        "type": "string",
+        "description": "Development request"
+      },
+      "contextFiles": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Editor open tabs and workspace files"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": [
+      "edits"
+    ],
+    "properties": {
+      "edits": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Workspace file edits"
+      },
+      "terminalOutputs": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Executed command results"
+      }
+    }
+  },
+  "limitations": "REJECTED — DUPLICATE CAPABILITY of native Antigravity IDE agent engine. Running Cline inside Antigravity creates unnecessary IDE-in-IDE nesting and redundant MCP hosting.",
+  "securityConcerns": "Has full permissions within its VS Code host process; must not be granted unchecked terminal approval."
+}

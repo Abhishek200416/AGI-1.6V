@@ -1,0 +1,55 @@
+{
+  "name": "Goose",
+  "category": "MCP_AGENT",
+  "status": "ADAPTER_READY",
+  "repository": "https://github.com/block/goose",
+  "license": "Apache-2.0",
+  "version": "1.0.x",
+  "whenToUse": "When leveraging community MCP extensions or standalone headless recipe execution that require Goose's Rust-based MCP host runner.",
+  "howToInvoke": "goose run --text \"<instruction>\" --recipe <path-to-recipe.yaml>",
+  "requiredDependencies": [
+    "Goose binary (cargo or pre-built release)",
+    "Active MCP servers configuration"
+  ],
+  "permissions": [
+    "terminal_exec",
+    "filesystem_write"
+  ],
+  "input": {
+    "type": "object",
+    "required": [
+      "text"
+    ],
+    "properties": {
+      "text": {
+        "type": "string",
+        "description": "Task description or automated prompt"
+      },
+      "recipe": {
+        "type": "string",
+        "description": "Optional path to automated YAML recipe"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": [
+      "summary"
+    ],
+    "properties": {
+      "summary": {
+        "type": "string",
+        "description": "Execution completion text"
+      },
+      "mcpToolLogs": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        },
+        "description": "Record of tool calls and results"
+      }
+    }
+  },
+  "limitations": "Rust binary must be precompiled or downloaded; Antigravity already provides native MCP client execution via `call_mcp_tool`.",
+  "securityConcerns": "External MCP servers invoked by Goose must adhere to the same least-privilege standards; secrets must never be passed in cleartext CLI flags."
+}
