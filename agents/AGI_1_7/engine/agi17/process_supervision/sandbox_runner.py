@@ -28,8 +28,6 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
-from ..adapters.model_adapter import redact_sensitive_text
-
 
 class SandboxSecurityError(RuntimeError):
     """Base exception for sandbox security policy violations."""
@@ -391,6 +389,8 @@ class DisposableSandboxRunner:
             stderr_str = (exc.stderr.decode("utf-8", errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")) + "\nSandbox execution timed out."
         finally:
             shutil.rmtree(staging_dir, ignore_errors=True)
+
+        from ..adapters.model_adapter import redact_sensitive_text
 
         cleanup_ok = not staging_dir.exists()
         dt = round(time.perf_counter() - t0, 4)
