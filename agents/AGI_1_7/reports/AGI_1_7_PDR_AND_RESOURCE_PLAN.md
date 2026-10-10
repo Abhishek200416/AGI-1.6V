@@ -5,7 +5,7 @@
 **Version:** `1.7.0`  
 **Status:** `APPROVED / AUTHORITATIVE RESOURCE & EXECUTION PLAN`  
 **Timestamp:** `2026-10-10T18:20:00+05:30` (`2026-10-10T12:50:00Z`)  
-**Repository Root:** `C:\Users\abhis\Downloads\pt`  
+**Repository Root:** `<REPO_ROOT>`  
 **Authoritative Storage Roots:** `D:\AGI_Storage\AGI_1_7\` & `D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\`
 
 ---
@@ -14,7 +14,7 @@
 
 ### 1.1 Live Hardware & Runtime Baseline Inspection Summary
 
-All architectural sizing, concurrency bounds, and storage paths in AGI 1.7 are calibrated directly against live measurements captured on this machine (`C:\Users\abhis\Downloads\pt`):
+All architectural sizing, concurrency bounds, and storage paths in AGI 1.7 are calibrated directly against live measurements captured on this machine (`<REPO_ROOT>`):
 
 | Resource / Subsystem | Live Measured Baseline | Operational Constraint / Governance Rule |
 |---|---|---|
@@ -140,7 +140,7 @@ Because the Windows 11 host currently operates at `~81.8%` physical memory utili
 
 | Volume | Free Space | Quarantine Status | Permitted Writes | Budget Ceiling |
 |---|---|---|---|---|
-| `C:\` (`C:\Users\abhis\Downloads\pt`) | `13.49 GB` | **STRICT QUARANTINE** | Source code (`agents/AGI_1_7/engine/`), lightweight markdown specs/reports (`docs/`, `agents/AGI_1_7/reports/`), unit tests (`tests/`) | **$\le 50\text{ MB}$ total** |
+| `C:\` (`<REPO_ROOT>`) | `13.49 GB` | **STRICT QUARANTINE** | Source code (`agents/AGI_1_7/engine/`), lightweight markdown specs/reports (`docs/`, `agents/AGI_1_7/reports/`), unit tests (`tests/`) | **$\le 50\text{ MB}$ total** |
 | `D:\` (`D:\AGI_Storage\AGI_1_7\`) | `610.82 GB` | **PRIMARY OPERATIONAL STORE** | `omega_task_store.sqlite3` (WAL), `task_events.jsonl`, `omega_memory.sqlite3`, `token_ledger.jsonl`, checkpoints, process logs | **Up to $50\text{ GB}$** |
 | `D:\` (`D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\`) | `610.82 GB` (Shared) | **PRIMARY BENCHMARK STORE** | `isolated_cwd\`, `calibration_canary\`, `campaigns\`, raw & normalized JSONL results, Harbor/OSWorld artifacts | **Up to $250\text{ GB}$** |
 
@@ -150,7 +150,7 @@ Because the Windows 11 host currently operates at `~81.8%` physical memory utili
 
 ### 4.1 Resolution of the AGI 1.6 Workspace Context Leak (`8.16M` -> `~1.08M` Campaign Profile)
 
-In AGI 1.6 (`gpqa_clean_189_task_results.jsonl`), running `agy.exe` from `C:\Users\abhis\Downloads\pt` without `AGI_ISOLATED_CWD` caused every single question to ingest `~22,700` tokens of repository context on Turn 1, compounding across internal tool turns to a mean of **39,105 input tokens** and **43,197 total tokens** per question (`8,164,321` total tokens across 189 items, with 14 timeouts).
+In AGI 1.6 (`gpqa_clean_189_task_results.jsonl`), running `agy.exe` from `<REPO_ROOT>` without `AGI_ISOLATED_CWD` caused every single question to ingest `~22,700` tokens of repository context on Turn 1, compounding across internal tool turns to a mean of **39,105 input tokens** and **43,197 total tokens** per question (`8,164,321` total tokens across 189 items, with 14 timeouts).
 
 By enforcing `cwd = D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\isolated_cwd` and single-turn closed-book prompting in `AdaptiveTokenController`:
 

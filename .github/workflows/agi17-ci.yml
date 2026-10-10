@@ -2,14 +2,22 @@ name: AGI 1.7 OMEGA COMMAND — Verification & CI Suite
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, "feat/**" ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      run_live_smoke:
+        description: "Run optional paid live-model smoke check (requires configured runner credentials)"
+        required: false
+        default: "false"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   verify-agi-1-7-runtime:
-    name: Verify 100 Specialists, Ecosystem Coordinator & 49 Runtime Tests (${{ matrix.os }})
+    name: Verify 100 Specialists, Sandbox Security & Runtime Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -25,6 +33,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install Package in Editable Mode (PEP 621 pyproject.toml Verification)
+        run: python -m pip install -e .
+
+      - name: Verify Zero Secret Leaks & Zero Hardcoded Local Paths
+        run: python -m unittest agents/AGI_1_7/tests/test_production_hardening_sprint.py -v
 
       - name: Verify 100 Specialist Contracts & Ecosystem Sync (Dry-Run, Zero Home Mutation)
         run: python agents/AGI_1_7/scripts/sync_ecosystem.py --dry-run

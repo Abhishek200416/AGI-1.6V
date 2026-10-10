@@ -1,374 +1,174 @@
 # AGI 1.7 — OMEGA COMMAND
-## The All-in-One Autonomous Operating System: 100 Embedded Specialist Agents Across 16 Families, 74 GSD Skills, 11 Plugin Suites, 21 MCP Servers, 14-State SQLite WAL Task Control & `-88.2%` Lower Token Burn
+## Resource-Aware, Sandboxed Multi-Agent Coding & Python CI-Repair Runtime (`gemini-3.8-flash-high`)
 
 [![Runtime](https://img.shields.io/badge/Runtime-AGI%201.7%20OMEGA%20COMMAND-10B981.svg)](agents/AGI_1_7/run_agi_17.py)
-[![Sole Model](https://img.shields.io/badge/Sole%20Model-gemini--3.8--flash--high-059669.svg)](https://deepmind.google/technologies/gemini/)
-[![Embedded Agents](https://img.shields.io/badge/Embedded%20Specialists-100%20Agents%20Across%2016%20Families-7E22CE.svg)](agents/AGI_1_7/ecosystem/agent_registry/registry.json)
-[![Skills & Plugins](https://img.shields.io/badge/Skills%20%26%20Plugins-74%20GSD%20%2B%2011%20Suites%20(Ponytail)-D97706.svg)](agents/AGI_1_7/ecosystem/)
-[![MCP Fabric](https://img.shields.io/badge/MCP%20Servers-21%20Pre--Configured-0284C7.svg)](agents/AGI_1_7/ecosystem/mcp/)
-[![Token Savings](https://img.shields.io/badge/Token%20Footprint--88.2%25%20Lower%20Input%20Burn-16A34A.svg)](agents/AGI_1_7/engine/agi17/telemetry/token_economy.py)
+[![Sole Model](https://img.shields.io/badge/Foundation%20Model-gemini--3.8--flash--high-059669.svg)](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py)
+[![Sandbox](https://img.shields.io/badge/Sandbox-Disposable%20Docker%20Container%20(--network%20none)-0284C7.svg)](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py)
+[![Embedded Agents](https://img.shields.io/badge/Specialist%20Contracts-100%20Across%2016%20Families-7E22CE.svg)](agents/AGI_1_7/ecosystem/agent_registry/registry.json)
+[![Tests](https://img.shields.io/badge/Offline%20Verification%20Suite-61%2F61%20Passing-16A34A.svg)](.github/workflows/agi17-ci.yml)
 
-**AGI 1.7 — OMEGA COMMAND** is a self-contained, resource-aware, persistent, self-orchestrating multi-agent operating system powered exclusively by **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)**.
+**AGI 1.7 — OMEGA COMMAND** is a self-contained, resource-aware, persistent multi-agent engineering and automated **Python CI-Repair** runtime built around **Google's Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** using the **Python 3.10+ Standard Library** (`0` third-party PyPI runtime dependencies required).
 
 > [!IMPORTANT]
-> **1 Visible Agent in Your UI (`AGI 1.7`) -> All 100 Specialized Agents Embedded Inside (`0` Separate Agent Clutter in Chrome / IDE)**
-> When you open the agent selector in Chrome / Antigravity, **only `AGI 1.7 — OMEGA COMMAND` appears as your top-level agent**—never 100 separate agents cluttering your menu. **All 100 schema-validated specialist agents across 16 functional families** ([`registry.json`](agents/AGI_1_7/ecosystem/agent_registry/registry.json) & [`subagents/`](agents/AGI_1_7/ecosystem/subagents/)), **74 autonomous workflow skills (`GSD`, `Kubernetes`)**, **11 plugin suites (`Ponytail`, `CodeRabbit`, `Gemini-API`, `Prompt-Master`, `Science`)**, and **21 MCP server schemas** are **strictly embedded inside [`agents/AGI_1_7/`](agents/AGI_1_7/)**. When you ask **AGI 1.7** to solve a task, it automatically routes and talks to its 100 internal specialists under the hood.
+> **What This Repository Is (And What It Is Not)**
+> - **Orchestration & Sandboxed Verification Runtime:** AGI 1.7 is a multi-agent orchestration, transactional SQLite WAL task-control, disposable Docker sandbox, and persistent-memory system wrapping `gemini-3.8-flash-high` via [`ModelAdapter`](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py). It is **not** a custom pre-trained or fine-tuned base LLM.
+> - **1 Unified Entrypoint (`AGI 1.7`) with 100 Embedded Specialist Contracts:** All 100 schema-validated specialist contracts across 16 functional families ([`registry.json`](agents/AGI_1_7/ecosystem/agent_registry/registry.json)) are embedded inside [`agents/AGI_1_7/`](agents/AGI_1_7/) and coordinated dynamically with Ponytail minimal-diff railings via [`EcosystemCoordinator`](agents/AGI_1_7/ecosystem/agent_registry/ecosystem_coordinator.py).
+> - **Focused Commercial Product Workflow (`CIRepairAgent`):** Includes a dedicated **Automated Python CI-Repair & Test-Healing Agent** ([`ci_repair_agent.py`](agents/AGI_1_7/engine/agi17/orchestration/ci_repair_agent.py), [`PRODUCT_SPEC_PYTHON_CI_REPAIR.md`](agents/AGI_1_7/docs/PRODUCT_SPEC_PYTHON_CI_REPAIR.md)) that reproduces failing `unittest` suites inside a network-disabled disposable container, synthesizes a minimal root-cause patch under strict USD/token ceilings, verifies zero test regressions inside the sandbox, and emits a unified diff and reviewable PR payload (`requires_human_approval=True`).
 
 ---
 
-## 🚀 1. Why AGI 1.7 Uses Drastically Less Overhead Than Outside Agents (While Beating Them Across 70 Benchmarks)
+## 📊 1. Transparent Evaluation & Verification Summary (5 Distinct Categories)
 
-When developers try to combine external single-purpose agents (Cursor, Cline, raw CLI wrappers) or external multi-agent frameworks (CrewAI, AutoGPT, LangGraph, OpenHands), they hit four walls: **installing dozens of separate packages**, **massive prompt token bloat**, **RAM exhaustion from spawning too many processes**, and **lost state when interrupted**.
+To prevent conflating deterministic unit tests with live LLM benchmark runs, all results in this repository are strictly separated into five verifiable categories:
 
-**AGI 1.7 — OMEGA COMMAND** eliminates all four problems inside one lightweight package:
+### Category 1: Deterministic Runtime, Sandbox & Security Verification (`61 / 61` Offline Tests)
+Executed automatically on every push and Pull Request across `ubuntu-latest` and `windows-latest` ([`.github/workflows/agi17-ci.yml`](.github/workflows/agi17-ci.yml)):
+- **[`test_production_hardening_sprint.py`](agents/AGI_1_7/tests/test_production_hardening_sprint.py) (`12 / 12` passing):** Repository secret/path leak scan (`0` leaks), typed `ModelRequest`/`ModelResponse`/`ModelProviderConfig`, `DeterministicMockProvider`, USD cost budget ceiling enforcement (`ModelCostBudgetExceededError`), `DisposableSandboxRunner` execution & `finally:` cleanup, `PathTraversalViolationError`, prompt-injection/malicious-code blocking (`UntrustedContentSecurityError`), fail-closed container check (`SandboxIsolationUnavailableError`), `HighImpactApprovalGate`, and end-to-end `CIRepairAgent` verification.
+- **[`test_agi17_unit_suite.py`](agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py) (`26 / 26` passing):** 100-contract JSON schema validation, 14-state SQLite WAL transitions, DFS dependency cycle detection, SHA-256 checkpoint verification, and SSRF firewall rules.
+- **[`test_agi17_integration_suite.py`](agents/AGI_1_7/tests/integration/test_agi17_integration_suite.py) (`16 / 16` passing):** Crash recovery (`reconcile_after_restart()`), live `CommandInbox` mid-run overrides (`ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `REPRIORITIZE`), and 10-layer SQLite memory fact supersession.
+- **[`test_agi17_e2e_demos.py`](agents/AGI_1_7/tests/end_to_end/test_agi17_e2e_demos.py) (`7 / 7` passing):** End-to-end DAG orchestration, disagreement self-healing, and detached background execution (`--detach`).
 
-### 1.1 Neatly Nested Colored Mermaid Bar Graph — AGI 1.7 vs. Outside Agents (70-Benchmark Suite)
+### Category 2: Live Multi-Agent Code $\rightarrow$ Test $\rightarrow$ Fail $\rightarrow$ Repair Trace
+- **Artifact:** [`agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json`](agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json) (reproducible via [`demo_real_multi_agent_code_fix.py`](agents/AGI_1_7/scripts/demo_real_multi_agent_code_fix.py)).
+- **Result:** `4` live `gemini-3.8-flash-high` calls (`70,708` provider-reported tokens, `\$0.015855` USD, `0` fallbacks): `plan_systems_architect` specifies contract $\rightarrow$ `swe_python_runtime_engineer` writes `interval_merger.py` $\rightarrow$ `qa_unit_suite_runner` writes 13 unit tests and detects 3 boundary failures (`exit_code=1`) $\rightarrow$ `swe_patch_minimizer` patches `interval_merger.py` from the `stderr` traceback $\rightarrow$ re-test passes `13 / 13` (`exit_code=0`).
 
-```mermaid
-flowchart TB
-    classDef amber fill:#D97706,stroke:#FBBF24,stroke-width:2px,color:#FFFFFF
-    classDef blue fill:#0284C7,stroke:#38BDF8,stroke-width:2px,color:#FFFFFF
-    classDef emerald fill:#059669,stroke:#34D399,stroke-width:3px,color:#FFFFFF
+### Category 3: Preliminary 3-Way Held-Out Coding Benchmark (`Config A` vs. `Config B` vs. `Config C`)
+- **Report & Raw Ledger:** [`HELDOUT_CODING_BENCHMARK_REPORT.md`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_REPORT.md) | [`HELDOUT_CODING_BENCHMARK_RAW_RESULTS.json`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_RAW_RESULTS.json)
+- **Scope Note:** This is a preliminary 3-task repository coding evaluation (`9` unseen held-out `unittest` methods graded inside `DisposableSandboxRunner` with `--network none`).
 
-    subgraph COMP["AGI 1.7 OMEGA COMMAND vs OUTSIDE AGENTS (70-BENCHMARK COMPOSITE)"]
-        direction TB
-        subgraph OVERALL["OVERALL 70-BENCHMARK MEAN SCORE"]
-            direction LR
-            O_SINGLE["Outside Single Agents | ██░░░░░░░░ 20.69% | 1 Persona, Stateless"]
-            O_MULTI["Outside Multi-Agent Frameworks | ████░░░░░░ 41.80% | Manual Wiring, High Chatter"]
-            O_17["AGI 1.7 OMEGA COMMAND | ██████████ 99.93% | 100 Agents in 1 Install, -88.2% Tokens"]
-            O_SINGLE --> O_MULTI --> O_17
-        end
-
-        subgraph L1["1. Agent Installation Footprint (1 Unified Runtime vs 100 Separate Agents)"]
-            direction LR
-            I_OUT["Outside Ecosystem | ██████████ 100 Separate Agent Installs"]
-            I_17["AGI 1.7 OMEGA COMMAND | █░░░░░░░░░ 1 Single Install (All 100 Specialists Inside)"]
-            I_OUT --> I_17
-        end
-
-        subgraph L2["2. Turn-1 Input Token Consumption (Isolated CWD + ACON Compression)"]
-            direction LR
-            T_OUT["Outside Repo-CWD Agents | ██████████ 31,840 Input Tokens per Turn (100% Burn)"]
-            T_17["AGI 1.7 Isolated-CWD Engine | █░░░░░░░░░ 3,742 Input Tokens per Turn (-88.2% Less Burn)"]
-            T_OUT --> T_17
-        end
-
-        subgraph L3["3. Simultaneous Process RAM Footprint (100 Logical Tasks to 1..4 Active Workers)"]
-            direction LR
-            R_OUT["Unbounded Multi-Agent Spawn | ██████████ 100 Processes (Host Freeze Risk)"]
-            R_17["AGI 1.7 Win32 RAM Governor | █░░░░░░░░░ 1 to 4 Active Workers (-96% Process Overhead)"]
-            R_OUT --> R_17
-        end
-    end
-
-    class O_SINGLE,I_OUT,T_OUT,R_OUT amber
-    class O_MULTI blue
-    class O_17,I_17,T_17,R_17 emerald
-    style COMP fill:#0F172A,stroke:#10B981,stroke-width:3px,color:#F8FAFC
-    style OVERALL fill:#1E293B,stroke:#F59E0B,stroke-width:2px,color:#FDE68A
-    style L1 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-    style L2 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-    style L3 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-```
-
-### 1.2 Side-by-Side Comparison: AGI 1.7 vs. Outside Single Agents & External Multi-Agent Frameworks
-
-| Dimension | Outside Single Agents (Cursor / Cline / Base CLI) | External Multi-Agent Frameworks (CrewAI / AutoGPT / LangGraph) | **🟩 AGI 1.7 — OMEGA COMMAND** |
-| :--- | :--- | :--- | :--- |
-| **How Many Agents to Install?** | 1 generalist agent (lacks domain specialists) | Must install & wire dozens of separate agent packages | **Install 1 package (`AGI 1.7`) -> All 100 validated specialists across 16 families are built inside** |
-| **Input Token Footprint** | Dumps full workspace context (`~31,840` tokens/turn) | Multi-agent chatter multiplies token cost `5x–10x` | **`-88.2%` lower input token burn (`~3,742` tokens/turn) via `isolated_cwd` + `EnforcedTokenEconomy`** |
-| **RAM & CPU Consumption** | Unthrottled child spawns can freeze host OS | Spawns N concurrent threads/processes blindly | **Separates `100` logical tasks from `1..4` active workers via live Win32 `GlobalMemoryStatusEx` (`1,400 MB` RAM floor)** |
-| **Task State & Crash Recovery** | Stateless chat session (`0%` crash recovery) | Fragile in-memory state dicts | **14-State Transactional SQLite WAL (`agi17_tasks.db`) + SHA-256 checkpoints + automatic `reconcile_after_restart()`** |
-| **Mid-Run User Overrides** | Must cancel & restart prompt from scratch | Cannot hot-swap tasks inside a running DAG | **Live SQLite `CommandInbox` (`ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `REPRIORITIZE`)** |
-| **Long-Running Process Handling** | Blocking shell wait or manual status polling | Blocking tool execution | **Non-blocking `ProcessSupervisor` + `StreamParser` + `<1ms` push callback (`CompletionNotifier`)** |
-| **Long-Horizon Memory** | Context window truncation | Naive summarization (loses exact file paths & hashes) | **10-Layer SQLite WAL `OmegaCommandMemory` + mandatory `retrieve_before_planning()` + fact supersession + `ACONCompressor`** |
-| **Code Simplicity Discipline** | Over-engineers & adds unnecessary dependencies | Heavy framework boilerplate | **Built-in Ponytail 7-Rung "Lazy Senior Dev" Ladder (stdlib first, minimum code that works, 1 runnable check)** |
-| **Desktop & Network Security** | Risk of host GUI interference or unfiltered URLs | Unfiltered HTTP requests | **Pre-Socket RFC 1918 SSRF Firewall + `0` Host Physical Desktop GUI Injections (`host_gui_actuation_allowed = false`)** |
-
----
-
-## 🧠 2. All 100 Specialist Agents Built Inside AGI 1.7 (`0` External Installs Required)
-
-When you run **AGI 1.7**, [`CapabilityRouter`](agents/AGI_1_7/ecosystem/agent_registry/capability_router.py) and [`SpecialistFactory`](agents/AGI_1_7/ecosystem/agent_registry/specialist_factory.py) automatically route your mission across **100 schema-validated specialist agents** defined in [`registry.json`](agents/AGI_1_7/ecosystem/agent_registry/registry.json) and [`ecosystem/subagents/`](agents/AGI_1_7/ecosystem/subagents/):
-
-```mermaid
-flowchart LR
-    classDef router fill:#059669,stroke:#34D399,stroke-width:3px,color:#FFFFFF
-    classDef fam fill:#1E293B,stroke:#38BDF8,stroke-width:1px,color:#F8FAFC
-
-    R["AGI 1.7 CapabilityRouter (1 Single Install = All 100 Specialists Inside)"]
-
-    subgraph G_ENG["Engineering, Planning and Ops (30 Agents)"]
-        F1["1. Planning and Architecture (6 Agents)"]
-        F7["7. Software Engineering (10 Agents)"]
-        F8["8. Terminal, Shell and OS Ops (8 Agents)"]
-        F9["9. Containers, Virtualization and Cloud (6 Agents)"]
-    end
-
-    subgraph G_SCI["Science, Math and Deep Research (30 Agents)"]
-        F2["2. Research and Evidence Synthesis (8 Agents)"]
-        F3["3. Mathematics and Symbolic Reasoning (6 Agents)"]
-        F4["4. Physics and Physical Sciences (6 Agents)"]
-        F5["5. Chemistry and Molecular Sciences (5 Agents)"]
-        F6["6. Biology and Biomedical Sciences (5 Agents)"]
-    end
-
-    subgraph G_AUT["Web, Desktop, Data and QA (26 Agents)"]
-        F10["10. Browser and Web Automation (6 Agents)"]
-        F11["11. Desktop and Computer Use (6 Agents)"]
-        F12["12. Data, Storage and Databases (6 Agents)"]
-        F13["13. Testing, QA and Verification (8 Agents)"]
-    end
-
-    subgraph G_GOV["Security, Token Economy and Release (14 Agents)"]
-        F14["14. Security, Permissions and Safety (6 Agents)"]
-        F15["15. Performance and Token Optimization (4 Agents)"]
-        F16["16. Release, Governance and Reporting (4 Agents)"]
-    end
-
-    R --> F1
-    R --> F7
-    R --> F8
-    R --> F9
-    R --> F2
-    R --> F3
-    R --> F4
-    R --> F5
-    R --> F6
-    R --> F10
-    R --> F11
-    R --> F12
-    R --> F13
-    R --> F14
-    R --> F15
-    R --> F16
-
-    class R router
-    class F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11,F12,F13,F14,F15,F16 fam
-    style G_ENG fill:#0F172A,stroke:#10B981,stroke-width:2px,color:#F8FAFC
-    style G_SCI fill:#0F172A,stroke:#A855F7,stroke-width:2px,color:#F8FAFC
-    style G_AUT fill:#0F172A,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC
-    style G_GOV fill:#0F172A,stroke:#F59E0B,stroke-width:2px,color:#F8FAFC
-```
-
-### Complete Directory of the 100 Embedded Specialists Across 16 Families
-
-| # | Specialist Family | Count | Embedded Specialist Agent IDs (`agents/AGI_1_7/ecosystem/subagents/`) |
-| :-: | :--- | :-: | :--- |
-| **1** | **Planning & Architecture** | **6** | `plan_mission_decomposer`, `plan_systems_architect`, `plan_dependency_analyzer`, `plan_risk_estimator`, `plan_capacity_forecaster`, `plan_adr_synthesizer` |
-| **2** | **Research & Evidence Synthesis** | **8** | `res_primary_source_hunter`, `res_citation_auditor`, `res_contradiction_detector`, `res_freshness_assessor`, `res_sdk_doc_navigator`, `res_benchmark_methodology_analyst`, `res_patent_and_standard_reviewer`, `res_evidence_ledger_archivist` |
-| **3** | **Mathematics & Symbolic Reasoning** | **6** | `math_algebraic_solver`, `math_combinatorics_analyst`, `math_probability_statistician`, `math_linear_algebra_verifier`, `math_number_theory_checker`, `math_real_complex_analyst` |
-| **4** | **Physics & Physical Sciences** | **6** | `phys_quantum_mechanics_reasoner`, `phys_relativistic_electrodynamics`, `phys_statistical_thermodynamics`, `phys_astrophysics_cosmology`, `phys_condensed_matter_analyst`, `phys_dimensional_consistency_auditor` |
-| **5** | **Chemistry & Molecular Sciences** | **5** | `chem_organic_synthesis_planner`, `chem_spectroscopy_elucidator`, `chem_kinetics_thermochemistry`, `chem_inorganic_coordination`, `chem_quantum_molecular_orbital` |
-| **6** | **Biology & Biomedical Sciences** | **5** | `bio_molecular_genetics_reasoner`, `bio_cell_signaling_oncology`, `bio_biochemistry_enzymology`, `bio_immunology_virology`, `bio_bioinformatics_sequence_analyst` |
-| **7** | **Software Engineering** | **10** | `swe_python_runtime_engineer`, `swe_ast_refactoring_specialist`, `swe_api_contract_designer`, `swe_concurrency_lock_auditor`, `swe_exception_resilience_engineer`, `swe_cli_ux_engineer`, `swe_serialization_codec_specialist`, `swe_dependency_hygiene_auditor`, `swe_state_machine_implementer`, `swe_patch_minimizer` |
-| **8** | **Terminal, Shell & OS Operations** | **8** | `ops_powershell_automation_specialist`, `ops_posix_shell_specialist`, `ops_process_tree_warden`, `ops_filesystem_storage_steward`, `ops_stream_progress_monitor`, `ops_archive_artifact_verifier`, `ops_environment_isolation_guard`, `ops_git_worktree_custodian` |
-| **9** | **Containers, Virtualization & Cloud** | **6** | `virt_docker_engine_inspector`, `virt_wsl2_memory_governor`, `virt_harbor_sandbox_coordinator`, `virt_dockerfile_layer_optimizer`, `virt_vm_image_readiness_auditor`, `virt_container_network_isolation_checker` |
-| **10** | **Browser & Web Automation** | **6** | `web_playwright_session_controller`, `web_dom_accessibility_inspector`, `web_network_har_analyzer`, `web_form_workflow_automator`, `web_ssrf_robots_compliance_guard`, `web_visual_regression_verifier` |
-| **11** | **Desktop & Computer Use** | **6** | `desk_sandbox_isolation_enforcer`, `desk_osworld_task_inspector`, `desk_screenshot_observation_compressor`, `desk_gui_action_schema_validator`, `desk_vm_snapshot_coordinator`, `desk_multi_app_handoff_planner` |
-| **12** | **Data, Storage & Databases** | **6** | `data_sqlite_wal_architect`, `data_jsonl_ledger_reconciler`, `data_memory_supersession_curator`, `data_acon_context_compressor`, `data_checkpoint_recovery_steward`, `data_telemetry_schema_normalizer` |
-| **13** | **Testing, QA & Verification** | **8** | `qa_unit_suite_runner`, `qa_integration_scenario_verifier`, `qa_gpqa_clean_auditor`, `qa_terminal_bench_reconciler`, `qa_claim_to_evidence_verifier`, `qa_registry_smoke_harness`, `qa_state_transition_fuzzer`, `qa_regression_baseline_comparator` |
-| **14** | **Security, Permissions & Safety** | **6** | `sec_permission_gate_enforcer`, `sec_prompt_injection_shield`, `sec_secret_credential_scanner`, `sec_benchmark_integrity_warden`, `sec_ssrf_network_firewall`, `sec_directive_zero_auditor` |
-| **15** | **Performance, Token & Resource Optimization** | **4** | `perf_adaptive_concurrency_governor`, `perf_token_budget_controller`, `perf_tail_latency_mitigator`, `perf_quantum_claim_gatekeeper` |
-| **16** | **Release, Governance & Reporting** | **4** | `gov_manifest_hash_sealer`, `gov_telemetry_dashboard_publisher`, `gov_phase_gate_reviewer`, `gov_release_dossier_compiler` |
-
----
-
-## 📦 3. Embedded Skills, Plugins, MCP Servers & Core Engine Subsystems
-
-Alongside the **100 specialist agents**, `agents/AGI_1_7/` bundles:
-
-### A. 74 Embedded Workflow Skills ([`agents/AGI_1_7/ecosystem/skills/`](agents/AGI_1_7/ecosystem/skills/))
-* **73 GSD (`gsd-*`) Autonomous Spec-Driven Development Skills**: `gsd-new-project`, `gsd-spec-phase`, `gsd-discuss-phase`, `gsd-plan-phase`, `gsd-execute-phase`, `gsd-verify-work`, `gsd-debug`, `gsd-code-review`, `gsd-secure-phase`, `gsd-autonomous`, `gsd-fast`, `gsd-quick`, `gsd-ship`, `gsd-mempalace-capture`, `gsd-mempalace-recall`, and 58 more.
-* **`kubernetes` Skill**: Local and cloud-native Kubernetes cluster management (KIND, manifests, rollout verification).
-
-### B. 11 Embedded Plugin Suites ([`agents/AGI_1_7/ecosystem/plugins/`](agents/AGI_1_7/ecosystem/plugins/))
-1. **`ponytail` (Lazy Senior Dev Mode)**: Enforces the 7-rung YAGNI & simplicity ladder (`ponytail`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`, `ponytail-review`).
-2. **`coderabbit`**: Automated deep code review (`code-review`) and safe PR thread resolution (`autofix`).
-3. **`gemini-api`**: Official patterns for `google-genai` SDK (`gemini-api-dev`, `gemini-live-api-dev`, `gemini-omni-flash-api`).
-4. **`prompt-master`**, **`science`**, **`data-agent-kit-plugin`**, **`firebase`**, **`modern-web-guidance-plugin`**, **`chrome-devtools-plugin`**, **`android-cli-plugin`**, **`google-antigravity-sdk`**.
-
-### C. 21 Embedded MCP Server Schemas ([`agents/AGI_1_7/ecosystem/mcp/`](agents/AGI_1_7/ecosystem/mcp/))
-* `sequential-thinking`, `ponytail`, `gsd`, `playwright`, `context7`, `gemini-api_gemini-api-docs`, `cloudrun`, `firebase-mcp-server`, `maestro`, `github`, `filesystem`, `memory`, `codegraphcontext`, `chrome-devtools-mcp`, `mobile-mcp`, `wdio-mcp`, `uiux-mcp`, `gonkarouter`, `arize-tracing-assistant`, `data-agent-kit-plugin_dak-notebook`, `data-agent-kit-plugin_dak-viz`.
-
-### D. 10 Core AGI 1.7 Operating-System Subsystems ([`agents/AGI_1_7/engine/agi17/`](agents/AGI_1_7/engine/agi17/))
-1. **100-Specialist Registry & Capability Router** ([`ecosystem/agent_registry/`](agents/AGI_1_7/ecosystem/agent_registry/)): `AgentContract`, `RegistryValidator`, `CapabilityRouter`, and `SpecialistFactory`.
-2. **Hierarchical Orchestrator & Win32 Resource Governor** ([`orchestration/`](agents/AGI_1_7/engine/agi17/orchestration/)): Separates `MAX_LOGICAL_CHILD_TASKS = 100` from `MAX_ACTIVE_EXECUTIONS = 1..4` via live Win32 `GlobalMemoryStatusEx` (`1,400 MB` free RAM floor, 3-sample scale-up hysteresis, automatic timeout backoff).
-3. **14-State SQLite WAL Task Control Plane & Live `CommandInbox`** ([`task_control/`](agents/AGI_1_7/engine/agi17/task_control/)): Durable `agi17_tasks.db` + `task_events.jsonl`, DFS cycle detection, SHA-256 checkpoints, crash reconciliation, and live mid-run commands (`ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `REPRIORITIZE`).
-4. **Streaming Process Supervisor & Instant Completion Notifier** ([`process_supervision/`](agents/AGI_1_7/engine/agi17/process_supervision/)): Non-blocking `Popen`, live `StreamParser`, idle-output stall detection, `<1ms` parent wakeup callbacks, and post-exit SHA-256 artifact verification.
-5. **10-Layer SQLite WAL Persistent Memory & ACON Compressor** ([`memory/omega_command_memory.py`](agents/AGI_1_7/engine/agi17/memory/omega_command_memory.py)): Mandatory `retrieve_before_planning()`, retrieval audit trails, deterministic fact supersession (`supersedes_id`), and anchor-preserving context compression.
-6. **Enforced Token Economy & Isolated Benchmark CWD** ([`telemetry/token_economy.py`](agents/AGI_1_7/engine/agi17/telemetry/token_economy.py)): Pre-call/child/task/campaign hard token caps, cumulative-to-delta normalization, `PROVIDER_REPORTED` vs `LOCAL_ESTIMATE` separation, and `-88.2%` input token reduction via `isolated_cwd`.
-7. **Live Win32 Capability Profiler** ([`capabilities/capability_profiler.py`](agents/AGI_1_7/engine/agi17/capabilities/capability_profiler.py)): Zero-dependency `ctypes` Win32 RAM, 2-sample CPU kernel/user delta, AC/battery power, and `C:\` / `D:\` disk headroom inspection.
-8. **Zero-Fabrication Claim-to-Evidence Verifier & Benchmark Auditor** ([`verification/evidence_verifier.py`](agents/AGI_1_7/engine/agi17/verification/evidence_verifier.py), [`evaluation/benchmark_auditor.py`](agents/AGI_1_7/engine/agi17/evaluation/benchmark_auditor.py)): Rejects unverified or synthetic benchmark claims and enforces SHA-256 disk evidence.
-9. **Grounded Research Engine with Pre-Socket SSRF Firewall** ([`research/grounded_research.py`](agents/AGI_1_7/engine/agi17/research/grounded_research.py)): Blocks RFC 1918 private IPs, loopback (`127.0.0.1`), link-local metadata (`169.254.169.254`), and `file://` URIs before any socket connection opens.
-10. **Unified Master Adapter (`Directive 0`)** ([`adapters/agi_17_adapter.py`](agents/AGI_1_7/engine/agi17/adapters/agi_17_adapter.py)): Binds all subsystems under `gemini-3.8-flash-high` with zero silent fallbacks.
-
----
-
-## 📊 4. Verified 70-Category Capability & Benchmark Scorecard Across 7 Domains (`99.93%` Arithmetic Mean: `699.50 / 700`)
-
-```mermaid
-flowchart TB
-    classDef amber fill:#D97706,stroke:#FBBF24,stroke-width:2px,color:#FFFFFF
-    classDef emerald fill:#059669,stroke:#34D399,stroke-width:2px,color:#FFFFFF
-
-    subgraph DOMAINS["7-DOMAIN BENCHMARK BAR GRAPH (OUTSIDE BASELINE vs AGI 1.7 OMEGA COMMAND)"]
-        direction TB
-        subgraph D1["D1 - 100-Specialist Registry and DAG Routing (01-10)"]
-            direction LR
-            D1_B["Outside Baseline | ██░░░░░░░░ 21.35%"]
-            D1_A["AGI 1.7 OMEGA COMMAND | ██████████ 100.00%"]
-            D1_B --> D1_A
-        end
-        subgraph D2["D2 - 14-State SQLite WAL Task DB and Live Inbox (11-20)"]
-            direction LR
-            D2_B["Outside Baseline | ░░░░░░░░░░ 3.43%"]
-            D2_A["AGI 1.7 OMEGA COMMAND | ██████████ 100.00%"]
-            D2_B --> D2_A
-        end
-        subgraph D3["D3 - Streaming Process Supervisor and Callbacks (21-30)"]
-            direction LR
-            D3_B["Outside Baseline | █░░░░░░░░░ 10.00%"]
-            D3_A["AGI 1.7 OMEGA COMMAND | ██████████ 100.00%"]
-            D3_B --> D3_A
-        end
-        subgraph D4["D4 - 10-Layer SQLite Memory and Supersession (31-40)"]
-            direction LR
-            D4_B["Outside Baseline | █░░░░░░░░░ 13.04%"]
-            D4_A["AGI 1.7 OMEGA COMMAND | ██████████ 99.65%"]
-            D4_B --> D4_A
-        end
-        subgraph D5["D5 - Isolated-CWD Token Economy and RAM Gov (41-50)"]
-            direction LR
-            D5_B["Outside Baseline | ░░░░░░░░░░ 4.50%"]
-            D5_A["AGI 1.7 OMEGA COMMAND | ██████████ 99.85%"]
-            D5_B --> D5_A
-        end
-        subgraph D6["D6 - Terminal-Bench 2.0 Harbor and OSWorld Safety (51-60)"]
-            direction LR
-            D6_B["Outside Baseline | ████░░░░░░ 43.00%"]
-            D6_A["AGI 1.7 OMEGA COMMAND | ██████████ 100.00%"]
-            D6_B --> D6_A
-        end
-        subgraph D7["D7 - GPQA Clean 189, BFCL, tau-bench and SSRF (61-70)"]
-            direction LR
-            D7_B["Outside Baseline | █████░░░░░ 49.48%"]
-            D7_A["AGI 1.7 OMEGA COMMAND | ██████████ 100.00%"]
-            D7_B --> D7_A
-        end
-    end
-
-    class D1_B,D2_B,D3_B,D4_B,D5_B,D6_B,D7_B amber
-    class D1_A,D2_A,D3_A,D4_A,D5_A,D6_A,D7_A emerald
-    style DOMAINS fill:#0F172A,stroke:#10B981,stroke-width:3px,color:#F8FAFC
-    style D1 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-    style D2 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-    style D3 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-    style D4 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-    style D5 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-    style D6 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-    style D7 fill:#1E293B,stroke:#475569,stroke-width:1px,color:#F8FAFC
-```
-
-| Domain (10 Benchmarks Each = 70 Total) | Outside Single-Agent Baseline | **🟩 AGI 1.7 (`OMEGA COMMAND`)** | Visual Score Bar (`🟧` Baseline vs `🟩` AGI 1.7) | Key Verified Evidence |
-| :--- | :-: | :-: | :--- | :--- |
-| **D1: 100-Specialist Registry & Ecosystem Coordination (`#01–#10`)** | `21.35%` | **`100.00%`** | 🟧 `██░░░░░░░░`<br/>🟩 `██████████` | `100` specialists + `76` Agency profiles + `21` MCPs (`ponytail`, `context7`, `sequential-thinking`, `gsd`) |
-| **D2: 14-State SQLite WAL Task DB & Live Inbox (`#11–#20`)** | `3.43%` | **`100.00%`** | 🟧 `░░░░░░░░░░`<br/>🟩 `██████████` | Live `ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `REPRIORITIZE` |
-| **D3: Streaming Process Supervisor & Callbacks (`#21–#30`)** | `10.00%` | **`100.00%`** | 🟧 `█░░░░░░░░░`<br/>🟩 `██████████` | Non-blocking `Popen` + `StreamParser` + `<1ms` `.notification.json` callback |
-| **D4: 10-Layer SQLite Memory & Supersession (`#31–#40`)** | `13.04%` | **`99.65%`** | 🟧 `█░░░░░░░░░`<br/>🟩 `██████████` | Mandatory `retrieve_before_planning()` + `supersedes_id` chain + `100%` MemoryArena/LongMemEval |
-| **D5: Isolated-CWD Token Economy & RAM Gov (`#41–#50`)** | `4.50%` | **`99.85%`** | 🟧 `░░░░░░░░░░`<br/>🟩 `██████████` | **`-96.07%` GPQA task token drop** (`321,031` vs `8,164,321`) + Win32 `1,400 MB` RAM floor |
-| **D6: Terminal-Bench 2.0 Harbor & OSWorld Safety (`#51–#60`)** | `43.00%` | **`100.00%`** | 🟧 `████░░░░░░`<br/>🟩 `██████████` | `5/5` Harbor tasks verified (`chess-best-move` `reward=1.0`) + `369/369` OSWorld manifests + `0` host GUI injections |
-| **D7: GPQA Clean 189, Held-Out Coding & SSRF (`#61–#70`)** | `49.48%` | **`100.00%`** | 🟧 `█████░░░░░`<br/>🟩 `██████████` | **`188/189` (`99.47%`) strict surface GPQA** (`9/10` cold-start) + **`2/3` (`66.67%` vs `0%`) Held-Out Coding** |
-| **🏆 GRAND TOTAL (ALL 70 BENCHMARKS)** | **`20.69%`** | **`99.93%`** | 🟧 `██░░░░░░░░` `20.69%`<br/>🟩 `██████████` **`99.93%`** | **`70 / 70` #1 Placements (`0` Losses) | `49 / 49` Unit, Integration & E2E Tests Passing** |
-
-### 4.1 Held-Out Reproducible Coding Benchmark (`AGI 1.7` vs. Raw Base Model `gemini-3.8-flash-high`)
-See [`HELDOUT_CODING_BENCHMARK_REPORT.md`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_REPORT.md) and [`HELDOUT_CODING_BENCHMARK_RAW_RESULTS.json`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_RAW_RESULTS.json) for full per-task logs, token counts, USD costs, and failed attempts (`agy.exe v1.3.3`, `gemini-3.8-flash-high`):
-
-| Metric | **`RAW_BASE_MODEL_SINGLE_SHOT`** (`gemini-3.8-flash-high`) | **`AGI_1_7_OMEGA_COMMAND`** (`gemini-3.8-flash-high` + Multi-Agent + Self-Healing) | **AGI 1.7 Advantage** |
+| Metric | **Config A: `RAW_BASE_MODEL_SINGLE_SHOT`** | **Config B: `SINGLE_AGENT_REPAIR_LOOP`** | **Config C: `AGI_1_7_OMEGA_COMMAND`** |
 | :--- | :---: | :---: | :---: |
-| **Verified Tasks Completed (`100%` of unseen held-out tests pass)** | **`0 / 3` (`0.00%`)** | **`2 / 3` (`66.67%`)** | **`+2` tasks (`+66.67 pp`)** |
-| **Unseen Held-Out Unit Tests Passed** | **`4 / 7` (`57.14%`)** | **`8 / 9` (`88.89%`)** | **`+31.75 pp`** |
-| **Deterministic Fallbacks Used (`any_fallback_used`)** | `False` (`0`) | **`False` (`0`)** | **100% live model code** |
-| **Total Tokens / Estimated Cost (USD)** | `38,365` (`$0.011823`) | `218,552` (`$0.060927`) | Full spec + test + repair loop |
+| **Verified Tasks Completed (`100%` Unseen Tests Pass)** | `0 / 3` (`0.00%`) | `0 / 3` (`0.00%`) | **`2 / 3` (`66.67%`)** |
+| **Unseen Held-Out Unit Tests Passed** | `4 / 7` (`57.14%`) | `4 / 9` (`44.44%`) | **`8 / 9` (`88.89%`)** |
+| **Regression Rate (Broke Starter Module)** | `33.33%` | `33.33%` | **`0.00%`** |
+| **Failure / Timeout Rate** | `0.00%` | `33.33%` | **`0.00%`** |
+| **Average Latency per Task** | **`66.89s`** | `271.07s` | `221.14s` |
+| **Total Tokens / Total Cost (USD)** | **`38,365` (`\$0.011823`)** | `95,820` (`\$0.029215`) | `218,552` (`\$0.060927`) |
+| **Cost per Verified Completed Task (USD)** | `N/A` (`0` verified) | `N/A` (`0` verified) | **`\$0.030464`** |
+| **Deterministic Fallbacks Used** | `False` (`0`) | `False` (`0`) | **`False` (`0`)** |
+
+*Engineering Trade-Off Analysis:* Config C (`AGI 1.7`) consumes more tokens than single-shot generation (`218,552` vs `38,365`) because it executes a 3-specialist specification, implementation, adversarial test generation, and repair loop. However, compared to Config B (`SINGLE_AGENT_REPAIR_LOOP`), separating `plan_systems_architect` from `qa_unit_suite_runner` prevented single-agent test confirmation bias on `TASK-02` and `TASK-03` (`66.67%` vs `0.00%` verified task completion) while running faster on average (`221.14s` vs `271.07s`). When a repository **already** contains failing unit tests, use [`CIRepairAgent`](agents/AGI_1_7/engine/agi17/orchestration/ci_repair_agent.py) (`--ci-repair-dir`) to repair directly in `1` model call without multi-agent decomposition overhead.
+
+### Category 4: External Academic Benchmark (`GPQA Diamond Clean 1.2.2`)
+- **Cold-Start Strict Surface-Only Live Sample (`10` questions from scratch, zero checkpoint reuse):** **`9 / 10` (`90.00%` overall; `9 / 9 = 100.00%` on surfaced responses, `1` unanswered due to print timeout)** across Biology (`3/3`), Chemistry (`3/3`), and Physics (`3/4`), consuming `163,054` provider-reported tokens (`\$0.042618` USD). Raw transcript: [`GPQA_COLD_START_STRICT_SURFACE_RESULTS.json`](agents/AGI_1_7/reports/GPQA_COLD_START_STRICT_SURFACE_RESULTS.json).
+- **Full 189-Item Clean Manifest Audit (`gpqa-diamond-clean v1.2.2`, `198 - 9 = 189` items):** Detailed in [`AGI_1_7_GPQA_CLEAN_189_REPORT.md`](agents/AGI_1_7/reports/AGI_1_7_GPQA_CLEAN_189_REPORT.md), separating strict surface-only grading (`allow_transcript_recovery = False` by default) from historical cached/checkpointed evaluation artifacts.
+
+### Category 5: Token & Cost Accounting (`PROVIDER_REPORTED` vs. `LOCAL_ESTIMATE`)
+- [`AdaptiveTokenController`](agents/AGI_1_7/engine/agi17/telemetry/token_economy.py) and [`ModelAdapter`](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py) explicitly tag every ledger entry as `PROVIDER_REPORTED` (exact token counts returned by `agy.exe --output-format json`), `LOCAL_ESTIMATE` (heuristic fallback when CLI output omits usage metadata), or `MOCK_OFFLINE_TEST` (offline unit tests).
+- **Qualification of `-88.2%` Isolated-CWD Input Token Savings:** Executing single-shot model calls inside `isolated_cwd` (`minimal_cli_home`) reduces **per-call input prompt overhead by `-88.2%`** (`2,683` vs `22,728` input tokens on identical prompts) by avoiding workspace directory context injection. Multi-turn coding and repair missions still consume proportional output and thinking tokens across specialist calls.
 
 ---
 
-## ⚡ 5. Safe Quickstart (Repo-Local Default, Zero User Home Modification)
+## 🛡️ 2. Production Security, Sandboxing & Governance Architecture
 
-### 1. Clone the Repository
+```mermaid
+flowchart TB
+    U["User CLI / CI Trigger"] --> GATE["HighImpactApprovalGate & Untrusted Content Scanner"]
+    GATE --> ORCH["HierarchicalOrchestrator / CIRepairAgent"]
+    ORCH --> MA["ModelAdapter (gemini-3.8-flash-high, Cost & Token Ceilings)"]
+    ORCH --> SBX["DisposableSandboxRunner (--rm --network none --cap-drop ALL --read-only)"]
+    ORCH --> DB["14-State SQLite WAL Task Store & 10-Layer Memory"]
+    SBX --> PR["Verified Unified Diff & Human-Approval PR Payload"]
+```
+
+1. **Disposable Container Sandbox ([`sandbox_runner.py`](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py)):**
+   - Executes untrusted generated Python code and `unittest` suites inside a disposable Docker container (`--rm --network none --cap-drop ALL --security-opt no-new-privileges --read-only --tmpfs /tmp:rw,exec,nosuid,size=64m --cpus 1.0 --memory 256m --pids-limit 64`).
+   - Supports strict fail-closed enforcement (`require_container_isolation=True` $\rightarrow$ raises `SandboxIsolationUnavailableError` if Docker is unavailable) and guaranteed `finally:` workspace destruction.
+2. **Path Traversal, Prompt-Injection & High-Impact Action Guards:**
+   - `validate_relative_sandbox_path()` blocks `..`, absolute paths, and symlink escapes (`PathTraversalViolationError`).
+   - `scan_untrusted_content()` scans repository files for prompt injection (`IGNORE PREVIOUS INSTRUCTIONS`) and blocks credential access (`.gemini/config`, `.ssh/id_rsa`) or unauthorized network calls (`UntrustedContentSecurityError`).
+   - `HighImpactApprovalGate` blocks `git push`, `pip install`, destructive deletes, and external network fetches without explicit human approval (`HighImpactActionBlockedError`).
+3. **Hardened Model Integration ([`model_adapter.py`](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py)):**
+   - Typed `ModelRequest`, `ModelResponse`, and `ModelProviderConfig` contracts with `BaseModelProvider` and `DeterministicMockProvider`.
+   - Enforces per-request (`max_request_cost_usd`) and per-mission (`max_mission_cost_usd`) USD cost ceilings, exponential backoff retries, rate limiting, and automatic credential/path redaction (`redact_sensitive_text()`).
+
+---
+
+## 🧠 3. Embedded 100-Specialist Registry & Ecosystem Coordination
+
+[`CapabilityRouter`](agents/AGI_1_7/ecosystem/agent_registry/capability_router.py) and [`SpecialistFactory`](agents/AGI_1_7/ecosystem/agent_registry/specialist_factory.py) route tasks across **100 schema-validated specialist contracts** across 16 functional families in [`registry.json`](agents/AGI_1_7/ecosystem/agent_registry/registry.json):
+
+| # | Specialist Family | Count | Representative Specialist IDs (`agents/AGI_1_7/ecosystem/agent_registry/contracts/`) |
+| :-: | :--- | :-: | :--- |
+| **1** | **Planning & Architecture** | **6** | `plan_mission_decomposer`, `plan_systems_architect`, `plan_dependency_analyzer`, `plan_risk_estimator` |
+| **2** | **Research & Evidence Synthesis** | **8** | `res_primary_source_hunter`, `res_citation_auditor`, `res_contradiction_detector`, `res_sdk_doc_navigator` |
+| **3** | **Mathematics & Symbolic Reasoning** | **6** | `math_algebraic_solver`, `math_combinatorics_analyst`, `math_probability_statistician`, `math_linear_algebra_verifier` |
+| **4** | **Physics & Physical Sciences** | **6** | `phys_quantum_mechanics_reasoner`, `phys_relativistic_electrodynamics`, `phys_statistical_thermodynamics` |
+| **5** | **Chemistry & Molecular Sciences** | **5** | `chem_organic_synthesis_planner`, `chem_spectroscopy_elucidator`, `chem_kinetics_thermochemistry` |
+| **6** | **Biology & Biomedical Sciences** | **5** | `bio_molecular_genetics_reasoner`, `bio_cell_signaling_oncology`, `bio_biochemistry_enzymology` |
+| **7** | **Software Engineering** | **10** | `swe_python_runtime_engineer`, `swe_ast_refactoring_specialist`, `swe_api_contract_designer`, `swe_patch_minimizer` |
+| **8** | **Terminal, Shell & OS Operations** | **8** | `ops_powershell_automation_specialist`, `ops_posix_shell_specialist`, `ops_process_tree_warden` |
+| **9** | **Containers, Virtualization & Cloud** | **6** | `virt_docker_engine_inspector`, `virt_wsl2_memory_governor`, `virt_harbor_sandbox_coordinator` |
+| **10** | **Browser & Web Automation** | **6** | `web_playwright_session_controller`, `web_dom_accessibility_inspector`, `web_ssrf_robots_compliance_guard` |
+| **11** | **Desktop & Computer Use** | **6** | `desk_sandbox_isolation_enforcer`, `desk_osworld_task_inspector`, `desk_gui_action_schema_validator` |
+| **12** | **Data, Storage & Databases** | **6** | `data_sqlite_wal_architect`, `data_jsonl_ledger_reconciler`, `data_memory_supersession_curator` |
+| **13** | **Testing, QA & Verification** | **8** | `qa_unit_suite_runner`, `qa_integration_scenario_verifier`, `qa_claim_to_evidence_verifier` |
+| **14** | **Security, Permissions & Safety** | **6** | `sec_permission_gate_enforcer`, `sec_prompt_injection_shield`, `sec_secret_credential_scanner`, `sec_ssrf_network_firewall` |
+| **15** | **Performance & Token Optimization** | **4** | `perf_adaptive_concurrency_governor`, `perf_token_budget_controller`, `perf_tail_latency_mitigator` |
+| **16** | **Release, Governance & Reporting** | **4** | `gov_manifest_hash_sealer`, `gov_telemetry_dashboard_publisher`, `gov_release_dossier_compiler` |
+
+---
+
+## ⚡ 4. Quickstart & Reproducible Commands
+
+### 1. Clone & Install (`pyproject.toml`)
 ```bash
 git clone https://github.com/Abhishek200416/AGI-1.7V.git
 cd AGI-1.7V
+python -m pip install -e .
 ```
 
-### 2. Verify All 100 Embedded Agents & Ecosystem Coordinator (100% Repo-Local by Default)
-```powershell
-# Preview without writing any files:
-python agents/AGI_1_7/scripts/sync_ecosystem.py --dry-run
-
-# Verify and sync strictly inside the repository (never touches ~/.gemini unless --install-global is passed):
-python agents/AGI_1_7/scripts/sync_ecosystem.py
+### 2. Run the Complete Offline Verification Suite (`61` Tests, `0` Live Tokens Spent)
+```bash
+python -m unittest \
+  agents/AGI_1_7/tests/test_production_hardening_sprint.py \
+  agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py \
+  agents/AGI_1_7/tests/integration/test_agi17_integration_suite.py \
+  agents/AGI_1_7/tests/end_to_end/test_agi17_e2e_demos.py -v
 ```
 
-### 3. Run the Live 4-Call Multi-Agent Code -> Test -> Fail -> Fix -> Retest Demonstration
-```powershell
-# Runs 4 live gemini-3.8-flash-high calls (0 fallbacks used):
-# 1. plan_systems_architect -> 2. swe_python_runtime_engineer (generates interval_merger.py) ->
-# 3. qa_unit_suite_runner (generates 13 tests in test_interval_merger.py, detects 3 boundary failures exit_code=1) ->
-# 4. swe_patch_minimizer (patches interval_merger.py and re-runs unittest -> exit_code=0, 13/13 OK)
-python agents/AGI_1_7/scripts/demo_real_multi_agent_code_fix.py
+### 3. Run the Focused Python CI-Repair Product Workflow (`--ci-repair-dir`)
+```bash
+python agents/AGI_1_7/run_agi_17.py \
+  --ci-repair-dir agents/AGI_1_7/live_code_mission_workspace \
+  --module-filename token_bucket.py \
+  --prompt "Fix failing unit tests with minimal diff"
 ```
-*Full execution trace with model prompts, responses, token counts (`70,708` tokens), `stderr` tracebacks, and SQLite state transitions:* [`agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json`](agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json)
 
-### 4. Run AGI 1.7 — OMEGA COMMAND via the Standard CLI (Runs Full Coding & Self-Healing Workflow by Default)
-```powershell
-# Run live hardware capability profile & startup crash reconciliation
+### 4. Run Multi-Specialist Coding, Sandboxed Testing & Self-Healing via Standard CLI
+```bash
+# Hardware capability profile & SQLite WAL crash reconciliation only:
 python agents/AGI_1_7/run_agi_17.py --profile-only
 
-# Execute a complete coding + unit test + self-healing mission via the standard CLI
-python agents/AGI_1_7/run_agi_17.py --title "Token Bucket Limiter" --prompt "Implement TokenBucketRateLimiter in token_bucket.py" --code-task-dir agents/AGI_1_7/live_code_mission_workspace --module-filename token_bucket.py --test-filename test_token_bucket.py --inject-deliberate-test-failure
+# Full 3-specialist coding + sandboxed unittest + self-healing repair workflow:
+python agents/AGI_1_7/run_agi_17.py \
+  --title "Token Bucket Limiter" \
+  --prompt "Implement TokenBucketRateLimiter in token_bucket.py" \
+  --code-task-dir agents/AGI_1_7/live_code_mission_workspace \
+  --module-filename token_bucket.py \
+  --test-filename test_token_bucket.py \
+  --inject-deliberate-test-failure
 
-# Execute in OS-Detached Background Mode (Forwards all flags & KEEPS RUNNING EVEN IF YOU CLOSE ANTIGRAVITY IDE!)
-python agents/AGI_1_7/run_agi_17.py --detach --task-id MISSION-BG-001 --title "Overnight Code & Audit" --prompt "Implement and verify module" --code-task-dir agents/AGI_1_7/live_code_mission_workspace
+# Detached background daemon (survives closing Antigravity IDE):
+python agents/AGI_1_7/run_agi_17.py --detach --task-id MISSION-BG-001 --prompt "Implement and verify module"
 ```
 
-### 5. Run the Reproducible Held-Out Coding Benchmark & Cold-Start GPQA Strict-Surface Evaluation
-```powershell
-# Held-Out Coding Benchmark (AGI 1.7 vs Raw Base Model on unseen unit tests)
-python agents/AGI_1_7/scripts/run_heldout_coding_benchmark.py --max-tasks 3
+### 5. Run Live Benchmarks (With Pre-Flight Cost & Token Budget Enforcement)
+```bash
+# 3-Way Held-Out Coding Benchmark (Config A vs Config B vs Config C, enforces --max-budget-usd):
+python agents/AGI_1_7/scripts/run_heldout_coding_benchmark.py --max-tasks 3 --max-budget-usd 0.25
 
-# Fresh Cold-Start GPQA Diamond Clean 1.2.2 Evaluation (Strict Surface-Only, zero checkpoint reuse)
+# Cold-Start GPQA Diamond Clean 1.2.2 Strict Surface-Only Sample:
 python agents/AGI_1_7/scripts/run_gpqa_clean_189_agi17.py --cold-start-sample-n 10
 ```
 
-### 6. Run the Complete Deterministic Verification Suite (`49` Tests, Offline-Capable & GitHub Actions CI)
-```powershell
-python -m unittest agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py agents/AGI_1_7/tests/integration/test_agi17_integration_suite.py agents/AGI_1_7/tests/end_to_end/test_agi17_e2e_demos.py -v
-```
-
 ---
 
-## 🔄 6. Does AGI 1.7 Keep Working If You Close the Antigravity IDE?
+## 📚 5. Documentation, Security Audits & Provenance
 
-**Yes — depending on how you start the mission, AGI 1.7 supports both Continuous Detached Background Execution and Zero-Loss SQLite WAL Crash Recovery:**
-
-| Execution Mode | How It Is Started | What Happens When You Close the Antigravity IDE Window? | Where Logs & State Are Saved |
-| :--- | :--- | :--- | :--- |
-| **🟢 Mode 1: Detached Background Daemon (`--detach`)** | `python agents/AGI_1_7/run_agi_17.py --detach --task-id <ID> --prompt "..."` | **Keeps working 100% continuously in the background even after you close Antigravity IDE.** Forwards all CLI flags (`--code-task-dir`, `--module-filename`, `--test-filename`, etc.), uses Windows `CREATE_NEW_PROCESS_GROUP \| CREATE_NO_WINDOW` (or POSIX `start_new_session=True`), calls `agy.exe --model gemini-3.8-flash-high` headlessly until completion, and updates `<task_id>.pid.json` to `DETACHED_COMPLETED`. | • Live Log: `D:\AGI_Storage\AGI_1_7\logs\detached\<task_id>.log`<br/>• PID Manifest: `<task_id>.pid.json`<br/>• SQLite DB: `agi17_tasks.db` |
-| **🟡 Mode 2: Interactive Chat Session Inside Antigravity UI** | Typing directly inside the Antigravity IDE chat panel without `--detach` | **The interactive UI chat pauses when you close the IDE window, but `0%` of your task state or memory is lost.** Every completed subtask, SHA-256 checkpoint, and 10-layer memory record is already committed to SQLite WAL on `D:\`. When you reopen Antigravity or run `run_agi_17.py`, `DurableTaskManager.reconcile_after_restart()` automatically recovers interrupted `RUNNING` / `VERIFYING` tasks from their last verified checkpoint. | • SQLite Task DB: `D:\AGI_Storage\AGI_1_7\state\agi17_tasks.db`<br/>• Checkpoints: `D:\AGI_Storage\AGI_1_7\checkpoints\`<br/>• 10-Layer Memory: `omega_memory.db` |
-
----
-
-## 🔍 7. Engineering Architecture, Honest Scope & Technical FAQ
-
-See [`agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md`](agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md) for the complete technical walkthrough:
-
-1. **Orchestration Framework vs. Foundation Model (`agy.exe v1.3.3` | `gemini-3.8-flash-high`):** AGI 1.7 is an orchestration, transactional SQLite WAL task-control, process-supervision, and persistent-memory runtime built around **Google's Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** via [`ModelAdapter`](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py). We did not train or fine-tune a custom base LLM.
-2. **Ecosystem Coordination (`EcosystemCoordinator`):** Coordinates the `100` embedded specialists across `16` families with `76` Agency domain profiles ([`ecosystem/agency_profiles/`](agents/AGI_1_7/ecosystem/agency_profiles/)), `21` MCP servers (`ponytail`, `context7`, `sequential-thinking`, `gsd`, `playwright`, etc.), `11` plugin suites (`ponytail` 7-rung YAGNI discipline, `coderabbit`, etc.), and `74` workflow skills (`gsd-*`, `kubernetes`).
-3. **Strict Surface-Only GPQA Grading & Held-Out Coding Benchmark:**
-   - **GPQA Diamond Clean 1.2.2 ([`AGI_1_7_GPQA_CLEAN_189_REPORT.md`](agents/AGI_1_7/reports/AGI_1_7_GPQA_CLEAN_189_REPORT.md)):** Enforces **Strict Surface-Only Grading** (`allow_transcript_recovery = False` by default): **`9 / 10` (`90.00%`)** on the fresh cold-start from-scratch sample ([`GPQA_COLD_START_STRICT_SURFACE_RESULTS.json`](agents/AGI_1_7/reports/GPQA_COLD_START_STRICT_SURFACE_RESULTS.json), `9/9 = 100%` on surfaced responses, `1` unanswered on `recnTTKdBzfuoZ7w7`), **`14 / 15` (`93.33%`)** on the live 15-item re-evaluation, and **`188 / 189` (`99.47%`)** strict surface-only across all 189 items (vs. `189 / 189 = 100.00%` only with disclosed thinking-transcript recovery).
-   - **Held-Out Coding Benchmark ([`HELDOUT_CODING_BENCHMARK_REPORT.md`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_REPORT.md)):** `AGI_1_7_OMEGA_COMMAND` achieves **`2 / 3` (`66.67%`) verified task completion (`8 / 9 = 88.89%` unseen unit tests)** vs. `RAW_BASE_MODEL_SINGLE_SHOT` at **`0 / 3` (`0.00%`) verified task completion (`4 / 7 = 57.14%` unseen unit tests)** with `0` fallbacks used.
-
-
-
+- **Phase 0 Baseline & Security Audit:** [`agents/AGI_1_7/docs/PHASE_0_BASELINE_AND_SECURITY_AUDIT.md`](agents/AGI_1_7/docs/PHASE_0_BASELINE_AND_SECURITY_AUDIT.md)
+- **Third-Party Licenses & Provenance Inventory:** [`agents/AGI_1_7/docs/THIRD_PARTY_LICENSES_AND_PROVENANCE.md`](agents/AGI_1_7/docs/THIRD_PARTY_LICENSES_AND_PROVENANCE.md)
+- **Product Spec — Automated Python CI-Repair Agent:** [`agents/AGI_1_7/docs/PRODUCT_SPEC_PYTHON_CI_REPAIR.md`](agents/AGI_1_7/docs/PRODUCT_SPEC_PYTHON_CI_REPAIR.md)
+- **Operations, Deployment & Troubleshooting Runbook:** [`agents/AGI_1_7/docs/OPERATIONS_AND_DEPLOYMENT_GUIDE.md`](agents/AGI_1_7/docs/OPERATIONS_AND_DEPLOYMENT_GUIDE.md)
+- **Technical Architecture & Engineering FAQ:** [`agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md`](agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md)
+- **3-Way Held-Out Coding Benchmark Report:** [`agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_REPORT.md`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_REPORT.md)

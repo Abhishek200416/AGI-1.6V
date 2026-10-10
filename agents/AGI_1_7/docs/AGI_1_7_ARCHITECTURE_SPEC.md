@@ -5,8 +5,8 @@
 **Version:** `1.7.0`  
 **Status:** `APPROVED / AUTHORITATIVE SPECIFICATION`  
 **Timestamp:** `2026-10-10T18:18:00+05:30` (`2026-10-10T12:48:00Z`)  
-**Repository Root:** `C:\Users\abhis\Downloads\pt`  
-**Codebase Root:** `C:\Users\abhis\Downloads\pt\agents\AGI_1_7\`  
+**Repository Root:** `<REPO_ROOT>`  
+**Codebase Root:** `<REPO_ROOT>\agents\AGI_1_7\`  
 **Primary External Storage Roots:**  
 - `D:\AGI_Storage\AGI_1_7\` (SQLite WAL ledgers, 10-layer persistent memory, checkpoints, process registries)  
 - `D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\` (Isolated benchmark CWD, raw telemetry JSONL, campaign artifacts)  
@@ -176,7 +176,7 @@ To guarantee zero circular imports, module dependencies follow a strict bottom-u
 
 ### 4.1 Cardinality & Concurrency Governance Constants
 
-Defined in [`engine/agi17/orchestration/resource_governor.py`](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_7/engine/agi17/orchestration/resource_governor.py):
+Defined in [`engine/agi17/orchestration/resource_governor.py`](file:///<REPO_ROOT>/agents/AGI_1_7/engine/agi17/orchestration/resource_governor.py):
 
 ```python
 MAX_AGENT_SPECIALIZATIONS: int = 100   # Total validated specialist contracts in registry

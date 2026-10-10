@@ -110,12 +110,13 @@ class EvidenceVerifier:
         )
 
     @classmethod
-    def verify_baseline_immutability(cls, repo_root: str | Path = r"c:\Users\abhis\Downloads\pt") -> VerificationCheck:
+    def verify_baseline_immutability(cls, repo_root: Optional[str | Path] = None) -> VerificationCheck:
         """Verifies via git status that agents/AGI_1_5 and agents/AGI_1_6 have zero modifications."""
+        root = Path(repo_root) if repo_root else Path(__file__).resolve().parents[5]
         try:
             proc = subprocess.run(
                 ["git", "status", "--porcelain", "agents/AGI_1_5", "agents/AGI_1_6"],
-                cwd=str(repo_root),
+                cwd=str(root),
                 capture_output=True,
                 text=True,
                 timeout=15,
@@ -126,7 +127,7 @@ class EvidenceVerifier:
             return VerificationCheck(
                 check_name="baseline_immutability:AGI_1_5_and_AGI_1_6",
                 passed=passed,
-                evidence_path=str(repo_root),
+                evidence_path=str(root),
                 expected=[],
                 observed=dirty_lines,
                 details="Zero modified files in agents/AGI_1_5 and agents/AGI_1_6" if passed else f"Modified: {dirty_lines}",
@@ -135,7 +136,7 @@ class EvidenceVerifier:
             return VerificationCheck(
                 check_name="baseline_immutability:AGI_1_5_and_AGI_1_6",
                 passed=False,
-                evidence_path=str(repo_root),
+                evidence_path=str(root),
                 expected="Clean git status",
                 observed=str(exc),
                 details=f"Failed to run git status: {exc}",

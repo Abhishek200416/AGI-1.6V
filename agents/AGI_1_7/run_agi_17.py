@@ -148,6 +148,11 @@ def main() -> int:
         action="store_true",
         help="Inject a deliberate defect after Stage 2 code generation so Stage 3 detects a real unittest failure, escalates to swe_patch_minimizer via ModelAdapter.invoke(), and re-runs tests",
     )
+    parser.add_argument(
+        "--ci-repair-dir",
+        default=None,
+        help="Run the focused Python CI-Repair Agent on the specified workspace directory (reproduces failing tests in disposable sandbox, generates minimal patch, verifies tests, outputs PR payload)",
+    )
     parser.add_argument("--save-execution-log", default=None, help="Optional path to save full JSON execution trace")
     parser.add_argument(
         "--detach",
@@ -160,9 +165,9 @@ def main() -> int:
     storage_root = _resolve_storage_root(args.storage_root)
 
     # Normal CLI runs the complete coding workflow by default whenever a prompt is given
-    # unless --text-only or --profile-only is specified.
+    # unless --text-only or --profile-only or --ci-repair-dir is specified.
     effective_code_dir: str | None = args.code_task_dir
-    if effective_code_dir is None and args.prompt and not args.text_only and not args.profile_only:
+    if effective_code_dir is None and args.prompt and not args.text_only and not args.profile_only and not args.ci_repair_dir:
         effective_code_dir = str(REPO_ROOT / "agents" / "AGI_1_7" / "live_code_mission_workspace")
 
     if args.detach:
@@ -171,6 +176,19 @@ def main() -> int:
     adapter = AGI17Adapter(storage_root=storage_root)
 
     startup = adapter.run_startup_reconciliation()
+
+    if args.ci_repair_dir:
+        repair_res = adapter.run_ci_repair(
+            workspace_dir=args.ci_repair_dir,
+            module_filename=args.module_filename,
+            issue_description=args.prompt or "Fix failing Python unit tests with minimal diff.",
+        )
+        if args.save_execution_log:
+            out_p = Path(args.save_execution_log)
+            out_p.parent.mkdir(parents=True, exist_ok=True)
+            out_p.write_text(json.dumps(repair_res, indent=2, default=str), encoding="utf-8")
+        print(json.dumps(repair_res, indent=2, default=str), flush=True)
+        return 0 if repair_res.get("status") in ("REPAIRED_AND_VERIFIED", "ALREADY_PASSING") else 1
 
     if args.profile_only or not args.prompt:
         profile = adapter.profiler.build_full_profile()

@@ -40,10 +40,10 @@ class BenchmarkAuditor:
 
     def __init__(
         self,
-        repo_root: str | Path = r"c:\Users\abhis\Downloads\pt",
+        repo_root: Optional[str | Path] = None,
         eval_root: str | Path = r"D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND",
     ) -> None:
-        self.repo_root = Path(repo_root)
+        self.repo_root = Path(repo_root) if repo_root else Path(__file__).resolve().parents[5]
         self.eval_root = Path(eval_root)
 
     @staticmethod
