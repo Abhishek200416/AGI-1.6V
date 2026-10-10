@@ -179,7 +179,10 @@ class TestAGI17UnitSuite(unittest.TestCase):
         self.assertGreater(snap.avail_phys_mb, 0.0)
         self.assertGreaterEqual(snap.cpu_percent, 0.0)
         self.assertLessEqual(snap.cpu_percent, 100.0)
-        self.assertGreater(snap.d_drive_free_gb, 0.0)
+        if snap.d_drive_available:
+            self.assertGreater(snap.d_drive_free_gb, 0.0)
+        else:
+            self.assertGreater(snap.c_drive_free_gb, 0.0)
 
     # 8. Concurrency reduction when free memory falls below floor
     def test_08_concurrency_reduction_below_memory_floor(self) -> None:

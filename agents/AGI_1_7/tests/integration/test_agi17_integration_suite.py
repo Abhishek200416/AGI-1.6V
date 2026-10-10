@@ -335,8 +335,10 @@ class TestAGI17IntegrationSuite(unittest.TestCase):
 
     # Test K — D:\ storage and local fallback verification
     def test_K_d_drive_storage_and_local_fallback_verification(self) -> None:
+        import os as _os
+        primary_target = Path(r"D:\AGI_Storage\AGI_1_7\memory") if (sys.platform == "win32" and _os.path.exists("D:\\")) else (self.tmp_path / "primary_mem")
         real_d_mem = OmegaCommandMemory(
-            primary_dir=r"D:\AGI_Storage\AGI_1_7\memory",
+            primary_dir=primary_target,
             fallback_dir=self.tmp_path / "fallback_mem",
             force_fallback=False,
         )

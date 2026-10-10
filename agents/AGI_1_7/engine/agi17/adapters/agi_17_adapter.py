@@ -44,8 +44,17 @@ class AGI17Adapter:
         storage_root: str | Path = r"D:\AGI_Storage\AGI_1_7",
         eval_root: str | Path = r"D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND",
     ) -> None:
-        self.storage_root = Path(storage_root)
-        self.eval_root = Path(eval_root)
+        import os as _os
+        import sys as _sys
+        fallback_base = Path(__file__).resolve().parents[3] / "state_fallback"
+        if str(storage_root).upper().startswith("D:") and (_sys.platform != "win32" or not _os.path.exists("D:\\")):
+            self.storage_root = fallback_base / "storage"
+        else:
+            self.storage_root = Path(storage_root)
+        if str(eval_root).upper().startswith("D:") and (_sys.platform != "win32" or not _os.path.exists("D:\\")):
+            self.eval_root = fallback_base / "eval"
+        else:
+            self.eval_root = Path(eval_root)
 
         self.profiler = CapabilityProfiler(
             storage_root=str(self.storage_root),

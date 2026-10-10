@@ -140,17 +140,27 @@ class OmegaCommandMemory:
     def __init__(
         self,
         primary_dir: str | Path = r"D:\AGI_Storage\AGI_1_7\memory",
-        fallback_dir: str | Path = r"c:\Users\abhis\Downloads\pt\agents\AGI_1_7\state_fallback\memory",
+        fallback_dir: Optional[str | Path] = None,
         session_id: Optional[str] = None,
         force_fallback: bool = False,
     ) -> None:
+        import os as _os
+        import sys as _sys
         self.primary_dir = Path(primary_dir)
-        self.fallback_dir = Path(fallback_dir)
+        default_fb = Path(__file__).resolve().parents[3] / "state_fallback" / "memory"
+        self.fallback_dir = Path(fallback_dir) if fallback_dir is not None else default_fb
         self.session_id = session_id or f"SESSION-{int(time.time() * 1000)}-{uuid.uuid4().hex[:6]}"
         self.using_fallback = False
         self._lock = threading.RLock()
 
-        if force_fallback:
+        raw_prim = str(primary_dir)
+        unmounted_drive = (
+            len(raw_prim) >= 2
+            and raw_prim[1] == ":"
+            and (_sys.platform != "win32" or not _os.path.exists(raw_prim[:2] + "\\"))
+        )
+
+        if force_fallback or unmounted_drive:
             self.active_dir = self.fallback_dir
             self.using_fallback = True
             self.active_dir.mkdir(parents=True, exist_ok=True)

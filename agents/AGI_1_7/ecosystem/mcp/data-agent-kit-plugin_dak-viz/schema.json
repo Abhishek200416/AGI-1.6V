@@ -1,0 +1,8 @@
+{
+  "server": "data-agent-kit-plugin_dak-viz",
+  "description": "Data Agent Kit Visualization MCP Server Schema for AGI 1.7 OMEGA COMMAND",
+  "tools": [
+    "render_chart",
+    "export_visualization_spec"
+  ]
+}

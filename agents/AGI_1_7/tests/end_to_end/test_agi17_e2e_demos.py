@@ -38,9 +38,12 @@ from agents.AGI_1_7.engine.agi17.telemetry.token_economy import TokenBudgetExcee
 class TestAGI17EndToEndDemos(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.storage_root = Path(r"D:\AGI_Storage\AGI_1_7")
-        cls.eval_root = Path(r"D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND")
-        cls.adapter = AGI17Adapter(storage_root=cls.storage_root, eval_root=cls.eval_root)
+        cls.adapter = AGI17Adapter(
+            storage_root=Path(r"D:\AGI_Storage\AGI_1_7"),
+            eval_root=Path(r"D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND"),
+        )
+        cls.storage_root = cls.adapter.storage_root
+        cls.eval_root = cls.adapter.eval_root
         cls.run_tag = f"{int(time.time())}-{uuid.uuid4().hex[:4]}"
         cls.demo_results: dict = {"run_tag": cls.run_tag}
 
