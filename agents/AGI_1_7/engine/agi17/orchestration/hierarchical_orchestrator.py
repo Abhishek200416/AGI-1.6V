@@ -8,23 +8,31 @@ Coordinates:
 3. Up to 100 logical child tasks represented in the durable SQLite `TaskStore`,
    routed to distinct specialists from the 100-agent registry (`SpecialistFactory`),
    while concurrent execution is bounded by `ResourceGovernor`.
-4. Safe checkpoint processing of live `CommandInbox` instructions (`ADD_CHILD_TASK`,
+4. Genuine inter-agent context passing (`context["upstream_outputs"]`), live
+   `ModelAdapter` (`gemini-3.8-flash-high`) invocation, supervised command/test
+   execution (`ProcessSupervisor`), and automatic disagreement / test-failure
+   self-healing (`RUNNING -> FAILED -> RETRYING -> READY -> RUNNING -> VERIFYING -> SUCCEEDED`).
+5. Safe checkpoint processing of live `CommandInbox` instructions (`ADD_CHILD_TASK`,
    `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `UPDATE_CONSTRAINTS`, etc.)
    between waves and subtasks.
-5. Mandatory post-execution `EvidenceVerifier` check and episodic memory commit.
+6. Mandatory post-execution `EvidenceVerifier` check and episodic memory commit.
 """
 
 from __future__ import annotations
 
 import concurrent.futures
+import json
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
+from agents.AGI_1_7.ecosystem.agent_registry.agent_contract import AgentContract
 from agents.AGI_1_7.ecosystem.agent_registry.specialist_factory import SpecialistFactory
-from ..capabilities.resource_snapshot import LiveResourceMetrics, ResourceSnapshot
+from ..capabilities.resource_snapshot import LiveResourceMetrics
 from ..memory.omega_command_memory import OmegaCommandMemory
+from ..process_supervision.process_supervisor import ProcessSupervisor
 from ..task_control.task_manager import DurableTaskManager
 from ..task_control.task_state_machine import TERMINAL_STATES, TaskState
 from ..telemetry.token_economy import AdaptiveTokenController
@@ -45,6 +53,12 @@ class SubtaskSpec:
     queue_type: str = "light_in_process"
     priority: int = 50
     token_budget: int = 6000
+    use_live_model: bool = False
+    executor_fn: Optional[Callable[[AgentContract, Dict[str, Any]], Dict[str, Any]]] = None
+    verification_command: Optional[List[str]] = None
+    verification_cwd: Optional[str] = None
+    repair_specialist_id: str = "swe_patch_minimizer"
+    repair_fn: Optional[Callable[[Dict[str, Any], Dict[str, Any]], Dict[str, Any]]] = None
 
 
 class HierarchicalOrchestrator:
@@ -71,12 +85,16 @@ class HierarchicalOrchestrator:
         governor: Optional[ResourceGovernor] = None,
         token_controller: Optional[AdaptiveTokenController] = None,
         specialist_factory: Optional[SpecialistFactory] = None,
+        model_adapter: Optional[Any] = None,
+        supervisor: Optional[ProcessSupervisor] = None,
     ) -> None:
         self.task_manager = task_manager or DurableTaskManager()
         self.memory = memory or OmegaCommandMemory()
         self.governor = governor or ResourceGovernor()
         self.token_controller = token_controller or AdaptiveTokenController()
         self.specialist_factory = specialist_factory or SpecialistFactory()
+        self.supervisor = supervisor or ProcessSupervisor(task_manager=self.task_manager)
+        self.model_adapter = model_adapter
 
     def requires_hierarchical_planning(
         self,
@@ -259,6 +277,58 @@ class HierarchicalOrchestrator:
             ),
         ]
 
+    def _build_live_model_executor(
+        self,
+        root_id: str,
+        child_id: str,
+    ) -> Callable[[AgentContract, Dict[str, Any]], Dict[str, Any]]:
+        """Creates a custom executor that invokes `gemini-3.8-flash-high` via `ModelAdapter`."""
+
+        def _exec(contract: AgentContract, payload: Dict[str, Any]) -> Dict[str, Any]:
+            if self.model_adapter is None:
+                raise RuntimeError(f"use_live_model=True requested for {child_id}, but ModelAdapter is not configured")
+            upstream = payload.get("context", {}).get("upstream_outputs", {})
+            upstream_summary = ""
+            if upstream:
+                upstream_summary = "\n\nUPSTREAM SPECIALIST OUTPUTS:\n" + json.dumps(
+                    {
+                        k: {
+                            "agent_id": v.get("agent_id"),
+                            "output_summary": v.get("output_summary"),
+                            "artifacts": v.get("artifacts"),
+                        }
+                        for k, v in upstream.items()
+                    },
+                    indent=2,
+                    default=str,
+                )
+            full_prompt = (
+                f"You are AGI 1.7 Embedded Specialist `{contract.agent_id}` ({contract.display_name}, Family: {contract.family}).\n"
+                f"Primary Capabilities: {', '.join(contract.primary_capabilities)}\n"
+                f"Task ({child_id}): {payload['task_prompt']}"
+                f"{upstream_summary}"
+            )
+            model_res = self.model_adapter.invoke(
+                task_id=root_id,
+                child_task_id=child_id,
+                prompt=full_prompt,
+                agent_id=contract.agent_id,
+                effort="high",
+                is_benchmark_or_single_shot=True,
+                tier="COMPLEX",
+            )
+            return {
+                "analysis": model_res["response_text"],
+                "model_invoked": model_res["model"],
+                "model_status": model_res["status"],
+                "model_duration_sec": model_res["duration_sec"],
+                "token_usage": model_res["token_usage"],
+                "notification_id": model_res["notification_id"],
+                "stdout_log_path": model_res.get("stdout_log_path"),
+            }
+
+        return _exec
+
     def _execute_hierarchical_dag(
         self,
         *,
@@ -277,10 +347,12 @@ class HierarchicalOrchestrator:
                 f"Requested {len(specs)} child tasks exceeds MAX_LOGICAL_CHILD_TASKS ({MAX_LOGICAL_CHILD_TASKS})"
             )
 
+        spec_by_cid: Dict[str, SubtaskSpec] = {}
         child_ids: List[str] = []
         for idx, sp in enumerate(specs):
             cid = f"{root_id}-SUB-{idx + 1:03d}"
             child_ids.append(cid)
+            spec_by_cid[cid] = sp
             deps = [child_ids[d_idx] for d_idx in sp.depends_on_indices if 0 <= d_idx < idx]
 
             if sp.preferred_specialist_id:
@@ -327,7 +399,6 @@ class HierarchicalOrchestrator:
                 TaskState.INTERRUPTED.value,
                 TaskState.WAITING_FOR_INPUT.value,
             ):
-                # Cancel any non-terminal children if root was canceled
                 if root_rec["state"] == TaskState.CANCELED.value:
                     for ch in self.task_manager.store.list_tasks(parent_task_id=root_id):
                         if TaskState(ch["state"]) not in TERMINAL_STATES:
@@ -368,7 +439,6 @@ class HierarchicalOrchestrator:
                 break
 
             if not ready_children:
-                # Check if remaining non-terminal tasks are deadlocked/blocked
                 break
 
             wave_index += 1
@@ -387,6 +457,7 @@ class HierarchicalOrchestrator:
 
             def _run_child(child_record: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
                 cid = child_record["task_id"]
+                sp_spec = spec_by_cid.get(cid)
                 q_type = child_record.get("metadata", {}).get("queue_type", "light_in_process")
                 decision = self.governor.acquire_slot(queue_type=q_type, snap=simulated_resource_snapshot)
                 if not decision.admitted:
@@ -396,7 +467,6 @@ class HierarchicalOrchestrator:
                             TaskState.WAITING_FOR_RESOURCE,
                             reason=decision.reason,
                         )
-                    # Wait briefly and execute under fallback slot1
                     time.sleep(0.02)
                     self.governor.acquire_slot(queue_type="light_in_process", snap=simulated_resource_snapshot)
                     q_type = "light_in_process"
@@ -408,10 +478,25 @@ class HierarchicalOrchestrator:
                     self.task_manager.transition(cid, TaskState.RUNNING, reason="Executing specialist subtask")
 
                     role_id = child_record.get("specialist_role") or "swe_python_runtime_engineer"
+                    custom_exec = None
+                    if sp_spec is not None:
+                        if sp_spec.executor_fn is not None:
+                            custom_exec = sp_spec.executor_fn
+                        elif sp_spec.use_live_model:
+                            custom_exec = self._build_live_model_executor(root_id=root_id, child_id=cid)
+
                     try:
-                        inst = self.specialist_factory.instantiate(role_id)
+                        inst = self.specialist_factory.instantiate(role_id, custom_executor=custom_exec)
                     except KeyError:
-                        inst = self.specialist_factory.instantiate("swe_python_runtime_engineer")
+                        inst = self.specialist_factory.instantiate("swe_python_runtime_engineer", custom_executor=custom_exec)
+
+                    # Pass upstream outputs from dependency tasks into context
+                    deps = child_record.get("depends_on", [])
+                    upstream_outputs = {
+                        dep_id: completed_results[dep_id]
+                        for dep_id in deps
+                        if dep_id in completed_results
+                    }
 
                     res = inst.run(
                         {
@@ -420,21 +505,103 @@ class HierarchicalOrchestrator:
                             "context": {
                                 "parent_task_id": root_id,
                                 "wave_index": wave_index,
+                                "upstream_outputs": upstream_outputs,
                                 "root_metadata": self.task_manager.store.get_task(root_id).get("metadata", {}),
                             },
                         }
                     )
 
-                    self.token_controller.record_usage(
-                        task_id=root_id,
-                        child_task_id=cid,
-                        agent_id=inst.contract.agent_id,
-                        prompt_text=child_record["description"],
-                        response_text=res["output_summary"],
-                        cwd_used=self.token_controller.get_execution_cwd(is_benchmark_or_single_shot=True),
-                    )
+                    if sp_spec is None or not sp_spec.use_live_model:
+                        self.token_controller.record_usage(
+                            task_id=root_id,
+                            child_task_id=cid,
+                            agent_id=inst.contract.agent_id,
+                            prompt_text=child_record["description"],
+                            response_text=res["output_summary"],
+                            cwd_used=self.token_controller.get_execution_cwd(is_benchmark_or_single_shot=True),
+                        )
 
                     self.task_manager.transition(cid, TaskState.VERIFYING, reason="Verifying specialist output")
+
+                    # Check verification command or custom executor verification flag
+                    verification_failed = False
+                    failure_details: Dict[str, Any] = {}
+                    artifacts = res.get("artifacts") or {}
+                    if artifacts.get("verification_passed") is False:
+                        verification_failed = True
+                        failure_details = dict(artifacts)
+
+                    if sp_spec and sp_spec.verification_command:
+                        ver_notif = self.supervisor.run_supervised(
+                            task_id=f"{cid}-VERIFY-ATT1",
+                            command=sp_spec.verification_command,
+                            cwd=sp_spec.verification_cwd,
+                            wall_timeout_sec=60.0,
+                            idle_timeout_sec=30.0,
+                        )
+                        stdout_txt = Path(ver_notif.stdout_log_path).read_text(encoding="utf-8", errors="replace") if Path(ver_notif.stdout_log_path).exists() else ""
+                        stderr_txt = Path(ver_notif.stderr_log_path).read_text(encoding="utf-8", errors="replace") if Path(ver_notif.stderr_log_path).exists() else ""
+                        artifacts["initial_verification_run"] = {
+                            "exit_code": ver_notif.exit_code,
+                            "stdout": stdout_txt,
+                            "stderr": stderr_txt,
+                            "notification_id": ver_notif.notification_id,
+                        }
+                        if ver_notif.exit_code != 0:
+                            verification_failed = True
+                            failure_details = artifacts["initial_verification_run"]
+
+                    # Self-healing retry loop when verification fails or specialists disagree
+                    if verification_failed and sp_spec and sp_spec.repair_fn is not None:
+                        self.task_manager.transition(
+                            cid,
+                            TaskState.FAILED,
+                            reason="Verification failed; initiating specialist repair",
+                            error=failure_details,
+                        )
+                        self.task_manager.transition(
+                            cid,
+                            TaskState.QUEUED,
+                            reason=f"Escalating failure to repair specialist '{sp_spec.repair_specialist_id}'",
+                        )
+                        self.task_manager.transition(cid, TaskState.READY, reason="Repair specialist ready")
+                        self.task_manager.transition(cid, TaskState.RUNNING, reason="Executing specialist repair & re-test")
+
+                        repair_out = sp_spec.repair_fn(res, failure_details)
+                        artifacts["repair_specialist_id"] = sp_spec.repair_specialist_id
+                        artifacts["repair_execution"] = repair_out
+
+                        self.task_manager.transition(cid, TaskState.VERIFYING, reason="Re-verifying after specialist patch")
+                        if sp_spec.verification_command:
+                            re_notif = self.supervisor.run_supervised(
+                                task_id=f"{cid}-VERIFY-ATT2",
+                                command=sp_spec.verification_command,
+                                cwd=sp_spec.verification_cwd,
+                                wall_timeout_sec=60.0,
+                                idle_timeout_sec=30.0,
+                            )
+                            re_stdout = Path(re_notif.stdout_log_path).read_text(encoding="utf-8", errors="replace") if Path(re_notif.stdout_log_path).exists() else ""
+                            re_stderr = Path(re_notif.stderr_log_path).read_text(encoding="utf-8", errors="replace") if Path(re_notif.stderr_log_path).exists() else ""
+                            artifacts["post_repair_verification_run"] = {
+                                "exit_code": re_notif.exit_code,
+                                "stdout": re_stdout,
+                                "stderr": re_stderr,
+                                "notification_id": re_notif.notification_id,
+                            }
+                            verification_failed = re_notif.exit_code != 0
+                        else:
+                            verification_failed = not bool(repair_out.get("verification_passed", True))
+
+                    if verification_failed:
+                        self.task_manager.transition(
+                            cid,
+                            TaskState.FAILED,
+                            reason="Specialist verification failed after retry",
+                            error=failure_details,
+                        )
+                        res["status"] = "FAILED"
+                        return cid, res
+
                     self.task_manager.transition(
                         cid,
                         TaskState.SUCCEEDED,

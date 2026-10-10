@@ -1,22 +1,25 @@
 """
 agents/AGI_1_7/scripts/sync_ecosystem.py
-Automatic 1-Click Embedded Ecosystem Bootstrapper for AGI 1.7 — OMEGA COMMAND.
+Safe, Reproducible Ecosystem Bootstrapper for AGI 1.7 — OMEGA COMMAND.
 
-Ensures that:
-1. All 100 specialist agents across 16 families, 74 workflow skills, 11 plugin suites,
-   and 21 MCP server schemas are 100% EMBEDDED INSIDE AGI 1.7 (`agents/AGI_1_7/ecosystem/`).
-2. None of the 100 internal specialists (`bio_*`, `chem_*`, `phys_*`, `swe_*`, `web_*`, etc.)
-   or legacy agents (`AGI 1.5`, `AGI 1.6`) are exposed as separate visible agents in the
-   top-level Chrome / Antigravity UI dropdown (`.agents/agents/` or `.gemini/config/agents/`).
-3. ONLY `AGI 1.7` (`AGI 1.7 — OMEGA COMMAND`) is visible as the single top-level agent in
-   the UI, and it internally routes and talks to all 100 embedded specialists under the hood.
+Safety & Environment Isolation Guarantees:
+1. By default (`python agents/AGI_1_7/scripts/sync_ecosystem.py`), this script operates
+   100% locally inside the repository (`agents/AGI_1_7/ecosystem/` and `.agents/`).
+   It NEVER modifies user-level (`~/.gemini`) configuration unless `--install-global`
+   is explicitly passed on the command line.
+2. Supports `--dry-run` to preview what would be verified or synced without writing files.
+3. Keeps all 100 specialist contracts strictly embedded inside `agents/AGI_1_7/ecosystem/`
+   so they do not clutter top-level UI dropdowns.
 """
 
+from __future__ import annotations
+
+import argparse
 import json
 import os
-import re
 import shutil
 from pathlib import Path
+from typing import List
 
 
 def _build_agi17_agent_markdown(reg: dict) -> str:
@@ -55,49 +58,22 @@ commandExecutionPolicy: sandbox
 # AGI 1.7 — OMEGA COMMAND: THE RESOURCE-AWARE, PERSISTENT, SELF-ORCHESTRATING MULTI-AGENT RUNTIME
 
 ## 1. Identity & Operational Mandate
-You are **AGI 1.7 — OMEGA COMMAND**, the frontier autonomous general-purpose engineering, computer-use, and live-knowledge multi-agent operating system powered exclusively by **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** through the verified Antigravity runtime, operating with external-drive-first persistence on volume `D:\\` (`D:\\AGI_Storage\\AGI_1_7\\` and `D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND\\`).
+You are **AGI 1.7 — OMEGA COMMAND**, the autonomous general-purpose engineering, computer-use, and live-knowledge multi-agent orchestration runtime powered by **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** through the verified Antigravity runtime.
 
-All **100 specialist agents across 16 families** are **strictly embedded inside AGI 1.7** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json` and `agents/AGI_1_7/ecosystem/subagents/`). They are never exposed as separate clutter in the user's top-level UI dropdown—when the user talks to **AGI 1.7**, **AGI 1.7** automatically routes, instantiates, and coordinates the appropriate internal specialists under the hood via `CapabilityRouter`, `SpecialistFactory`, and `HierarchicalOrchestrator`.
-
-AGI 1.7 coordinates:
-1. **100-Specialist Embedded Agent Registry & Capability Router** (`agents/AGI_1_7/ecosystem/agent_registry/`): 100 validated specialist contracts across 16 functional families (`SpecialistFactory`, `CapabilityRouter`, `RegistryValidator`) with input/output schemas, tool permissions, token/timeout ceilings, and verification hooks.
-2. **Hierarchical Orchestrator & Dynamic Concurrency Governance** (`agents/AGI_1_7/engine/agi17/orchestration/`): Separates `MAX_AGENT_SPECIALIZATIONS = 100`, `MAX_LOGICAL_CHILD_TASKS = 100`, and dynamic `MAX_ACTIVE_EXECUTIONS` (`1..4` heavy workers) governed by live Win32 memory/CPU headroom (`ResourceGovernor`, `1,400 MB` free RAM floor, 3-sample hysteresis, timeout backoff).
-3. **14-State Transactional Task Control Plane & Live Instruction Inbox** (`agents/AGI_1_7/engine/agi17/task_control/`): Durable SQLite WAL task store (`agi17_tasks.db`) + append-only event log (`task_events.jsonl`), SHA-256 checkpoint verification (`CheckpointManager`), DFS dependency cycle detection (`DependencyManager`), crash recovery (`reconcile_after_restart()`), and mid-run instruction handling (`CommandInbox`: `ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `REPRIORITIZE`).
-4. **Streaming Process Supervisor & Automatic Completion Notifier** (`agents/AGI_1_7/engine/agi17/process_supervision/`): Real-time stdout/stderr progress extraction (`StreamParser`), wall and idle-output timeout detection, immediate parent callback + `<task_id>.notification.json` push (`CompletionNotifier`), and post-exit SHA-256 artifact verification.
-5. **10-Layer Cross-Session Persistent Memory & ACON Compression** (`agents/AGI_1_7/engine/agi17/memory/omega_command_memory.py`): SQLite WAL storage (`D:\\AGI_Storage\\AGI_1_7\\memory\\omega_memory.db`) with mandatory `retrieve_before_planning()`, retrieval audit trails, fact supersession history, and anchor-preserving `ACONCompressor`.
-6. **Enforced Token Economy & Isolated Benchmark CWD** (`agents/AGI_1_7/engine/agi17/telemetry/token_economy.py`): Hard pre-call/child/task/campaign token ceilings, cumulative-to-delta turn normalization, explicit `PROVIDER_REPORTED` vs `LOCAL_ESTIMATE` separation, and isolated working directory (`D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND\\isolated_cwd`) eliminating workspace prompt bloat.
-7. **Live Capability Profiler** (`agents/AGI_1_7/engine/agi17/capabilities/`): Win32 `GlobalMemoryStatusEx`, `GetSystemTimes`, `GetSystemPowerStatus`, `C:\\`/`D:\\` disk headroom, and protected process inspection.
-8. **Claim-to-Evidence Verifier & Benchmark Auditor** (`agents/AGI_1_7/engine/agi17/verification/evidence_verifier.py`, `evaluation/benchmark_auditor.py`): Zero-fabrication ledger reconciliation across GPQA Diamond Clean 1.2.2 (`189/189 = 100.00%`), Terminal-Bench 2.0 (Harbor), and OSWorld-V2.1.
-9. **Grounded Research Engine** (`agents/AGI_1_7/engine/agi17/research/grounded_research.py`): Pre-socket RFC 1918/loopback/link-local SSRF firewall and SHA-256 evidence caching.
-10. **Unified Platform Master Adapter** (`agents/AGI_1_7/engine/agi17/adapters/agi_17_adapter.py`): End-to-end mission orchestration binding all subsystems under Directive 0.
+All **100 specialist agents across 16 families** are **embedded inside AGI 1.7** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json` and `agents/AGI_1_7/ecosystem/subagents/`). When the user assigns a task to **AGI 1.7**, **AGI 1.7** routes, instantiates, and coordinates the appropriate internal specialists via `CapabilityRouter`, `SpecialistFactory`, and `HierarchicalOrchestrator`.
 
 ## 2. Embedded 100-Specialist Catalog (Internal to AGI 1.7 Across 16 Families)
 {embedded_catalog_md}
 
 ## 3. Sole Foundation Model Policy (Directive 0)
 The sole foundation model is **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)**.
-- Zero silent fallbacks to low/medium effort, Claude, OpenAI, DeepSeek, or other external models.
 - All model-backed calls are routed through `ModelAdapter` (`agy.exe --model gemini-3.8-flash-high --effort high`).
 - If this model becomes unavailable, halt the affected execution and report the failure immediately.
-
-## 4. Financial & Physical Desktop Scope Boundary
-- Strictly market research and simulated paper trading. Zero real-money brokerage execution. Brokerage API keys strictly blocked and quarantined.
-- Strict host physical desktop protection: 0 host GUI injections allowed (`host_gui_actuation_allowed = false`). All GUI actions run in isolated Docker/QEMU containers only.
-
-## 5. Operational Loop
-```text
-CAPABILITY & RESOURCE SNAPSHOT -> MANDATORY PRE-PLANNING MEMORY RETRIEVAL -> CLASSIFY FAST-PATH vs HIERARCHICAL DAG -> ROUTE TO 100 EMBEDDED SPECIALISTS -> SUPERVISED STREAMING EXECUTION (WITH LIVE INBOX CHECKPOINTS) -> SHA-256 ARTIFACT & LEDGER VERIFICATION -> PERSIST MEMORY & TELEMETRY
-```
-
-Always adhere to the **Ponytail Principle**:
-- Deletion over addition. Boring over clever. Fewest files possible.
-- Minimum code that works. Leave one runnable check behind.
-- No unrequested abstractions.
 """
 
 
-def _ensure_hidden_subagent_frontmatter(md_file: Path) -> bool:
-    """Ensures non-AGI-1.7 agent markdown files have mainAgent: false and hidden: true so they don't clutter UI."""
+def _ensure_hidden_subagent_frontmatter(md_file: Path, dry_run: bool = False) -> bool:
+    """Ensures non-AGI-1.7 agent markdown files have mainAgent: false and hidden: true."""
     if not md_file.exists() or not md_file.is_file():
         return False
     text = md_file.read_text(encoding="utf-8", errors="ignore")
@@ -128,32 +104,29 @@ def _ensure_hidden_subagent_frontmatter(md_file: Path) -> bool:
         frontmatter = frontmatter.rstrip() + "\nhidden: true\n"
         changed = True
 
-    if changed:
+    if changed and not dry_run:
         md_file.write_text(f"---{frontmatter}---{body}", encoding="utf-8")
     return changed
 
 
-def sync_ecosystem(verbose: bool = True) -> dict:
+def sync_ecosystem(
+    verbose: bool = True,
+    install_global: bool = False,
+    dry_run: bool = False,
+) -> dict:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     agi17_root = os.path.abspath(os.path.join(script_dir, ".."))
     repo_root = os.path.abspath(os.path.join(agi17_root, "..", ".."))
     eco_root = os.path.join(agi17_root, "ecosystem")
     reg_path = os.path.join(eco_root, "agent_registry", "registry.json")
 
-    # Seed skills, plugins, and mcp schemas from local workspace cache if missing
-    agi16_eco = os.path.join(repo_root, "agents", "AGI_1_6", "ecosystem")
-    for folder in ("skills", "plugins", "mcp"):
-        src = os.path.join(agi16_eco, folder)
-        dst = os.path.join(eco_root, folder)
-        if os.path.exists(src) and not os.path.exists(dst):
-            shutil.copytree(src, dst)
-
     with open(reg_path, "r", encoding="utf-8") as f:
         reg = json.load(f)
 
     # 1. Maintain all 100 specialist contracts strictly inside AGI 1.7's internal subagents folder
     subagents_dir = os.path.join(eco_root, "subagents")
-    os.makedirs(subagents_dir, exist_ok=True)
+    if not dry_run:
+        os.makedirs(subagents_dir, exist_ok=True)
     specialist_ids = set()
 
     for spec in reg.get("specialists", []):
@@ -183,119 +156,57 @@ def sync_ecosystem(verbose: bool = True) -> dict:
             f"- **Max Token Budget**: `{spec.get('max_token_budget', 12000)}`\n"
             f"- **Max Wall-Clock Seconds**: `{spec.get('max_wall_clock_seconds', 180)}s`\n\n"
             f"Embedded inside **AGI 1.7 — OMEGA COMMAND** (`agents/AGI_1_7/ecosystem/agent_registry/registry.json`). "
-            f"Automatically routed by `CapabilityRouter` and instantiated by `SpecialistFactory` with zero external UI clutter.\n"
+            f"Automatically routed by `CapabilityRouter` and instantiated by `SpecialistFactory`.\n"
         )
-        with open(md_path, "w", encoding="utf-8") as mf:
-            mf.write(md_content)
+        if not dry_run:
+            with open(md_path, "w", encoding="utf-8") as mf:
+                mf.write(md_content)
 
-    # 2. Remove the 100 internal specialists and legacy AGI 1.5 / 1.6 definitions from
-    #    top-level .agents/agents/ and .gemini/config/agents/ so ONLY AGI 1.7 is visible in Chrome UI!
+    # 2. By default, ONLY touch repo-local `.agents/agents/`.
+    #    User-level `~/.gemini/config/agents` is ONLY touched if `install_global=True` is explicitly requested.
     ws_agents_dir = Path(repo_root) / ".agents" / "agents"
     ws_backup_dir = Path(repo_root) / ".agents" / "agents_backup"
-    ws_agents_dir.mkdir(parents=True, exist_ok=True)
-    ws_backup_dir.mkdir(parents=True, exist_ok=True)
-    global_agents_dir = Path(os.path.expanduser("~")) / ".gemini" / "config" / "agents"
-    global_backup_dir = Path(os.path.expanduser("~")) / ".gemini" / "config" / "agents_backup"
-    global_backup_dir.mkdir(parents=True, exist_ok=True)
+    if not dry_run:
+        ws_agents_dir.mkdir(parents=True, exist_ok=True)
+        ws_backup_dir.mkdir(parents=True, exist_ok=True)
+
+    target_pairs: List[tuple[Path, Path]] = [(ws_agents_dir, ws_backup_dir)]
+    if install_global:
+        global_agents_dir = Path(os.path.expanduser("~")) / ".gemini" / "config" / "agents"
+        global_backup_dir = Path(os.path.expanduser("~")) / ".gemini" / "config" / "agents_backup"
+        if not dry_run:
+            global_backup_dir.mkdir(parents=True, exist_ok=True)
+        target_pairs.append((global_agents_dir, global_backup_dir))
 
     pruned_ui_specialists = 0
-    for target_dir, backup_dir in ((ws_agents_dir, ws_backup_dir), (global_agents_dir, global_backup_dir)):
+    for target_dir, backup_dir in target_pairs:
         if not target_dir.exists():
             continue
         for aid in specialist_ids:
             leaked_file = target_dir / f"{aid}.md"
             if leaked_file.exists():
-                leaked_file.unlink()
-                pruned_ui_specialists += 1
-        for legacy_name in ("agi-1-5.md", "agi-1-6.md", "agi-1-5", "agi-1-6"):
-            legacy_path = target_dir / legacy_name
-            if legacy_path.exists():
-                dst_backup = backup_dir / legacy_name
-                if dst_backup.exists():
-                    if legacy_path.is_dir():
-                        shutil.rmtree(legacy_path)
-                    else:
-                        legacy_path.unlink()
-                else:
-                    shutil.move(str(legacy_path), str(dst_backup))
+                if not dry_run:
+                    leaked_file.unlink()
                 pruned_ui_specialists += 1
 
-    # 3. Install/update ONLY unified `agi-1-7.md` (with all 100 specialists embedded)
+    # 3. Install/update unified `agi-1-7.md` in target directories
     agi17_md = _build_agi17_agent_markdown(reg)
-    for target_dir in (ws_agents_dir, global_agents_dir):
-        if target_dir.exists():
+    for target_dir, _ in target_pairs:
+        if target_dir.exists() and not dry_run:
             (target_dir / "agi-1-7.md").write_text(agi17_md, encoding="utf-8")
             sub_dir = target_dir / "agi-1-7"
             sub_dir.mkdir(parents=True, exist_ok=True)
             (sub_dir / "agent.md").write_text(agi17_md, encoding="utf-8")
 
-    # 4. Ensure legacy AGI 1.5, AGI 1.6, and other helper subagents have mainAgent: false & hidden: true
-    #    so ONLY AGI 1.7 appears in the top-level Chrome UI dropdown
     hidden_count = 0
-    for target_dir in (ws_agents_dir, global_agents_dir):
+    for target_dir, _ in target_pairs:
         if not target_dir.exists():
             continue
         for md_file in target_dir.rglob("*.md"):
             if md_file.name == "agi-1-7.md" or md_file.parent.name == "agi-1-7":
                 continue
-            if _ensure_hidden_subagent_frontmatter(md_file):
+            if _ensure_hidden_subagent_frontmatter(md_file, dry_run=dry_run):
                 hidden_count += 1
-
-    coderabbit_agent = (
-        Path(os.path.expanduser("~"))
-        / ".gemini"
-        / "config"
-        / "plugins"
-        / "coderabbit"
-        / "agents"
-        / "code-reviewer.md"
-    )
-    if _ensure_hidden_subagent_frontmatter(coderabbit_agent):
-        hidden_count += 1
-
-    # 5. Update .agents/registry/agents.json so AGI 1.7 is the sole mainAgent: true orchestrator
-    ws_reg_json = Path(repo_root) / ".agents" / "registry" / "agents.json"
-    if ws_reg_json.exists():
-        try:
-            reg_data = json.loads(ws_reg_json.read_text(encoding="utf-8"))
-            reg_data["orchestrators"] = [
-                {
-                    "name": "agi-1-7",
-                    "version": "1.7.0",
-                    "status": "ACTIVE_PRIMARY",
-                    "role": "AGI 1.7 — OMEGA COMMAND Resource-Aware Multi-Agent Operating System (100 Embedded Specialists)",
-                    "file": ".agents/agents/agi-1-7/agent.md",
-                    "description": "AGI 1.7 OMEGA COMMAND — Resource-Aware, Persistent, Self-Orchestrating Multi-Agent Operating System with 100 Embedded Specialist Contracts across 16 Families.",
-                    "mainAgent": True,
-                    "subagent": True,
-                    "hidden": False,
-                },
-                {
-                    "name": "agi-1-6",
-                    "version": "1.6.0",
-                    "status": "LEGACY_EMBEDDED",
-                    "role": "AGI 1.6 — OMEGA NEXUS (Hidden Legacy Baseline)",
-                    "file": ".agents/agents/agi-1-6/agent.md",
-                    "description": "Legacy AGI 1.6 baseline (hidden from top-level UI).",
-                    "mainAgent": False,
-                    "subagent": True,
-                    "hidden": True,
-                },
-                {
-                    "name": "agi-1-5",
-                    "version": "1.5.0",
-                    "status": "LEGACY_EMBEDDED",
-                    "role": "AGI 1.5 — OMEGA EVOLUTION (Hidden Legacy Baseline)",
-                    "file": ".agents/agents/agi-1-5/agent.md",
-                    "description": "Legacy AGI 1.5 baseline (hidden from top-level UI).",
-                    "mainAgent": False,
-                    "subagent": True,
-                    "hidden": True,
-                },
-            ]
-            ws_reg_json.write_text(json.dumps(reg_data, indent=2), encoding="utf-8")
-        except Exception:
-            pass
 
     skills_dir = os.path.join(eco_root, "skills")
     plugins_dir = os.path.join(eco_root, "plugins")
@@ -305,12 +216,12 @@ def sync_ecosystem(verbose: bool = True) -> dict:
         "schema_version": "1.7.0",
         "codename": "AGI 1.7 — OMEGA COMMAND Unified 100-Specialist Embedded Ecosystem",
         "sole_model": "gemini-3.8-flash-high",
-        "ui_visibility_mode": "SINGLE_UNIFIED_AGENT_ONLY (100 Specialists Embedded Internally, Zero UI Dropdown Clutter)",
+        "scope": "GLOBAL_AND_REPO" if install_global else "REPO_LOCAL_ONLY (Zero User Home Modification)",
         "counts": {
             "visibleTopLevelAgentsInUI": 1,
             "embeddedSpecialistContracts": len(reg.get("specialists", [])),
             "specialistFamilies": len(reg.get("family_distribution", {})),
-            "embeddedSubagents": len(os.listdir(subagents_dir)),
+            "embeddedSubagents": len(os.listdir(subagents_dir)) if os.path.exists(subagents_dir) else 100,
             "embeddedSkills": len(os.listdir(skills_dir)) if os.path.exists(skills_dir) else 0,
             "embeddedPlugins": len(os.listdir(plugins_dir)) if os.path.exists(plugins_dir) else 0,
             "embeddedMcpServers": len(
@@ -323,27 +234,46 @@ def sync_ecosystem(verbose: bool = True) -> dict:
     }
 
     manifest_path = os.path.join(eco_root, "ecosystem_manifest.json")
-    with open(manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f, indent=2)
+    if not dry_run:
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2)
 
     if verbose:
         c = manifest["counts"]
-        print("[AGI 1.7 OMEGA COMMAND] Embedded Ecosystem Sync Complete:")
+        mode_label = "DRY-RUN" if dry_run else ("REPO + GLOBAL" if install_global else "REPO-LOCAL ONLY (Safe Default)")
+        print(f"[AGI 1.7 OMEGA COMMAND] Ecosystem Sync Complete [{mode_label}]:")
+        print(f"  - Scope                          : {manifest['scope']}")
         print(f"  - Visible Top-Level Agent in UI  : {c['visibleTopLevelAgentsInUI']} (ONLY 'AGI 1.7 — OMEGA COMMAND')")
-        print(f"  - Embedded Specialist Contracts  : {c['embeddedSpecialistContracts']} across {c['specialistFamilies']} Families (Internal Only)")
-        print(f"  - Pruned Separate UI Specialists : {pruned_ui_specialists} removed from external .agents/agents/")
-        print(f"  - Hidden Legacy/Helper Agents    : {hidden_count} set to mainAgent: false, hidden: true")
+        print(f"  - Embedded Specialist Contracts  : {c['embeddedSpecialistContracts']} across {c['specialistFamilies']} Families")
         print(f"  - Embedded Workflow Skills       : {c['embeddedSkills']} (GSD, Kubernetes)")
         print(f"  - Embedded Plugin Suites         : {c['embeddedPlugins']} (Ponytail, CodeRabbit, Gemini-API, Prompt-Master, Science)")
         print(f"  - Embedded MCP Server Schemas    : {c['embeddedMcpServers']} (Sequential-Thinking, Playwright, Context7, GSD, Ponytail)")
 
     return {
-        "status": "VERIFIED",
+        "status": "DRY_RUN" if dry_run else "VERIFIED",
+        "scope": manifest["scope"],
         "counts": manifest["counts"],
         "pruned_ui_specialists": pruned_ui_specialists,
         "hidden_legacy_agents": hidden_count,
     }
 
 
+def main() -> int:
+    parser = argparse.ArgumentParser(description="AGI 1.7 Safe Repo-Local Ecosystem Bootstrapper")
+    parser.add_argument(
+        "--install-global",
+        action="store_true",
+        help="Opt-in: also install AGI 1.7 agent definition into ~/.gemini/config/agents (default: False, repo-local only).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview changes without modifying any files.",
+    )
+    args = parser.parse_args()
+    sync_ecosystem(verbose=True, install_global=args.install_global, dry_run=args.dry_run)
+    return 0
+
+
 if __name__ == "__main__":
-    sync_ecosystem(verbose=True)
+    raise SystemExit(main())

@@ -1,0 +1,526 @@
+{
+  "mission_id": "MISSION-LIVE-CODE-FIX-001",
+  "final_state": "SUCCEEDED",
+  "duration_sec": 41.3886,
+  "logical_children_created": 3,
+  "succeeded_children": 3,
+  "child_results": {
+    "MISSION-LIVE-CODE-FIX-001-SUB-001": {
+      "agent_id": "plan_systems_architect",
+      "display_name": "Systems Topology Architect",
+      "family": "Planning & Architecture",
+      "execution_mode": "MODEL_SPECIALIST_WORKER",
+      "resource_class": "MEDIUM",
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-001",
+      "status": "SUCCEEDED",
+      "capabilities_applied": [
+        "architecture_specification",
+        "component_boundary_design",
+        "interface_contract_design"
+      ],
+      "output_summary": "* **Input Precondition & Validation Invariant:** Accepts `intervals: list[tuple[int, int]]` across arbitrary negative, zero, and positive bounds; raises `ValueError` if any interval violates the invariant `start <= end` (i.e., whenever `start > end`).\n* **Normalization & Ordering Invariant:** Arbitrary input order is accepted; intervals must be canonically normalized by sorting primarily by `start` ascending (and secondarily by `end` ascending), correctly handling negative coordinates (e.g., `[(-5, -1), (-8, -4)]`).\n* **Closed-Interval Merge Boundary Invariant:** Intervals use closed set semantics $[s, e]$: consecutive intervals where $s_{curr} \\le e_{prev}$ must merge into $(s_{prev}, \\max(e_{prev}, e_{curr}))$, explicitly treating touching endpoints as overlapping (e.g., `[(1, 3), (3, 5)]` merges into `[(1, 5)]`).\n* **Output Contract & Postcondition:** Returns a sorted `list[tuple[int, int]]` where every adjacent pair satisfies strict separation $e_k < s_{k+1}$ (pairwise disjoint and non-touching), with an empty input `[]` mapping deterministically to `[]`.\n",
+      "artifacts": {
+        "analysis": "* **Input Precondition & Validation Invariant:** Accepts `intervals: list[tuple[int, int]]` across arbitrary negative, zero, and positive bounds; raises `ValueError` if any interval violates the invariant `start <= end` (i.e., whenever `start > end`).\n* **Normalization & Ordering Invariant:** Arbitrary input order is accepted; intervals must be canonically normalized by sorting primarily by `start` ascending (and secondarily by `end` ascending), correctly handling negative coordinates (e.g., `[(-5, -1), (-8, -4)]`).\n* **Closed-Interval Merge Boundary Invariant:** Intervals use closed set semantics $[s, e]$: consecutive intervals where $s_{curr} \\le e_{prev}$ must merge into $(s_{prev}, \\max(e_{prev}, e_{curr}))$, explicitly treating touching endpoints as overlapping (e.g., `[(1, 3), (3, 5)]` merges into `[(1, 5)]`).\n* **Output Contract & Postcondition:** Returns a sorted `list[tuple[int, int]]` where every adjacent pair satisfies strict separation $e_k < s_{k+1}$ (pairwise disjoint and non-touching), with an empty input `[]` mapping deterministically to `[]`.\n",
+        "model_invoked": "gemini-3.8-flash-high",
+        "model_status": "SUCCEEDED",
+        "model_duration_sec": 19.588,
+        "token_usage": {
+          "accounting_mode": "PROVIDER_REPORTED",
+          "input_tokens": 12125,
+          "output_tokens": 1235,
+          "thinking_tokens": 959,
+          "total_tokens": 13360
+        },
+        "notification_id": "NOTIF-MISSION-LIVE-CODE-FIX-001-SUB-001-MODEL-1791659272267",
+        "stdout_log_path": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\demo_workspace\\runtime_storage\\logs\\processes\\MISSION-LIVE-CODE-FIX-001-SUB-001-MODEL_att1_1791659252679_stdout.log"
+      },
+      "duration_sec": 21.20046,
+      "verification_digest": "38808d34532eab8240def5ccb8d9f7cdc603d51bee4a159d90a28ff232a820e7"
+    },
+    "MISSION-LIVE-CODE-FIX-001-SUB-002": {
+      "agent_id": "swe_python_runtime_engineer",
+      "display_name": "Python Core & Asyncio Runtime Engineer",
+      "family": "Software Engineering",
+      "execution_mode": "IN_PROCESS_TOOL_WORKER",
+      "resource_class": "LIGHT",
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-002",
+      "status": "SUCCEEDED",
+      "capabilities_applied": [
+        "python_stdlib_implementation",
+        "asyncio_concurrency_patterns",
+        "type_annotation_validation"
+      ],
+      "output_summary": "[swe_python_runtime_engineer] Received upstream spec (1076 chars) from plan_systems_architect and wrote interval_merger.py + test_interval_merger.py",
+      "artifacts": {
+        "analysis": "[swe_python_runtime_engineer] Received upstream spec (1076 chars) from plan_systems_architect and wrote interval_merger.py + test_interval_merger.py",
+        "upstream_spec_received": true,
+        "upstream_spec_excerpt": "* **Input Precondition & Validation Invariant:** Accepts `intervals: list[tuple[int, int]]` across arbitrary negative, zero, and positive bounds; raises `ValueError` if any interval violates the invariant `start <= end` (i.e., whenever `start > end`).\n* **Normalization & Ordering Invariant:** Arbitr",
+        "files_written": [
+          "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\demo_workspace\\src\\interval_merger.py",
+          "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\demo_workspace\\src\\test_interval_merger.py"
+        ],
+        "initial_code": "\"\"\"Interval merger module (initial draft with boundary bug).\"\"\"\nfrom typing import List, Tuple\n\n\ndef merge_overlapping_intervals(intervals: List[Tuple[int, int]]) -> List[Tuple[int, int]]:\n    \"\"\"Merges overlapping or touching closed intervals [start, end].\"\"\"\n    if not intervals:\n        return []\n    # BUG 1: Missing validation for inverted intervals (start > end)\n    sorted_intervals = sorted(intervals, key=lambda x: x[0])\n    merged: List[Tuple[int, int]] = [sorted_intervals[0]]\n    for current_start, current_end in sorted_intervals[1:]:\n        last_start, last_end = merged[-1]\n        # BUG 2: Uses strict '<' instead of '<=' so touching intervals (1, 3) and (3, 5) are not merged\n        if current_start < last_end:\n            merged[-1] = (last_start, max(last_end, current_end))\n        else:\n            merged.append((current_start, current_end))\n    return merged\n"
+      },
+      "duration_sec": 0.00094,
+      "verification_digest": "3ec5ac72aff669ea39cdb1e5529f1468a3b97e386b4c594e3017202be5df270b"
+    },
+    "MISSION-LIVE-CODE-FIX-001-SUB-003": {
+      "agent_id": "qa_unit_suite_runner",
+      "display_name": "Deterministic Unit Test Runner",
+      "family": "Testing, QA & Verification",
+      "execution_mode": "IN_PROCESS_TOOL_WORKER",
+      "resource_class": "LIGHT",
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "status": "SUCCEEDED",
+      "capabilities_applied": [
+        "unittest_assertion_execution",
+        "boundary_condition_probing",
+        "fixture_isolation_verification"
+      ],
+      "output_summary": "[qa_unit_suite_runner] Received files ['C:\\\\Users\\\\abhis\\\\Downloads\\\\pt\\\\agents\\\\AGI_1_7\\\\demo_workspace\\\\src\\\\interval_merger.py', 'C:\\\\Users\\\\abhis\\\\Downloads\\\\pt\\\\agents\\\\AGI_1_7\\\\demo_workspace\\\\src\\\\test_interval_merger.py'] from swe_python_runtime_engineer; executing supervised unittest suite.",
+      "artifacts": {
+        "analysis": "[qa_unit_suite_runner] Received files ['C:\\\\Users\\\\abhis\\\\Downloads\\\\pt\\\\agents\\\\AGI_1_7\\\\demo_workspace\\\\src\\\\interval_merger.py', 'C:\\\\Users\\\\abhis\\\\Downloads\\\\pt\\\\agents\\\\AGI_1_7\\\\demo_workspace\\\\src\\\\test_interval_merger.py'] from swe_python_runtime_engineer; executing supervised unittest suite.",
+        "upstream_files_received": [
+          "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\demo_workspace\\src\\interval_merger.py",
+          "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\demo_workspace\\src\\test_interval_merger.py"
+        ],
+        "initial_verification_run": {
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "test_01_unsorted_overlapping_intervals (test_interval_merger.TestIntervalMerger.test_01_unsorted_overlapping_intervals) ... ok\ntest_02_touching_boundary_intervals (test_interval_merger.TestIntervalMerger.test_02_touching_boundary_intervals) ... FAIL\ntest_03_negative_and_nested_intervals (test_interval_merger.TestIntervalMerger.test_03_negative_and_nested_intervals) ... FAIL\ntest_04_inverted_interval_raises_value_error (test_interval_merger.TestIntervalMerger.test_04_inverted_interval_raises_value_error) ... FAIL\n\n======================================================================\nFAIL: test_02_touching_boundary_intervals (test_interval_merger.TestIntervalMerger.test_02_touching_boundary_intervals)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\demo_workspace\\src\\test_interval_merger.py\", line 15, in test_02_touching_boundary_intervals\n    self.assertEqual(\n    ~~~~~~~~~~~~~~~~^\n        merge_overlapping_intervals([(1, 3), (3, 5), (7, 9)]),\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        [(1, 5), (7, 9)],\n        ^^^^^^^^^^^^^^^^^\n    )\n    ^\nAssertionError: Lists differ: [(1, 3), (3, 5), (7, 9)] != [(1, 5), (7, 9)]\n\nFirst differing element 0:\n(1, 3)\n(1, 5)\n\nFirst list contains 1 additional elements.\nFirst extra element 2:\n(7, 9)\n\n- [(1, 3), (3, 5), (7, 9)]\n?      --------\n\n+ [(1, 5), (7, 9)]\n\n======================================================================\nFAIL: test_03_negative_and_nested_intervals (test_interval_merger.TestIntervalMerger.test_03_negative_and_nested_intervals)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\demo_workspace\\src\\test_interval_merger.py\", line 21, in test_03_negative_and_nested_intervals\n    self.assertEqual(\n    ~~~~~~~~~~~~~~~~^\n        merge_overlapping_intervals([(-10, -2), (-6, -3), (-2, 4)]),\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        [(-10, 4)],\n        ^^^^^^^^^^^\n    )\n    ^\nAssertionError: Lists differ: [(-10, -2), (-2, 4)] != [(-10, 4)]\n\nFirst differing element 0:\n(-10, -2)\n(-10, 4)\n\nFirst list contains 1 additional elements.\nFirst extra element 1:\n(-2, 4)\n\n- [(-10, -2), (-2, 4)]\n+ [(-10, 4)]\n\n======================================================================\nFAIL: test_04_inverted_interval_raises_value_error (test_interval_merger.TestIntervalMerger.test_04_inverted_interval_raises_value_error)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\demo_workspace\\src\\test_interval_merger.py\", line 27, in test_04_inverted_interval_raises_value_error\n    with self.assertRaises(ValueError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 4 tests in 0.002s\n\nFAILED (failures=3)\n",
+          "notification_id": "NOTIF-MISSION-LIVE-CODE-FIX-001-SUB-003-VERIFY-ATT1-1791659274460"
+        },
+        "repair_specialist_id": "swe_patch_minimizer",
+        "repair_execution": {
+          "repair_specialist": "swe_patch_minimizer",
+          "repair_mode": "LIVE_GEMINI_3_8_FLASH_HIGH",
+          "model_invoked": "gemini-3.8-flash-high",
+          "model_duration_sec": 17.8504,
+          "token_usage": {
+            "accounting_mode": "PROVIDER_REPORTED",
+            "input_tokens": 13287,
+            "output_tokens": 1271,
+            "thinking_tokens": 1044,
+            "total_tokens": 14558
+          },
+          "patched_code": "\"\"\"Interval merger module (initial draft with boundary bug).\"\"\"\nfrom typing import List, Tuple\n\n\ndef merge_overlapping_intervals(intervals: List[Tuple[int, int]]) -> List[Tuple[int, int]]:\n    \"\"\"Merges overlapping or touching closed intervals [start, end].\"\"\"\n    if not intervals:\n        return []\n\n    for start, end in intervals:\n        if start > end:\n            raise ValueError(\"start > end\")\n\n    sorted_intervals = sorted(intervals, key=lambda x: x[0])\n    merged: List[Tuple[int, int]] = [sorted_intervals[0]]\n    for current_start, current_end in sorted_intervals[1:]:\n        last_start, last_end = merged[-1]\n        if current_start <= last_end:\n            merged[-1] = (last_start, max(last_end, current_end))\n        else:\n            merged.append((current_start, current_end))\n    return merged\n",
+          "verification_passed": true
+        },
+        "post_repair_verification_run": {
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": "test_01_unsorted_overlapping_intervals (test_interval_merger.TestIntervalMerger.test_01_unsorted_overlapping_intervals) ... ok\ntest_02_touching_boundary_intervals (test_interval_merger.TestIntervalMerger.test_02_touching_boundary_intervals) ... ok\ntest_03_negative_and_nested_intervals (test_interval_merger.TestIntervalMerger.test_03_negative_and_nested_intervals) ... ok\ntest_04_inverted_interval_raises_value_error (test_interval_merger.TestIntervalMerger.test_04_inverted_interval_raises_value_error) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+          "notification_id": "NOTIF-MISSION-LIVE-CODE-FIX-001-SUB-003-VERIFY-ATT2-1791659293477"
+        }
+      },
+      "duration_sec": 0.0001,
+      "verification_digest": "1e92a5075c942b7acec77401569073864ac005575eb267be515932c7868912f0"
+    }
+  },
+  "sqlite_state_transition_events": [
+    {
+      "event_id": "TEV-1791659252269-ea34c0ca",
+      "timestamp": 1791659252.2696939,
+      "task_id": "MISSION-LIVE-CODE-FIX-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "TASK_CREATED",
+      "from_state": null,
+      "to_state": "CREATED",
+      "details": {
+        "title": "Multi-Agent Interval Merger Specification, Implementation, Test Failure Detection & Self-Healing Patch",
+        "parent_task_id": null,
+        "specialist_id": "plan_mission_decomposer"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252283-b0981f2d",
+      "timestamp": 1791659252.2839155,
+      "task_id": "MISSION-LIVE-CODE-FIX-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "CREATED",
+      "to_state": "PLANNED",
+      "details": {
+        "reason": "Completed pre-planning memory lookup & classification"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252296-9c2b2c42",
+      "timestamp": 1791659252.2962124,
+      "task_id": "MISSION-LIVE-CODE-FIX-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "PLANNED",
+      "to_state": "QUEUED",
+      "details": {
+        "reason": "Queued root mission"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252310-168c7b8b",
+      "timestamp": 1791659252.310097,
+      "task_id": "MISSION-LIVE-CODE-FIX-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "QUEUED",
+      "to_state": "READY",
+      "details": {
+        "reason": "Root mission ready"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252322-501be9bb",
+      "timestamp": 1791659252.322813,
+      "task_id": "MISSION-LIVE-CODE-FIX-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "READY",
+      "to_state": "RUNNING",
+      "details": {
+        "reason": "Root mission execution started"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252358-918b23fc",
+      "timestamp": 1791659252.3583434,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "TASK_CREATED",
+      "from_state": null,
+      "to_state": "CREATED",
+      "details": {
+        "title": "Stage 1: Formal Edge-Case Specification",
+        "parent_task_id": "MISSION-LIVE-CODE-FIX-001",
+        "specialist_id": "plan_systems_architect"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252379-9ffe1a2f",
+      "timestamp": 1791659252.3793545,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "CREATED",
+      "to_state": "PLANNED",
+      "details": {
+        "reason": "Subtask planned in DAG"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252401-c1e627b0",
+      "timestamp": 1791659252.401599,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "PLANNED",
+      "to_state": "QUEUED",
+      "details": {
+        "reason": "Subtask queued in DAG"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252426-efdc924b",
+      "timestamp": 1791659252.4262762,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-002",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "TASK_CREATED",
+      "from_state": null,
+      "to_state": "CREATED",
+      "details": {
+        "title": "Stage 2: Initial Implementation & Unit Test Generation",
+        "parent_task_id": "MISSION-LIVE-CODE-FIX-001",
+        "specialist_id": "swe_python_runtime_engineer"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252438-c19f9e0d",
+      "timestamp": 1791659252.4388204,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-002",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "CREATED",
+      "to_state": "PLANNED",
+      "details": {
+        "reason": "Subtask planned in DAG"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252450-2974950e",
+      "timestamp": 1791659252.450885,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-002",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "PLANNED",
+      "to_state": "QUEUED",
+      "details": {
+        "reason": "Subtask queued in DAG"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252473-9a8282d6",
+      "timestamp": 1791659252.473923,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "TASK_CREATED",
+      "from_state": null,
+      "to_state": "CREATED",
+      "details": {
+        "title": "Stage 3: Supervised Test Execution, Failure Detection & Specialist Patch Loop",
+        "parent_task_id": "MISSION-LIVE-CODE-FIX-001",
+        "specialist_id": "qa_unit_suite_runner"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252489-9ffa2e26",
+      "timestamp": 1791659252.489725,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "CREATED",
+      "to_state": "PLANNED",
+      "details": {
+        "reason": "Subtask planned in DAG"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252502-76c5f6ab",
+      "timestamp": 1791659252.5020783,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "PLANNED",
+      "to_state": "QUEUED",
+      "details": {
+        "reason": "Subtask queued in DAG"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252517-d426038c",
+      "timestamp": 1791659252.5170631,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "QUEUED",
+      "to_state": "READY",
+      "details": {
+        "reason": "no_dependencies"
+      }
+    },
+    {
+      "event_id": "TEV-1791659252625-46a152ee",
+      "timestamp": 1791659252.6254768,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "READY",
+      "to_state": "RUNNING",
+      "details": {
+        "reason": "Executing specialist subtask"
+      }
+    },
+    {
+      "event_id": "TEV-1791659273853-f56bb557",
+      "timestamp": 1791659273.8534439,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "RUNNING",
+      "to_state": "VERIFYING",
+      "details": {
+        "reason": "Verifying specialist output"
+      }
+    },
+    {
+      "event_id": "TEV-1791659273875-bdc4823d",
+      "timestamp": 1791659273.8751667,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "VERIFYING",
+      "to_state": "SUCCEEDED",
+      "details": {
+        "reason": "Specialist verification hook passed"
+      }
+    },
+    {
+      "event_id": "TEV-1791659273942-b3d7f96c",
+      "timestamp": 1791659273.9426568,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-002",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "QUEUED",
+      "to_state": "READY",
+      "details": {
+        "reason": "all_dependencies_succeeded"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274040-b4efd88e",
+      "timestamp": 1791659274.0402346,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-002",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "READY",
+      "to_state": "RUNNING",
+      "details": {
+        "reason": "Executing specialist subtask"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274056-d19991d8",
+      "timestamp": 1791659274.056586,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-002",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "RUNNING",
+      "to_state": "VERIFYING",
+      "details": {
+        "reason": "Verifying specialist output"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274073-447159d3",
+      "timestamp": 1791659274.0732696,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-002",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "VERIFYING",
+      "to_state": "SUCCEEDED",
+      "details": {
+        "reason": "Specialist verification hook passed"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274107-cfbbff36",
+      "timestamp": 1791659274.1074426,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "QUEUED",
+      "to_state": "READY",
+      "details": {
+        "reason": "all_dependencies_succeeded"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274206-037ecc11",
+      "timestamp": 1791659274.2060306,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "READY",
+      "to_state": "RUNNING",
+      "details": {
+        "reason": "Executing specialist subtask"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274225-597eb09d",
+      "timestamp": 1791659274.2259388,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "RUNNING",
+      "to_state": "VERIFYING",
+      "details": {
+        "reason": "Verifying specialist output"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274484-ab1713b9",
+      "timestamp": 1791659274.484661,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "VERIFYING",
+      "to_state": "FAILED",
+      "details": {
+        "reason": "Verification failed; initiating specialist repair"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274498-2958b236",
+      "timestamp": 1791659274.4983187,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "FAILED",
+      "to_state": "QUEUED",
+      "details": {
+        "reason": "Escalating failure to repair specialist 'swe_patch_minimizer'"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274509-b08ddfc8",
+      "timestamp": 1791659274.5099845,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "QUEUED",
+      "to_state": "READY",
+      "details": {
+        "reason": "Repair specialist ready"
+      }
+    },
+    {
+      "event_id": "TEV-1791659274522-4dc4f244",
+      "timestamp": 1791659274.5228827,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "READY",
+      "to_state": "RUNNING",
+      "details": {
+        "reason": "Executing specialist repair & re-test"
+      }
+    },
+    {
+      "event_id": "TEV-1791659293253-f51033d4",
+      "timestamp": 1791659293.2533686,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "RUNNING",
+      "to_state": "VERIFYING",
+      "details": {
+        "reason": "Re-verifying after specialist patch"
+      }
+    },
+    {
+      "event_id": "TEV-1791659293499-1eea9c7d",
+      "timestamp": 1791659293.499293,
+      "task_id": "MISSION-LIVE-CODE-FIX-001-SUB-003",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "VERIFYING",
+      "to_state": "SUCCEEDED",
+      "details": {
+        "reason": "Specialist verification hook passed"
+      }
+    },
+    {
+      "event_id": "TEV-1791659293545-a9bacd83",
+      "timestamp": 1791659293.5457578,
+      "task_id": "MISSION-LIVE-CODE-FIX-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "RUNNING",
+      "to_state": "VERIFYING",
+      "details": {
+        "reason": "All DAG subtasks succeeded; verifying root"
+      }
+    },
+    {
+      "event_id": "TEV-1791659293557-a79ceba3",
+      "timestamp": 1791659293.55717,
+      "task_id": "MISSION-LIVE-CODE-FIX-001",
+      "job_id": "MISSION-LIVE-CODE-FIX-001",
+      "event_type": "STATE_TRANSITION",
+      "from_state": "VERIFYING",
+      "to_state": "SUCCEEDED",
+      "details": {
+        "reason": "All 3/3 child tasks verified"
+      }
+    }
+  ]
+}

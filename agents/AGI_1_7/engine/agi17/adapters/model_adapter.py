@@ -4,9 +4,9 @@ Enforces:
 1. Sole Foundation Model (`gemini-3.8-flash-high`) with zero silent fallbacks.
 2. Safe permissions policy: does NOT blindly pass `--dangerously-skip-permissions`
    unless explicitly authorized by `permissions_policy.json` for a scoped sandbox container.
-3. Isolated working directory (`D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND\\isolated_cwd`)
+3. Isolated working directory (`isolated_cwd`) and isolated minimal CLI home (`minimal_cli_home`)
    for benchmark items and single-shot reasoning calls, eliminating the 22.7k token
-   workspace prompt injection leak discovered in AGI 1.6.
+   workspace prompt injection leak and preventing external MCP server startup hangs.
 4. Supervised execution via `ProcessSupervisor` with `AdaptiveTokenController`
    budget admission and `ResourceGovernor` concurrency gating.
 """
@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -48,6 +49,28 @@ class ModelAdapter:
         if not default_agy.exists():
             default_agy = default_agy.with_suffix(".cmd")
         self.agy_path = Path(agy_path) if agy_path else default_agy
+
+    def _ensure_minimal_cli_home(self, base_dir: Path) -> Path:
+        """Creates an isolated CLI home with empty mcpServers/skills so single-shot calls do not hang on MCP boot."""
+        min_home = base_dir.parent / "minimal_cli_home"
+        cfg_dir = min_home / ".gemini" / "config"
+        cfg_dir.mkdir(parents=True, exist_ok=True)
+        mcp_cfg = cfg_dir / "mcp_config.json"
+        if not mcp_cfg.exists():
+            mcp_cfg.write_text('{"mcpServers":{}}', encoding="utf-8")
+        skills_cfg = cfg_dir / "skills.json"
+        if not skills_cfg.exists():
+            skills_cfg.write_text("{}", encoding="utf-8")
+
+        real_home = Path(os.path.expanduser("~"))
+        real_cfg = real_home / ".gemini" / "config" / "config.json"
+        dst_cfg = cfg_dir / "config.json"
+        if real_cfg.exists() and not dst_cfg.exists():
+            try:
+                shutil.copy2(real_cfg, dst_cfg)
+            except Exception:
+                pass
+        return min_home
 
     def build_command(
         self,
@@ -127,12 +150,26 @@ class ModelAdapter:
             allow_dangerous_permissions_flag=False,
         )
 
+        env_overrides: Optional[Dict[str, str]] = None
+        if is_benchmark_or_single_shot:
+            try:
+                min_home = self._ensure_minimal_cli_home(Path(exec_cwd))
+                env_overrides = {
+                    "USERPROFILE": str(min_home),
+                    "HOME": str(min_home),
+                }
+            except Exception:
+                env_overrides = None
+
+        proc_task_id = f"{child_task_id or task_id}-MODEL"
         slot = self.governor.acquire_slot(queue_type="model_call")
         try:
             notif = self.supervisor.run_supervised(
-                task_id=task_id,
+                task_id=proc_task_id,
+                parent_task_id=task_id,
                 command=cmd,
                 cwd=exec_cwd,
+                env=env_overrides,
                 wall_timeout_sec=wall_timeout_sec,
                 idle_timeout_sec=idle_timeout_sec,
                 max_retries=0,
@@ -154,7 +191,6 @@ class ModelAdapter:
         provider_usage: Optional[Dict[str, Any]] = notif.usage_metadata or None
 
         if full_stdout:
-            # Try parsing last JSON object in stdout
             for candidate_line in reversed([ln.strip() for ln in full_stdout.splitlines() if ln.strip()]):
                 if candidate_line.startswith("{") and candidate_line.endswith("}"):
                     try:
@@ -193,6 +229,8 @@ class ModelAdapter:
 
         return {
             "task_id": task_id,
+            "agent_id": agent_id,
+            "model": self.SOLE_MODEL,
             "status": notif.final_status,
             "exit_code": notif.exit_code,
             "timed_out": notif.timed_out or notif.idle_timed_out,
@@ -209,4 +247,6 @@ class ModelAdapter:
                 "total_tokens": usage_rec.total_tokens,
             },
             "notification_id": notif.notification_id,
+            "stdout_log_path": notif.stdout_log_path,
+            "stderr_log_path": notif.stderr_log_path,
         }

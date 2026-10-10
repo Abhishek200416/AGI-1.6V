@@ -284,38 +284,62 @@ flowchart TB
 
 ---
 
-## ⚡ 5. Quickstart: Clone Once, Get All 100 Agents Inside
+## ⚡ 5. Safe Quickstart (Repo-Local Default, Zero User Home Modification)
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Abhishek200416/AGI-1.6V.git
-cd AGI-1.6V
+git clone https://github.com/Abhishek200416/AGI-1.7V.git
+cd AGI-1.7V
 ```
 
-### 2. Verify All 100 Embedded Agents, 74 Skills, 11 Plugins & 21 MCPs
+### 2. Verify All 100 Embedded Agents (100% Repo-Local by Default)
 ```powershell
+# Preview without writing any files:
+python agents/AGI_1_7/scripts/sync_ecosystem.py --dry-run
+
+# Verify and sync strictly inside the repository (never touches ~/.gemini unless --install-global is passed):
 python agents/AGI_1_7/scripts/sync_ecosystem.py
 ```
 
-### 3. Run AGI 1.7 — OMEGA COMMAND
+### 3. Run the Live Multi-Agent Code -> Test -> Fail -> Fix -> Retest Demonstration
+```powershell
+# Runs plan_systems_architect (live Gemini 3.8 Flash High) -> swe_python_runtime_engineer ->
+# qa_unit_suite_runner (detects real unittest failure exit_code=1) -> swe_patch_minimizer (live Gemini patch) ->
+# qa_unit_suite_runner (re-runs unittest -> exit_code=0 OK)
+python agents/AGI_1_7/scripts/demo_real_multi_agent_code_fix.py
+```
+*Full execution trace with model prompts, responses, token counts, stderr tracebacks, and SQLite state transitions:* [`agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json`](agents/AGI_1_7/reports/LIVE_MULTI_AGENT_EXECUTION_LOG.json)
+
+### 4. Run AGI 1.7 — OMEGA COMMAND
 ```powershell
 # Run live hardware capability profile & startup crash reconciliation
 python agents/AGI_1_7/run_agi_17.py --profile-only
 
 # Execute a multi-specialist mission (automatically routes across the 100 embedded specialists)
 python agents/AGI_1_7/run_agi_17.py --title "System Audit" --prompt "Decompose and execute a full architecture, security, and test verification."
-
-# Or launch via PowerShell / Batch wrappers
-.\agents\AGI_1_7\run_agent.ps1 "Design and verify a fault-tolerant rate limiter"
-.\agents\AGI_1_7\run_agent.bat
 ```
 
-### 4. Send Live Mid-Run Instructions (`agi17ctl.py`) Without Restarting
+### 5. Send Live Mid-Run Instructions (`agi17ctl.py`) Without Restarting
 ```powershell
 python agents/AGI_1_7/scripts/agi17ctl.py send --type ADD_CHILD_TASK --target-task-id MISSION-001 --payload-json "{\"title\": \"Extra Security Check\", \"description\": \"Run SSRF and credential scan\"}"
 ```
 
-### 5. Run the Complete Verification Suite (Unit + Integration + E2E Demos)
+### 6. Run the Complete Deterministic Verification Suite (`49` Tests, Offline-Capable)
 ```powershell
 python -m unittest agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py agents/AGI_1_7/tests/integration/test_agi17_integration_suite.py agents/AGI_1_7/tests/end_to_end/test_agi17_e2e_demos.py -v
 ```
+
+---
+
+## 🔍 6. Engineering Architecture, Honest Scope & Technical FAQ
+
+See [`agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md`](agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md) for the complete technical walkthrough:
+
+1. **Orchestration Framework vs. Foundation Model:** AGI 1.7 is an orchestration, transactional SQLite WAL task-control, process-supervision, and persistent-memory runtime built around **Google's Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** via [`ModelAdapter`](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py) (`agy.exe --model gemini-3.8-flash-high --effort high --output-format json`). We did not train or fine-tune a custom base LLM.
+2. **How the 100 Specialists Coordinate:** The 100 entries in [`registry.json`](agents/AGI_1_7/ecosystem/agent_registry/registry.json) are 100 validated `AgentContract` specialist definitions across 16 families (not 100 permanently running OS processes, as [`ResourceGovernor`](agents/AGI_1_7/engine/agi17/orchestration/resource_governor.py) bounds active workers to `1..4` based on live Win32 RAM headroom). [`HierarchicalOrchestrator`](agents/AGI_1_7/engine/agi17/orchestration/hierarchical_orchestrator.py) passes upstream outputs via `context["upstream_outputs"]` between dependent DAG nodes and automatically triggers `VERIFYING -> FAILED -> QUEUED -> READY -> RUNNING` repair loops when a test runner (`qa_unit_suite_runner`) detects a failure.
+3. **Internal Checks vs. External Benchmarks:**
+   - **Internal Subsystem Engineering Checks (`49` automated tests + `60` architectural invariants):** Verify deterministic engine properties (state machine transitions, DAG cycle detection, SHA-256 checkpoints, SSRF blocking, RAM throttling, memory supersession).
+   - **GPQA Diamond Clean 1.2.2 (`189 / 189 = 100.00%`, `4.61 mins`, `321,031` net task tokens):** Evaluated on the 189-question cleaned subset (`198` source minus `9` official [`gpqa-diamond-clean v1.2.2`](https://github.com/adamallcock/gpqa-diamond-clean) exclusions) and independently scored against the ground-truth answer key ([`AGI_1_7_GPQA_CLEAN_189_REPORT.md`](agents/AGI_1_7/reports/AGI_1_7_GPQA_CLEAN_189_REPORT.md)).
+   - **Terminal-Bench 2.0 & OSWorld-V2.1 Honest Scope:** Audited in [`benchmark_auditor.py`](agents/AGI_1_7/engine/agi17/evaluation/benchmark_auditor.py)—`chess-best-move` (`reward = 1.0`) was verified in an official Harbor container (`1` container task + `4` local script tasks), and `369/369` OSWorld-V2.1 JSON manifests were schema-audited while live Ubuntu VM GUI execution remains `PENDING_VM_IMAGE` (`0/369`).
+4. **Privacy, Credentials & License:** Prompts sent to `ModelAdapter.invoke()` are transmitted over HTTPS to Google's Gemini backend inside an `isolated_cwd` (preventing automatic workspace file leakage), while SQLite task stores, checkpoints, and 10-layer memory stay local. Released under the **MIT License** ([`LICENSE`](LICENSE)) using the Python standard library (`0` leaked secrets across all `1,279` git-tracked files).
+

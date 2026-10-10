@@ -71,3 +71,8 @@ external/
 /matched*.txt
 /scratch_cip*.py
 
+
+# AGI 1.7 demo runtime scratch & CLI home
+agents/AGI_1_7/demo_workspace/eval_env/
+agents/AGI_1_7/demo_workspace/runtime_storage/
+

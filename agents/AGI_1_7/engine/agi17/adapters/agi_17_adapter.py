@@ -79,6 +79,8 @@ class AGI17Adapter:
             governor=self.governor,
             token_controller=self.token_controller,
             specialist_factory=self.specialist_factory,
+            model_adapter=self.model_adapter,
+            supervisor=self.supervisor,
         )
         self.progress_service = ProgressService(
             task_store=self.task_manager.store,
