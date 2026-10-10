@@ -67,8 +67,8 @@ agents/AGI_1_6/
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Abhishek200416/AGI-1.5V.git
-cd AGI-1.5V
+git clone https://github.com/Abhishek200416/AGI-1.6V.git
+cd AGI-1.6V
 ```
 
 ### 2. Launch AGI 1.6 OMEGA NEXUS
