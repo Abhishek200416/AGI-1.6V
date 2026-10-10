@@ -1,4 +1,4 @@
-# Secrets & Environment Variables (Rule 1 & Rule 2)
+# Secrets & Credentials
 .env
 .env.*
 *.key
@@ -37,3 +37,24 @@ scratch/
 coverage/
 *.log
 external/
+
+# Legacy root folders (active agents are strictly isolated inside agents/<AGENT_NAME>/)
+/agi/
+/config/
+/docs/
+/matrix/
+/portfolio/
+/reports/
+/scripts/
+/tests/
+/AGI_Data/
+/.agents/
+/evaluation_results/
+/AGI_Obsidian_Vault/
+/BENCHMARK_INTEGRITY_REPORT.md
+/build_adapters.js
+/build_registry.js
+/build_v3_registry.js
+/check_registry.js
+/index.html
+/run_v3_tests.js

@@ -1,0 +1,143 @@
+{
+  "manifest_version": "1.5.0",
+  "project": "AGI 1.5 — OMEGA EVOLUTION",
+  "generated_at": "2026-10-10T04:15:00Z",
+  "total_requirements": 75,
+  "requirements": [
+    {
+      "id": "REQ-AGI15-001",
+      "category": "Version & Identity",
+      "name": "Active AGI 1.5 Evolution Runtime Validation",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "verification_method": "Startup Compatibility Gate and Diagnostic Status Check",
+      "dependencies": []
+    },
+    {
+      "id": "REQ-AGI15-002",
+      "category": "Requirements Management",
+      "name": "Canonical Requirements Manifest 1.5",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "verification_method": "JSON Schema & Hash Validation",
+      "dependencies": ["REQ-AGI15-001"]
+    },
+    {
+      "id": "REQ-AGI15-003",
+      "category": "External Storage",
+      "name": "Authoritative Persistent Storage on D:\\ External Drive",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "verification_method": "11-Step Real Durable Storage Verification Protocol",
+      "dependencies": []
+    },
+    {
+      "id": "REQ-AGI15-004",
+      "category": "Storage Resilience",
+      "name": "12-State Disconnection and Reconnection State Machine",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "verification_method": "12-State Machine Unit & Integration Verification",
+      "dependencies": ["REQ-AGI15-003"]
+    },
+    {
+      "id": "REQ-AGI15-005",
+      "category": "Memory Architecture",
+      "name": "500 Logical Memory Strata Hierarchy",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "verification_method": "500-Strata Schema and Partition Registry Check",
+      "dependencies": ["REQ-AGI15-003"]
+    },
+    {
+      "id": "REQ-AGI15-006",
+      "category": "Capability Fabric",
+      "name": "1,200 Registered Capability Catalog across 24 Families",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "verification_method": "Capability Count & Contract Validation Test",
+      "dependencies": []
+    },
+    {
+      "id": "REQ-AGI15-007",
+      "category": "Telemetry & Observability",
+      "name": "2,000 OpenTelemetry GenAI Semantic Attributes across 20 Namespaces",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "verification_method": "Telemetry Schema Validator & Secret Scrubbing Test",
+      "dependencies": []
+    },
+    {
+      "id": "REQ-AGI15-008",
+      "category": "Concurrency & Scheduling",
+      "name": "Resource-Adaptive DynTaskMAS Concurrency up to 500 Workers",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "verification_method": "Tarjan Cycle Detection and Wavefront Benchmark",
+      "dependencies": []
+    },
+    {
+      "id": "REQ-AGI15-009",
+      "category": "Live Knowledge & Research",
+      "name": "10-Stage Observable Research Pipeline with D: Cache",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "verification_method": "10-Stage Pipeline Execution and Citation Hash Verification",
+      "dependencies": ["REQ-AGI15-003"]
+    },
+    {
+      "id": "REQ-AGI15-010",
+      "category": "Foundation Model Policy",
+      "name": "Sole Foundation Model Policy: gemini-3.8-flash-high",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "verification_method": "Directive 0 Startup Gate and Provider Check",
+      "dependencies": []
+    },
+    {
+      "id": "REQ-AGI15-011",
+      "category": "Testing & Verification",
+      "name": "Expanded Core Custom Test Suite (16,800 Unique Cases)",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "verification_method": "11-Category Deterministic Regression Suite Execution",
+      "dependencies": []
+    },
+    {
+      "id": "REQ-AGI15-012",
+      "category": "Security & Adversarial Shield",
+      "name": "Expanded SSRF (14,720) and Policy Instruction (14,400) Scenarios",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "verification_method": "AgentLAB Adversarial Vector Execution",
+      "dependencies": []
+    },
+    {
+      "id": "REQ-AGI15-013",
+      "category": "Security Trajectories",
+      "name": "32,000 Multi-Turn Security Trajectories",
+      "status": "VERIFIED",
+      "priority": "CRITICAL",
+      "verification_method": "Multi-Turn Prompt Injection & Quarantine Verification",
+      "dependencies": ["REQ-AGI15-012"]
+    },
+    {
+      "id": "REQ-AGI15-014",
+      "category": "Durability & Recovery",
+      "name": "16,000 Verified Durability Steps and 1,200 Checkpoint Tests",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "verification_method": "Continuous Step Execution & Restart Recovery",
+      "dependencies": ["REQ-AGI15-003", "REQ-AGI15-004"]
+    },
+    {
+      "id": "REQ-AGI15-015",
+      "category": "Harness Self-Validation",
+      "name": "Test Harness Self-Validation via Reversible Mutation Testing",
+      "status": "VERIFIED",
+      "priority": "HIGH",
+      "verification_method": "8-Fault Mutation Injection and 100% Kill Rate Verification",
+      "dependencies": []
+    }
+  ]
+}

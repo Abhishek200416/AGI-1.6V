@@ -1,0 +1,83 @@
+{
+  "version": "1.5.0",
+  "timestamp": "2026-10-09T23:09:21Z",
+  "total_mutants": 8,
+  "killed_count": 8,
+  "survived_count": 0,
+  "kill_rate_pct": 100.0,
+  "all_killed": true,
+  "mutant_evaluations": [
+    {
+      "mutant_id": "MUTANT-01-SSRF-BYPASS",
+      "name": "Bypass SSRF IP blacklist check",
+      "subsystem": "agi.computer.web_browser",
+      "status": "KILLED",
+      "killed": true,
+      "clean_restored_pass": true,
+      "duration_seconds": 0.48
+    },
+    {
+      "mutant_id": "MUTANT-02-INJECTION-BYPASS",
+      "name": "Bypass prompt injection regex pattern inspection",
+      "subsystem": "agi.security.injection_shield",
+      "status": "KILLED",
+      "killed": true,
+      "clean_restored_pass": true,
+      "duration_seconds": 0.237
+    },
+    {
+      "mutant_id": "MUTANT-03-TERMINAL-POLICY-BYPASS",
+      "name": "Bypass dangerous terminal command policy enforcement",
+      "subsystem": "agi.security.injection_shield",
+      "status": "KILLED",
+      "killed": true,
+      "clean_restored_pass": true,
+      "duration_seconds": 3.113
+    },
+    {
+      "mutant_id": "MUTANT-04-POLICY-TAG-BYPASS",
+      "name": "Suppress INJECTION_DETECTED reason string in policy handling",
+      "subsystem": "agi.security.injection_shield",
+      "status": "KILLED",
+      "killed": true,
+      "clean_restored_pass": true,
+      "duration_seconds": 0.154
+    },
+    {
+      "mutant_id": "MUTANT-05-STRATA-CEILING-CORRUPT",
+      "name": "Corrupt strata registry total ceiling from 500 to 200",
+      "subsystem": "agi.memory.strata_registry",
+      "status": "KILLED",
+      "killed": true,
+      "clean_restored_pass": true,
+      "duration_seconds": 0.308
+    },
+    {
+      "mutant_id": "MUTANT-06-MEMORY-STATE-CORRUPT",
+      "name": "Force OmegaMemoryEngine initialization into FAILED state instead of READY",
+      "subsystem": "agi.memory.omega_memory",
+      "status": "KILLED",
+      "killed": true,
+      "clean_restored_pass": true,
+      "duration_seconds": 0.591
+    },
+    {
+      "mutant_id": "MUTANT-07-COMPAT-GATE-VERSION-BREAK",
+      "name": "Break Compatibility Gate version expectation to 9.9.9",
+      "subsystem": "agi.runtime.compatibility_gate",
+      "status": "KILLED",
+      "killed": true,
+      "clean_restored_pass": true,
+      "duration_seconds": 0.67
+    },
+    {
+      "mutant_id": "MUTANT-08-CAPABILITY-COUNT-BREAK",
+      "name": "Corrupt total capability count assertion to 999",
+      "subsystem": "agi.capabilities.capability_registry",
+      "status": "KILLED",
+      "killed": true,
+      "clean_restored_pass": true,
+      "duration_seconds": 4.204
+    }
+  ]
+}
