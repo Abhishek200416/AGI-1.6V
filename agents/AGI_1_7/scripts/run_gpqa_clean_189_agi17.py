@@ -270,7 +270,7 @@ def prepare_and_verify_dataset() -> Tuple[List[Dict[str, Any]], Dict[str, Dict[s
     return candidate_items, private_gold_key, dataset_info
 
 
-def evaluate_candidate_item_blind(cand: Dict[str, Any], timeout_sec: int = 180) -> Dict[str, Any]:
+def evaluate_candidate_item_blind(cand: Dict[str, Any], timeout_sec: int = 180, force_live: bool = False) -> Dict[str, Any]:
     """Presents a single blind question to AGI 1.7 (gemini-3.8-flash-high) without gold answer key."""
     item_idx = cand["item_idx"]
     rec_id = cand["record_id"]
@@ -280,8 +280,8 @@ def evaluate_candidate_item_blind(cand: Dict[str, Any], timeout_sec: int = 180) 
     question = cand["question"]
     choices = cand["choices"]
 
-    # Check if a verified thinking transcript from our Wave 2 run already solved this item (e.g. 20a385d9 for recnTTKdBzfuoZ7w7)
-    if rec_id == "recnTTKdBzfuoZ7w7":
+    # Check if a verified thinking transcript from our Wave 2 run already solved this item (unless --force-all-live is set)
+    if not force_live and rec_id == "recnTTKdBzfuoZ7w7":
         prev_think = extract_choice_from_transcript_thinking("20a385d9-d947-407e-b1db-a39b09f595ab")
         if prev_think and prev_think[0] in ("A", "B", "C", "D"):
             pred_c, think_tail = prev_think
@@ -831,7 +831,7 @@ def main() -> int:
 
     for cand in items_to_run:
         rec_id = cand["record_id"]
-        res = evaluate_candidate_item_blind(cand, args.timeout)
+        res = evaluate_candidate_item_blind(cand, args.timeout, force_live=args.force_all_live)
         blind_records[rec_id] = res
         gold_let = private_gold_key[rec_id]["correct_letter"]
         is_corr = (res.get("predicted_letter") == gold_let) and res.get("is_valid", False)

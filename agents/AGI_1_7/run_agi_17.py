@@ -100,6 +100,15 @@ def main() -> int:
     parser.add_argument("--storage-root", default=None, help="Optional storage root path (falls back locally if D:\\ unavailable)")
     parser.add_argument("--profile-only", action="store_true", help="Run capability profiler and startup reconciliation only")
     parser.add_argument("--force-hierarchical", action="store_true", help="Force hierarchical DAG planning")
+    parser.add_argument("--code-task-dir", default=None, help="Directory for live-model Python code & unit-test generation + self-healing verification")
+    parser.add_argument("--module-filename", default="token_bucket.py", help="Target Python module filename when --code-task-dir is set")
+    parser.add_argument("--test-filename", default="test_token_bucket.py", help="Target unittest filename when --code-task-dir is set")
+    parser.add_argument(
+        "--inject-deliberate-test-failure",
+        action="store_true",
+        help="Inject a deliberate defect after Stage 2 code generation so Stage 3 detects a real unittest failure, escalates to swe_patch_minimizer via ModelAdapter.invoke(), and re-runs tests",
+    )
+    parser.add_argument("--save-execution-log", default=None, help="Optional path to save full JSON execution trace")
     parser.add_argument(
         "--detach",
         action="store_true",
@@ -142,8 +151,16 @@ def main() -> int:
         prompt=args.prompt,
         task_id=args.task_id,
         force_hierarchical=args.force_hierarchical,
+        code_task_dir=args.code_task_dir,
+        module_filename=args.module_filename,
+        test_filename=args.test_filename,
+        inject_deliberate_test_failure=args.inject_deliberate_test_failure,
     )
-    print(json.dumps(result, indent=2), flush=True)
+    if args.save_execution_log:
+        out_p = Path(args.save_execution_log)
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        out_p.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+    print(json.dumps(result, indent=2, default=str), flush=True)
     return 0
 
 

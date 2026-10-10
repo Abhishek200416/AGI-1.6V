@@ -1,0 +1,436 @@
+{
+  "mission_id": "MISSION-RUN-AGI17-LIVE-001",
+  "execution_path": "HIERARCHICAL_DAG",
+  "final_state": "SUCCEEDED",
+  "logical_children_created": 3,
+  "succeeded_children": 3,
+  "max_concurrent_workers_used": 1,
+  "limits_enforced": {
+    "MAX_AGENT_SPECIALIZATIONS": 100,
+    "MAX_LOGICAL_CHILD_TASKS": 100,
+    "MAX_ACTIVE_EXECUTIONS": 1
+  },
+  "memory_retrieval": {
+    "audit_id": "PREPLAN-RET-MISSION-RUN-AGI17-LIVE-001-1791660541806",
+    "task_id": "MISSION-RUN-AGI17-LIVE-001",
+    "session_id": "SESSION-1791660541606-975d98",
+    "using_fallback_storage": false,
+    "retrieved_entry_ids": [
+      "MEM-L5-1791637839850-97c8c2",
+      "MEM-L5-1791637665248-5b75a3",
+      "MEM-L4-1791639350335-19c91e",
+      "MEM-L4-1791637846157-ded0df",
+      "MEM-L4-1791637839323-67c4b2",
+      "MEM-L4-1791637835532-0faf5f",
+      "MEM-L4-1791637746890-89830f"
+    ],
+    "semantic_facts": [
+      {
+        "entry_id": "MEM-L5-1791637839850-97c8c2",
+        "layer": 5,
+        "layer_name": "CROSS_SESSION_SEMANTIC_FACTS",
+        "subject_key": "demo_d:cwd_policy:1791637736-cce8",
+        "content": "Updated policy: run in D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND\\isolated_cwd",
+        "structured_data": {},
+        "tags": [
+          "demo_d",
+          "cwd"
+        ],
+        "source_task_id": null,
+        "session_id": "DEMO-D-S1-1791637736-cce8",
+        "confidence": 1.0,
+        "created_at": 1791637839.8507373,
+        "updated_at": 1791637839.8507373,
+        "expires_at": null,
+        "access_count": 4,
+        "useful_count": 0,
+        "supersedes_id": "MEM-L5-1791637839818-db6424",
+        "superseded_by_id": null,
+        "is_active": true
+      },
+      {
+        "entry_id": "MEM-L5-1791637665248-5b75a3",
+        "layer": 5,
+        "layer_name": "CROSS_SESSION_SEMANTIC_FACTS",
+        "subject_key": "demo_d:benchmark_cwd_policy",
+        "content": "Updated policy: run in D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND\\isolated_cwd",
+        "structured_data": {},
+        "tags": [
+          "demo_d",
+          "cwd"
+        ],
+        "source_task_id": null,
+        "session_id": "DEMO-D-SESSION-1",
+        "confidence": 1.0,
+        "created_at": 1791637665.2480083,
+        "updated_at": 1791637665.2480083,
+        "expires_at": null,
+        "access_count": 9,
+        "useful_count": 0,
+        "supersedes_id": "MEM-L5-1791637665224-5790a4",
+        "superseded_by_id": null,
+        "is_active": true
+      }
+    ],
+    "procedural_recipes": [],
+    "failure_playbooks": [],
+    "episodic_traces": [
+      {
+        "entry_id": "MEM-L4-1791639350335-19c91e",
+        "layer": 4,
+        "layer_name": "COMPRESSED_EPISODIC_TRACE",
+        "subject_key": "episode:MISSION-1791639350070-a1887c",
+        "content": "FastPath mission '70-Benchmark 4-Agent Comparative Verification Mission' (MISSION-1791639350070-a1887c) succeeded via data_sqlite_wal_architect: [SQLite WAL Concurrency & Schema Architect] executed IN_PROCESS_TOOL_WORKER on task 'MISSION-1791639350070-a1887c'",
+        "structured_data": {
+          "compressed_text": "FastPath mission '70-Benchmark 4-Agent Comparative Verification Mission' (MISSION-1791639350070-a1887c) succeeded via data_sqlite_wal_architect: [SQLite WAL Concurrency & Schema Architect] executed IN_PROCESS_TOOL_WORKER on task 'MISSION-1791639350070-a1887c'",
+          "raw_chars": 259,
+          "compressed_chars": 259,
+          "raw_estimated_tokens": 64,
+          "compressed_estimated_tokens": 64,
+          "reduction_ratio": 0.0,
+          "preserved_anchors": {
+            "task_ids": [
+              "MISSION-1791639350070-a1887c"
+            ],
+            "exit_codes": [],
+            "error_names": [],
+            "file_paths": [],
+            "sha256_hashes": [],
+            "extra_identifiers": []
+          }
+        },
+        "tags": [
+          "episodic",
+          "acon"
+        ],
+        "source_task_id": "MISSION-1791639350070-a1887c",
+        "session_id": "SESSION-1791639349957-f77b0d",
+        "confidence": 1.0,
+        "created_at": 1791639350.3356187,
+        "updated_at": 1791639350.3356187,
+        "expires_at": null,
+        "access_count": 1,
+        "useful_count": 0,
+        "supersedes_id": null,
+        "superseded_by_id": null,
+        "is_active": true
+      },
+      {
+        "entry_id": "MEM-L4-1791637846157-ded0df",
+        "layer": 4,
+        "layer_name": "COMPRESSED_EPISODIC_TRACE",
+        "subject_key": "episode:DEMO-E-THROTTLE-1791637736-cce8",
+        "content": "Hierarchical mission 'Demo E: Resource Pressure Throttling' (DEMO-E-THROTTLE-1791637736-cce8) finished with state=SUCCEEDED, children=6/6, max_concurrency=1",
+        "structured_data": {
+          "compressed_text": "Hierarchical mission 'Demo E: Resource Pressure Throttling' (DEMO-E-THROTTLE-1791637736-cce8) finished with state=SUCCEEDED, children=6/6, max_concurrency=1",
+          "raw_chars": 156,
+          "compressed_chars": 156,
+          "raw_estimated_tokens": 39,
+          "compressed_estimated_tokens": 39,
+          "reduction_ratio": 0.0,
+          "preserved_anchors": {
+            "task_ids": [],
+            "exit_codes": [],
+            "error_names": [],
+            "file_paths": [],
+            "sha256_hashes": [],
+            "extra_identifiers": []
+          }
+        },
+        "tags": [
+          "episodic",
+          "acon"
+        ],
+        "source_task_id": "DEMO-E-THROTTLE-1791637736-cce8",
+        "session_id": "SESSION-1791637736590-53cfdc",
+        "confidence": 1.0,
+        "created_at": 1791637846.1576817,
+        "updated_at": 1791637846.1576817,
+        "expires_at": null,
+        "access_count": 2,
+        "useful_count": 0,
+        "supersedes_id": null,
+        "superseded_by_id": null,
+        "is_active": true
+      },
+      {
+        "entry_id": "MEM-L4-1791637839323-67c4b2",
+        "layer": 4,
+        "layer_name": "COMPRESSED_EPISODIC_TRACE",
+        "subject_key": "episode:DEMO-B-INJECT-1791637736-cce8",
+        "content": "Hierarchical mission 'Demo B: Mid-Run Child Injection' (DEMO-B-INJECT-1791637736-cce8) finished with state=SUCCEEDED, children=3/3, max_concurrency=1",
+        "structured_data": {
+          "compressed_text": "Hierarchical mission 'Demo B: Mid-Run Child Injection' (DEMO-B-INJECT-1791637736-cce8) finished with state=SUCCEEDED, children=3/3, max_concurrency=1",
+          "raw_chars": 149,
+          "compressed_chars": 149,
+          "raw_estimated_tokens": 37,
+          "compressed_estimated_tokens": 37,
+          "reduction_ratio": 0.0,
+          "preserved_anchors": {
+            "task_ids": [],
+            "exit_codes": [],
+            "error_names": [],
+            "file_paths": [],
+            "sha256_hashes": [],
+            "extra_identifiers": []
+          }
+        },
+        "tags": [
+          "episodic",
+          "acon"
+        ],
+        "source_task_id": "DEMO-B-INJECT-1791637736-cce8",
+        "session_id": "SESSION-1791637736590-53cfdc",
+        "confidence": 1.0,
+        "created_at": 1791637839.323774,
+        "updated_at": 1791637839.323774,
+        "expires_at": null,
+        "access_count": 4,
+        "useful_count": 0,
+        "supersedes_id": null,
+        "superseded_by_id": null,
+        "is_active": true
+      },
+      {
+        "entry_id": "MEM-L4-1791637835532-0faf5f",
+        "layer": 4,
+        "layer_name": "COMPRESSED_EPISODIC_TRACE",
+        "subject_key": "episode:DEMO-A-100SUB-1791637736-cce8",
+        "content": "Hierarchical mission 'Demo A2: 100 Logical Child Tasks with Bounded Active Execution' (DEMO-A-100SUB-1791637736-cce8) finished with state=SUCCEEDED, children=100/100, max_concurrency=4",
+        "structured_data": {
+          "compressed_text": "Hierarchical mission 'Demo A2: 100 Logical Child Tasks with Bounded Active Execution' (DEMO-A-100SUB-1791637736-cce8) finished with state=SUCCEEDED, children=100/100, max_concurrency=4",
+          "raw_chars": 184,
+          "compressed_chars": 184,
+          "raw_estimated_tokens": 46,
+          "compressed_estimated_tokens": 46,
+          "reduction_ratio": 0.0,
+          "preserved_anchors": {
+            "task_ids": [],
+            "exit_codes": [],
+            "error_names": [],
+            "file_paths": [],
+            "sha256_hashes": [],
+            "extra_identifiers": []
+          }
+        },
+        "tags": [
+          "episodic",
+          "acon"
+        ],
+        "source_task_id": "DEMO-A-100SUB-1791637736-cce8",
+        "session_id": "SESSION-1791637736590-53cfdc",
+        "confidence": 1.0,
+        "created_at": 1791637835.53253,
+        "updated_at": 1791637835.53253,
+        "expires_at": null,
+        "access_count": 5,
+        "useful_count": 0,
+        "supersedes_id": null,
+        "superseded_by_id": null,
+        "is_active": true
+      },
+      {
+        "entry_id": "MEM-L4-1791637746890-89830f",
+        "layer": 4,
+        "layer_name": "COMPRESSED_EPISODIC_TRACE",
+        "subject_key": "episode:DEMO-A-12SUB-1791637736-cce8",
+        "content": "Hierarchical mission 'Demo A1: 12-Subtask Multi-Family DAG' (DEMO-A-12SUB-1791637736-cce8) finished with state=SUCCEEDED, children=12/12, max_concurrency=2",
+        "structured_data": {
+          "compressed_text": "Hierarchical mission 'Demo A1: 12-Subtask Multi-Family DAG' (DEMO-A-12SUB-1791637736-cce8) finished with state=SUCCEEDED, children=12/12, max_concurrency=2",
+          "raw_chars": 155,
+          "compressed_chars": 155,
+          "raw_estimated_tokens": 38,
+          "compressed_estimated_tokens": 38,
+          "reduction_ratio": 0.0,
+          "preserved_anchors": {
+            "task_ids": [],
+            "exit_codes": [],
+            "error_names": [],
+            "file_paths": [],
+            "sha256_hashes": [],
+            "extra_identifiers": []
+          }
+        },
+        "tags": [
+          "episodic",
+          "acon"
+        ],
+        "source_task_id": "DEMO-A-12SUB-1791637736-cce8",
+        "session_id": "SESSION-1791637736590-53cfdc",
+        "confidence": 1.0,
+        "created_at": 1791637746.8906846,
+        "updated_at": 1791637746.8906846,
+        "expires_at": null,
+        "access_count": 6,
+        "useful_count": 0,
+        "supersedes_id": null,
+        "superseded_by_id": null,
+        "is_active": true
+      }
+    ]
+  },
+  "child_results": {
+    "MISSION-RUN-AGI17-LIVE-001-SUB-001": {
+      "agent_id": "plan_systems_architect",
+      "display_name": "Systems Topology Architect",
+      "family": "Planning & Architecture",
+      "execution_mode": "MODEL_SPECIALIST_WORKER",
+      "resource_class": "MEDIUM",
+      "task_id": "MISSION-RUN-AGI17-LIVE-001-SUB-001",
+      "status": "SUCCEEDED",
+      "execution_origin": "LIVE_MODEL_ADAPTER",
+      "schema_validation_passed": true,
+      "artifact_verification_passed": null,
+      "task_correctness_verified": null,
+      "capabilities_applied": [
+        "architecture_specification",
+        "component_boundary_design",
+        "interface_contract_design"
+      ],
+      "output_summary": "### Architecture & Interface Specification: `token_bucket.py`\n\n* **Class Definition & State Invariants (`__init__`)**:\n  * **Signature**: `TokenBucketRateLimiter(capacity: float, refill_rate: float) -> None`\n  * **Contract**: Validates `capacity > 0` and `refill_rate > 0`, raising `ValueError(\"capacity and refill_rate must be > 0\")` on non-positive values. Initializes internal state: `self.capacity: float = float(capacity)`, `self.refill_rate: float = float(refill_rate)`, `self.tokens: float = float(capacity)`, and `self.last_timestamp: float | None = None`.\n\n* **Acquisition Interface Contract (`try_acquire`)**:\n  * **Signature**: `try_acquire(tokens: float = 1.0, now: float | None = None) -> bool`\n  * **Validation**: Validates `tokens > 0`, raising `ValueError(\"tokens requested must be > 0\")` if non-positive.\n  * **Decision & Deduction**: After evaluation and replenishment, if `self.tokens >= tokens`, decrements `self.tokens -= tokens` and returns `True`; otherwise leaves `self.tokens` intact and returns `False`.\n\n* **Refill Mechanics & Clock Progression**:\n  * If `now` is provided:\n    * If `self.last_timestamp is None`: Initializes `self.last_timestamp = now` (no time elapsed yet).\n    * If `self.last_timestamp is not None`: Computes elapsed time `delta = max(0.0, now - self.last_timestamp)`, replenishes tokens via `self.tokens = min(self.capacity, self.tokens + delta * self.refill_rate)`, and updates `self.last_timestamp = now`.\n\n* **Read-Only Telemetry Query (`available_tokens`)**:\n  * **Signature**: `available_tokens() -> float`\n  * **Contract**: Returns current `self.tokens` without side effects, time-stepping, or mutations.\n\n* **Boundary & Numerical Stability Invariants**:\n  * Clamps `self.tokens` strictly to the interval `[0.0, self.capacity]`.\n  * Monotonicity safeguard: Non-monotonic time steps (`now < self.last_timestamp`) result in zero refill (`delta = 0.0`) rather than token depletion.\n",
+      "artifacts": {
+        "execution_origin": "LIVE_MODEL_ADAPTER",
+        "analysis": "### Architecture & Interface Specification: `token_bucket.py`\n\n* **Class Definition & State Invariants (`__init__`)**:\n  * **Signature**: `TokenBucketRateLimiter(capacity: float, refill_rate: float) -> None`\n  * **Contract**: Validates `capacity > 0` and `refill_rate > 0`, raising `ValueError(\"capacity and refill_rate must be > 0\")` on non-positive values. Initializes internal state: `self.capacity: float = float(capacity)`, `self.refill_rate: float = float(refill_rate)`, `self.tokens: float = float(capacity)`, and `self.last_timestamp: float | None = None`.\n\n* **Acquisition Interface Contract (`try_acquire`)**:\n  * **Signature**: `try_acquire(tokens: float = 1.0, now: float | None = None) -> bool`\n  * **Validation**: Validates `tokens > 0`, raising `ValueError(\"tokens requested must be > 0\")` if non-positive.\n  * **Decision & Deduction**: After evaluation and replenishment, if `self.tokens >= tokens`, decrements `self.tokens -= tokens` and returns `True`; otherwise leaves `self.tokens` intact and returns `False`.\n\n* **Refill Mechanics & Clock Progression**:\n  * If `now` is provided:\n    * If `self.last_timestamp is None`: Initializes `self.last_timestamp = now` (no time elapsed yet).\n    * If `self.last_timestamp is not None`: Computes elapsed time `delta = max(0.0, now - self.last_timestamp)`, replenishes tokens via `self.tokens = min(self.capacity, self.tokens + delta * self.refill_rate)`, and updates `self.last_timestamp = now`.\n\n* **Read-Only Telemetry Query (`available_tokens`)**:\n  * **Signature**: `available_tokens() -> float`\n  * **Contract**: Returns current `self.tokens` without side effects, time-stepping, or mutations.\n\n* **Boundary & Numerical Stability Invariants**:\n  * Clamps `self.tokens` strictly to the interval `[0.0, self.capacity]`.\n  * Monotonicity safeguard: Non-monotonic time steps (`now < self.last_timestamp`) result in zero refill (`delta = 0.0`) rather than token depletion.\n",
+        "model_invoked": "gemini-3.8-flash-high",
+        "model_status": "SUCCEEDED",
+        "model_duration_sec": 28.1809,
+        "token_usage": {
+          "accounting_mode": "PROVIDER_REPORTED",
+          "input_tokens": 12032,
+          "output_tokens": 1793,
+          "thinking_tokens": 1262,
+          "total_tokens": 13825
+        },
+        "notification_id": "NOTIF-MISSION-RUN-AGI17-LIVE-001-SUB-001-MODEL-1791660570786",
+        "stdout_log_path": "D:\\AGI_Storage\\AGI_1_7\\logs\\processes\\MISSION-RUN-AGI17-LIVE-001-SUB-001-MODEL_att1_1791660542605_stdout.log",
+        "artifact_verification_passed": null,
+        "task_correctness_verified": null
+      },
+      "duration_sec": 28.25516,
+      "verification_digest": "4821846fca51e4533bc3647cad5a5214d2fbab65f5f66885be1454dd2f041066"
+    },
+    "MISSION-RUN-AGI17-LIVE-001-SUB-002": {
+      "agent_id": "swe_python_runtime_engineer",
+      "display_name": "Python Core & Asyncio Runtime Engineer",
+      "family": "Software Engineering",
+      "execution_mode": "IN_PROCESS_TOOL_WORKER",
+      "resource_class": "LIGHT",
+      "task_id": "MISSION-RUN-AGI17-LIVE-001-SUB-002",
+      "status": "SUCCEEDED",
+      "execution_origin": "LIVE_MODEL_ADAPTER",
+      "schema_validation_passed": true,
+      "artifact_verification_passed": true,
+      "task_correctness_verified": null,
+      "capabilities_applied": [
+        "python_stdlib_implementation",
+        "asyncio_concurrency_patterns",
+        "type_annotation_validation"
+      ],
+      "output_summary": "```python\nfrom __future__ import annotations\n\n\nclass TokenBucketRateLimiter:\n    \"\"\"Token bucket rate limiter supporting token replenishment and discrete acquisitions.\n\n    Attributes:\n        capacity (float): Maximum token capacity of the bucket.\n        refill_rate (float): Number of tokens added to the bucket per unit of time.\n        tokens (float): Current number of tokens in the bucket.\n        last_timestamp (float | None): Timestamp of the last observation or refill event.\n    \"\"\"\n\n    def __init__(self, capacity: float, refill_rate: float) -> None:\n        \"\"\"Initialize the TokenBucketRateLimiter.\n\n        Args:\n            capacity: Maximum burst capacity of the token bucket (must be > 0).\n            refill_rate: Rate at which tokens replenish per unit time (must be > 0).\n\n        Raises:\n            ValueError: If capacity <= 0 or refill_rate <= 0.\n        \"\"\"\n        if capacity <= 0 or refill_rate <= 0:\n            raise ValueError(\"capacity and refill_rate must be > 0\")\n\n        self.capacity: float = float(capacity)\n        self.refill_rate: float = float(refill_rate)\n        self.tokens: float = float(capacity)\n        self.last_timestamp: float | None = None\n\n    def try_acquire(self, tokens: float = 1.0, now: float | None = None) -> bool:\n        \"\"\"Attempt to acquire tokens from the bucket.\n\n        Args:\n            tokens: Number of tokens requested (default: 1.0, must be > 0).\n            now: Current timestamp in seconds. If provided, refills tokens based on elapsed time.\n\n        Returns:\n            bool: True if sufficient tokens were available and deducted, False otherwise.\n\n        Raises:\n            ValueError: If tokens <= 0.\n        \"\"\"\n        if tokens <= 0:\n            raise ValueError(\"tokens requested must be > 0\")\n\n        if now is not None:\n            now_ts = float(now)\n            if self.last_timestamp is None:\n                self.last_timestamp = now_ts\n            else:\n                delta = max(0.0, now_ts - self.last_timestamp)\n                self.tokens = min(self.capacity, self.tokens + delta * self.refill_rate)\n                self.last_timestamp = now_ts\n\n        if self.tokens >= tokens:\n            self.tokens -= float(tokens)\n            return True\n        return False\n\n    def available_tokens(self) -> float:\n        \"\"\"Return the current number of available tokens without modifying state.\n\n        Returns:\n            float: Current available tokens in the bucket.\n        \"\"\"\n        return self.tokens\n```\n",
+      "artifacts": {
+        "execution_origin": "LIVE_MODEL_ADAPTER",
+        "analysis": "```python\nfrom __future__ import annotations\n\n\nclass TokenBucketRateLimiter:\n    \"\"\"Token bucket rate limiter supporting token replenishment and discrete acquisitions.\n\n    Attributes:\n        capacity (float): Maximum token capacity of the bucket.\n        refill_rate (float): Number of tokens added to the bucket per unit of time.\n        tokens (float): Current number of tokens in the bucket.\n        last_timestamp (float | None): Timestamp of the last observation or refill event.\n    \"\"\"\n\n    def __init__(self, capacity: float, refill_rate: float) -> None:\n        \"\"\"Initialize the TokenBucketRateLimiter.\n\n        Args:\n            capacity: Maximum burst capacity of the token bucket (must be > 0).\n            refill_rate: Rate at which tokens replenish per unit time (must be > 0).\n\n        Raises:\n            ValueError: If capacity <= 0 or refill_rate <= 0.\n        \"\"\"\n        if capacity <= 0 or refill_rate <= 0:\n            raise ValueError(\"capacity and refill_rate must be > 0\")\n\n        self.capacity: float = float(capacity)\n        self.refill_rate: float = float(refill_rate)\n        self.tokens: float = float(capacity)\n        self.last_timestamp: float | None = None\n\n    def try_acquire(self, tokens: float = 1.0, now: float | None = None) -> bool:\n        \"\"\"Attempt to acquire tokens from the bucket.\n\n        Args:\n            tokens: Number of tokens requested (default: 1.0, must be > 0).\n            now: Current timestamp in seconds. If provided, refills tokens based on elapsed time.\n\n        Returns:\n            bool: True if sufficient tokens were available and deducted, False otherwise.\n\n        Raises:\n            ValueError: If tokens <= 0.\n        \"\"\"\n        if tokens <= 0:\n            raise ValueError(\"tokens requested must be > 0\")\n\n        if now is not None:\n            now_ts = float(now)\n            if self.last_timestamp is None:\n                self.last_timestamp = now_ts\n            else:\n                delta = max(0.0, now_ts - self.last_timestamp)\n                self.tokens = min(self.capacity, self.tokens + delta * self.refill_rate)\n                self.last_timestamp = now_ts\n\n        if self.tokens >= tokens:\n            self.tokens -= float(tokens)\n            return True\n        return False\n\n    def available_tokens(self) -> float:\n        \"\"\"Return the current number of available tokens without modifying state.\n\n        Returns:\n            float: Current available tokens in the bucket.\n        \"\"\"\n        return self.tokens\n```\n",
+        "model_invoked": "gemini-3.8-flash-high",
+        "model_status": "SUCCEEDED",
+        "model_duration_sec": 36.6461,
+        "token_usage": {
+          "accounting_mode": "PROVIDER_REPORTED",
+          "input_tokens": 13522,
+          "output_tokens": 3273,
+          "thinking_tokens": 2660,
+          "total_tokens": 16795
+        },
+        "notification_id": "NOTIF-MISSION-RUN-AGI17-LIVE-001-SUB-002-MODEL-1791660607948",
+        "stdout_log_path": "D:\\AGI_Storage\\AGI_1_7\\logs\\processes\\MISSION-RUN-AGI17-LIVE-001-SUB-002-MODEL_att1_1791660571302_stdout.log",
+        "artifact_verification_passed": true,
+        "task_correctness_verified": null,
+        "written_file_path": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\live_code_mission_workspace\\token_bucket.py",
+        "clean_generated_code": "from __future__ import annotations\n\n\nclass TokenBucketRateLimiter:\n    \"\"\"Token bucket rate limiter supporting token replenishment and discrete acquisitions.\n\n    Attributes:\n        capacity (float): Maximum token capacity of the bucket.\n        refill_rate (float): Number of tokens added to the bucket per unit of time.\n        tokens (float): Current number of tokens in the bucket.\n        last_timestamp (float | None): Timestamp of the last observation or refill event.\n    \"\"\"\n\n    def __init__(self, capacity: float, refill_rate: float) -> None:\n        \"\"\"Initialize the TokenBucketRateLimiter.\n\n        Args:\n            capacity: Maximum burst capacity of the token bucket (must be > 0).\n            refill_rate: Rate at which tokens replenish per unit time (must be > 0).\n\n        Raises:\n            ValueError: If capacity <= 0 or refill_rate <= 0.\n        \"\"\"\n        if capacity <= 0 or refill_rate <= 0:\n            raise ValueError(\"capacity and refill_rate must be > 0\")\n\n        self.capacity: float = float(capacity)\n        self.refill_rate: float = float(refill_rate)\n        self.tokens: float = float(capacity)\n        self.last_timestamp: float | None = None\n\n    def try_acquire(self, tokens: float = 1.0, now: float | None = None) -> bool:\n        \"\"\"Attempt to acquire tokens from the bucket.\n\n        Args:\n            tokens: Number of tokens requested (default: 1.0, must be > 0).\n            now: Current timestamp in seconds. If provided, refills tokens based on elapsed time.\n\n        Returns:\n            bool: True if sufficient tokens were available and deducted, False otherwise.\n\n        Raises:\n            ValueError: If tokens <= 0.\n        \"\"\"\n        if tokens <= 0:\n            raise ValueError(\"tokens requested must be > 0\")\n\n        if now is not None:\n            now_ts = float(now)\n            if self.last_timestamp is None:\n                self.last_timestamp = now_ts\n            else:\n                delta = max(0.0, now_ts - self.last_timestamp)\n                self.tokens = min(self.capacity, self.tokens + delta * self.refill_rate)\n                self.last_timestamp = now_ts\n\n        if self.tokens >= tokens:\n            self.tokens -= float(tokens)\n            return True\n        return False\n\n    def available_tokens(self) -> float:\n        \"\"\"Return the current number of available tokens without modifying state.\n\n        Returns:\n            float: Current available tokens in the bucket.\n        \"\"\"\n        return self.tokens\n",
+        "clean_file_sha256": "279f44d903a34c45c0db449b1f3a9e18226700e0db202df234e3b49839e07ea5"
+      },
+      "duration_sec": 36.73957,
+      "verification_digest": "89fe3a4943d6c035ce1c1508de981306a1b7fdeff1436532782cf4b5091f6286"
+    },
+    "MISSION-RUN-AGI17-LIVE-001-SUB-003": {
+      "agent_id": "qa_unit_suite_runner",
+      "display_name": "Deterministic Unit Test Runner",
+      "family": "Testing, QA & Verification",
+      "execution_mode": "IN_PROCESS_TOOL_WORKER",
+      "resource_class": "LIGHT",
+      "task_id": "MISSION-RUN-AGI17-LIVE-001-SUB-003",
+      "status": "SUCCEEDED",
+      "execution_origin": "LIVE_MODEL_ADAPTER",
+      "schema_validation_passed": true,
+      "artifact_verification_passed": true,
+      "task_correctness_verified": true,
+      "capabilities_applied": [
+        "unittest_assertion_execution",
+        "boundary_condition_probing",
+        "fixture_isolation_verification"
+      ],
+      "output_summary": "```python\nimport unittest\nfrom token_bucket import TokenBucketRateLimiter\n\n\nclass TestTokenBucketRateLimiter(unittest.TestCase):\n    \"\"\"Unit test suite for TokenBucketRateLimiter validating normal operation, boundary conditions, and error handling.\"\"\"\n\n    def test_initialization_valid(self):\n        \"\"\"Test proper initialization with positive capacity and refill rate.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=2.0)\n        self.assertEqual(limiter.capacity, 10.0)\n        self.assertEqual(limiter.refill_rate, 2.0)\n        self.assertEqual(limiter.tokens, 10.0)\n        self.assertIsNone(limiter.last_timestamp)\n        self.assertEqual(limiter.available_tokens(), 10.0)\n\n    def test_initialization_invalid_capacity_raises_value_error(self):\n        \"\"\"Test that non-positive capacity values raise ValueError.\"\"\"\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=0.0, refill_rate=1.0)\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=-5.0, refill_rate=1.0)\n\n    def test_initialization_invalid_refill_rate_raises_value_error(self):\n        \"\"\"Test that non-positive refill_rate values raise ValueError.\"\"\"\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=10.0, refill_rate=0.0)\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=10.0, refill_rate=-2.5)\n\n    def test_try_acquire_invalid_tokens_raises_value_error(self):\n        \"\"\"Test that requesting non-positive tokens raises ValueError.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=1.0)\n        with self.assertRaises(ValueError):\n            limiter.try_acquire(tokens=0.0)\n        with self.assertRaises(ValueError):\n            limiter.try_acquire(tokens=-1.0)\n\n    def test_normal_operation_default_acquire(self):\n        \"\"\"Test normal single-token acquisition using the default parameter.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=5.0, refill_rate=1.0)\n        self.assertTrue(limiter.try_acquire())\n        self.assertEqual(limiter.available_tokens(), 4.0)\n\n    def test_normal_operation_partial_acquire(self):\n        \"\"\"Test sequential acquisition of variable token amounts.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=1.0)\n        self.assertTrue(limiter.try_acquire(tokens=3.5))\n        self.assertEqual(limiter.available_tokens(), 6.5)\n        self.assertTrue(limiter.try_acquire(tokens=2.5))\n        self.assertEqual(limiter.available_tokens(), 4.0)\n\n    def test_insufficient_tokens_returns_false_without_deduction(self):\n        \"\"\"Test that acquisition fails and state remains unchanged when requesting more tokens than available.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=5.0, refill_rate=1.0)\n        self.assertFalse(limiter.try_acquire(tokens=6.0))\n        self.assertEqual(limiter.available_tokens(), 5.0)\n\n    def test_exact_boundary_acquisition_100_percent_capacity(self):\n        \"\"\"Test exact boundary condition: acquiring 100% of capacity and verifying subsequent exhaustion.\"\"\"\n        capacity = 10.0\n        limiter = TokenBucketRateLimiter(capacity=capacity, refill_rate=1.0)\n        \n        # Acquire 100% of capacity in one call\n        acquired = limiter.try_acquire(tokens=capacity)\n        self.assertTrue(acquired)\n        self.assertEqual(limiter.available_tokens(), 0.0)\n\n        # Immediate follow-up acquisition must fail\n        self.assertFalse(limiter.try_acquire(tokens=0.1))\n        self.assertEqual(limiter.available_tokens(), 0.0)\n\n    def test_refill_mechanics_with_clock_progression(self):\n        \"\"\"Test token replenishment based on elapsed time between timestamps.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=2.0)\n        # First call with timestamp initializes last_timestamp without refill\n        self.assertTrue(limiter.try_acquire(tokens=10.0, now=100.0))\n        self.assertEqual(limiter.available_tokens(), 0.0)\n\n        # 2.5 seconds later -> 5.0 tokens replenished; acquire 3.0 tokens\n        self.assertTrue(limiter.try_acquire(tokens=3.0, now=102.5))\n        self.assertAlmostEqual(limiter.available_tokens(), 2.0)\n\n    def test_refill_clamped_to_maximum_capacity(self):\n        \"\"\"Test that replenishing tokens never exceeds maximum capacity.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=5.0)\n        self.assertTrue(limiter.try_acquire(tokens=5.0, now=0.0))\n        self.assertEqual(limiter.available_tokens(), 5.0)\n\n        # Large elapsed time should cap tokens at capacity (10.0) before deduction\n        self.assertTrue(limiter.try_acquire(tokens=1.0, now=100.0))\n        self.assertEqual(limiter.available_tokens(), 9.0)\n\n    def test_non_monotonic_timestamp_safeguard(self):\n        \"\"\"Test that negative time progression (backward clock jump) produces zero refill rather than depletion.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=2.0)\n        self.assertTrue(limiter.try_acquire(tokens=4.0, now=100.0))\n        self.assertEqual(limiter.available_tokens(), 6.0)\n\n        # Backward timestamp: delta clamped to 0.0, tokens deducted normally\n        self.assertTrue(limiter.try_acquire(tokens=2.0, now=90.0))\n        self.assertEqual(limiter.available_tokens(), 4.0)\n\n    def test_available_tokens_read_only_telemetry(self):\n        \"\"\"Test that available_tokens query does not mutate internal state or timestamps.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=7.0, refill_rate=1.0)\n        self.assertEqual(limiter.available_tokens(), 7.0)\n        self.assertEqual(limiter.available_tokens(), 7.0)\n        self.assertIsNone(limiter.last_timestamp)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n```\n",
+      "artifacts": {
+        "execution_origin": "LIVE_MODEL_ADAPTER",
+        "analysis": "```python\nimport unittest\nfrom token_bucket import TokenBucketRateLimiter\n\n\nclass TestTokenBucketRateLimiter(unittest.TestCase):\n    \"\"\"Unit test suite for TokenBucketRateLimiter validating normal operation, boundary conditions, and error handling.\"\"\"\n\n    def test_initialization_valid(self):\n        \"\"\"Test proper initialization with positive capacity and refill rate.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=2.0)\n        self.assertEqual(limiter.capacity, 10.0)\n        self.assertEqual(limiter.refill_rate, 2.0)\n        self.assertEqual(limiter.tokens, 10.0)\n        self.assertIsNone(limiter.last_timestamp)\n        self.assertEqual(limiter.available_tokens(), 10.0)\n\n    def test_initialization_invalid_capacity_raises_value_error(self):\n        \"\"\"Test that non-positive capacity values raise ValueError.\"\"\"\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=0.0, refill_rate=1.0)\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=-5.0, refill_rate=1.0)\n\n    def test_initialization_invalid_refill_rate_raises_value_error(self):\n        \"\"\"Test that non-positive refill_rate values raise ValueError.\"\"\"\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=10.0, refill_rate=0.0)\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=10.0, refill_rate=-2.5)\n\n    def test_try_acquire_invalid_tokens_raises_value_error(self):\n        \"\"\"Test that requesting non-positive tokens raises ValueError.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=1.0)\n        with self.assertRaises(ValueError):\n            limiter.try_acquire(tokens=0.0)\n        with self.assertRaises(ValueError):\n            limiter.try_acquire(tokens=-1.0)\n\n    def test_normal_operation_default_acquire(self):\n        \"\"\"Test normal single-token acquisition using the default parameter.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=5.0, refill_rate=1.0)\n        self.assertTrue(limiter.try_acquire())\n        self.assertEqual(limiter.available_tokens(), 4.0)\n\n    def test_normal_operation_partial_acquire(self):\n        \"\"\"Test sequential acquisition of variable token amounts.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=1.0)\n        self.assertTrue(limiter.try_acquire(tokens=3.5))\n        self.assertEqual(limiter.available_tokens(), 6.5)\n        self.assertTrue(limiter.try_acquire(tokens=2.5))\n        self.assertEqual(limiter.available_tokens(), 4.0)\n\n    def test_insufficient_tokens_returns_false_without_deduction(self):\n        \"\"\"Test that acquisition fails and state remains unchanged when requesting more tokens than available.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=5.0, refill_rate=1.0)\n        self.assertFalse(limiter.try_acquire(tokens=6.0))\n        self.assertEqual(limiter.available_tokens(), 5.0)\n\n    def test_exact_boundary_acquisition_100_percent_capacity(self):\n        \"\"\"Test exact boundary condition: acquiring 100% of capacity and verifying subsequent exhaustion.\"\"\"\n        capacity = 10.0\n        limiter = TokenBucketRateLimiter(capacity=capacity, refill_rate=1.0)\n        \n        # Acquire 100% of capacity in one call\n        acquired = limiter.try_acquire(tokens=capacity)\n        self.assertTrue(acquired)\n        self.assertEqual(limiter.available_tokens(), 0.0)\n\n        # Immediate follow-up acquisition must fail\n        self.assertFalse(limiter.try_acquire(tokens=0.1))\n        self.assertEqual(limiter.available_tokens(), 0.0)\n\n    def test_refill_mechanics_with_clock_progression(self):\n        \"\"\"Test token replenishment based on elapsed time between timestamps.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=2.0)\n        # First call with timestamp initializes last_timestamp without refill\n        self.assertTrue(limiter.try_acquire(tokens=10.0, now=100.0))\n        self.assertEqual(limiter.available_tokens(), 0.0)\n\n        # 2.5 seconds later -> 5.0 tokens replenished; acquire 3.0 tokens\n        self.assertTrue(limiter.try_acquire(tokens=3.0, now=102.5))\n        self.assertAlmostEqual(limiter.available_tokens(), 2.0)\n\n    def test_refill_clamped_to_maximum_capacity(self):\n        \"\"\"Test that replenishing tokens never exceeds maximum capacity.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=5.0)\n        self.assertTrue(limiter.try_acquire(tokens=5.0, now=0.0))\n        self.assertEqual(limiter.available_tokens(), 5.0)\n\n        # Large elapsed time should cap tokens at capacity (10.0) before deduction\n        self.assertTrue(limiter.try_acquire(tokens=1.0, now=100.0))\n        self.assertEqual(limiter.available_tokens(), 9.0)\n\n    def test_non_monotonic_timestamp_safeguard(self):\n        \"\"\"Test that negative time progression (backward clock jump) produces zero refill rather than depletion.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=2.0)\n        self.assertTrue(limiter.try_acquire(tokens=4.0, now=100.0))\n        self.assertEqual(limiter.available_tokens(), 6.0)\n\n        # Backward timestamp: delta clamped to 0.0, tokens deducted normally\n        self.assertTrue(limiter.try_acquire(tokens=2.0, now=90.0))\n        self.assertEqual(limiter.available_tokens(), 4.0)\n\n    def test_available_tokens_read_only_telemetry(self):\n        \"\"\"Test that available_tokens query does not mutate internal state or timestamps.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=7.0, refill_rate=1.0)\n        self.assertEqual(limiter.available_tokens(), 7.0)\n        self.assertEqual(limiter.available_tokens(), 7.0)\n        self.assertIsNone(limiter.last_timestamp)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n```\n",
+        "model_invoked": "gemini-3.8-flash-high",
+        "model_status": "SUCCEEDED",
+        "model_duration_sec": 50.6566,
+        "token_usage": {
+          "accounting_mode": "PROVIDER_REPORTED",
+          "input_tokens": 15918,
+          "output_tokens": 4896,
+          "thinking_tokens": 3260,
+          "total_tokens": 20814
+        },
+        "notification_id": "NOTIF-MISSION-RUN-AGI17-LIVE-001-SUB-003-MODEL-1791660659118",
+        "stdout_log_path": "D:\\AGI_Storage\\AGI_1_7\\logs\\processes\\MISSION-RUN-AGI17-LIVE-001-SUB-003-MODEL_att1_1791660608461_stdout.log",
+        "artifact_verification_passed": true,
+        "task_correctness_verified": null,
+        "written_file_path": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\live_code_mission_workspace\\test_token_bucket.py",
+        "clean_generated_code": "import unittest\nfrom token_bucket import TokenBucketRateLimiter\n\n\nclass TestTokenBucketRateLimiter(unittest.TestCase):\n    \"\"\"Unit test suite for TokenBucketRateLimiter validating normal operation, boundary conditions, and error handling.\"\"\"\n\n    def test_initialization_valid(self):\n        \"\"\"Test proper initialization with positive capacity and refill rate.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=2.0)\n        self.assertEqual(limiter.capacity, 10.0)\n        self.assertEqual(limiter.refill_rate, 2.0)\n        self.assertEqual(limiter.tokens, 10.0)\n        self.assertIsNone(limiter.last_timestamp)\n        self.assertEqual(limiter.available_tokens(), 10.0)\n\n    def test_initialization_invalid_capacity_raises_value_error(self):\n        \"\"\"Test that non-positive capacity values raise ValueError.\"\"\"\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=0.0, refill_rate=1.0)\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=-5.0, refill_rate=1.0)\n\n    def test_initialization_invalid_refill_rate_raises_value_error(self):\n        \"\"\"Test that non-positive refill_rate values raise ValueError.\"\"\"\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=10.0, refill_rate=0.0)\n        with self.assertRaises(ValueError):\n            TokenBucketRateLimiter(capacity=10.0, refill_rate=-2.5)\n\n    def test_try_acquire_invalid_tokens_raises_value_error(self):\n        \"\"\"Test that requesting non-positive tokens raises ValueError.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=1.0)\n        with self.assertRaises(ValueError):\n            limiter.try_acquire(tokens=0.0)\n        with self.assertRaises(ValueError):\n            limiter.try_acquire(tokens=-1.0)\n\n    def test_normal_operation_default_acquire(self):\n        \"\"\"Test normal single-token acquisition using the default parameter.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=5.0, refill_rate=1.0)\n        self.assertTrue(limiter.try_acquire())\n        self.assertEqual(limiter.available_tokens(), 4.0)\n\n    def test_normal_operation_partial_acquire(self):\n        \"\"\"Test sequential acquisition of variable token amounts.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=1.0)\n        self.assertTrue(limiter.try_acquire(tokens=3.5))\n        self.assertEqual(limiter.available_tokens(), 6.5)\n        self.assertTrue(limiter.try_acquire(tokens=2.5))\n        self.assertEqual(limiter.available_tokens(), 4.0)\n\n    def test_insufficient_tokens_returns_false_without_deduction(self):\n        \"\"\"Test that acquisition fails and state remains unchanged when requesting more tokens than available.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=5.0, refill_rate=1.0)\n        self.assertFalse(limiter.try_acquire(tokens=6.0))\n        self.assertEqual(limiter.available_tokens(), 5.0)\n\n    def test_exact_boundary_acquisition_100_percent_capacity(self):\n        \"\"\"Test exact boundary condition: acquiring 100% of capacity and verifying subsequent exhaustion.\"\"\"\n        capacity = 10.0\n        limiter = TokenBucketRateLimiter(capacity=capacity, refill_rate=1.0)\n        \n        # Acquire 100% of capacity in one call\n        acquired = limiter.try_acquire(tokens=capacity)\n        self.assertTrue(acquired)\n        self.assertEqual(limiter.available_tokens(), 0.0)\n\n        # Immediate follow-up acquisition must fail\n        self.assertFalse(limiter.try_acquire(tokens=0.1))\n        self.assertEqual(limiter.available_tokens(), 0.0)\n\n    def test_refill_mechanics_with_clock_progression(self):\n        \"\"\"Test token replenishment based on elapsed time between timestamps.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=2.0)\n        # First call with timestamp initializes last_timestamp without refill\n        self.assertTrue(limiter.try_acquire(tokens=10.0, now=100.0))\n        self.assertEqual(limiter.available_tokens(), 0.0)\n\n        # 2.5 seconds later -> 5.0 tokens replenished; acquire 3.0 tokens\n        self.assertTrue(limiter.try_acquire(tokens=3.0, now=102.5))\n        self.assertAlmostEqual(limiter.available_tokens(), 2.0)\n\n    def test_refill_clamped_to_maximum_capacity(self):\n        \"\"\"Test that replenishing tokens never exceeds maximum capacity.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=5.0)\n        self.assertTrue(limiter.try_acquire(tokens=5.0, now=0.0))\n        self.assertEqual(limiter.available_tokens(), 5.0)\n\n        # Large elapsed time should cap tokens at capacity (10.0) before deduction\n        self.assertTrue(limiter.try_acquire(tokens=1.0, now=100.0))\n        self.assertEqual(limiter.available_tokens(), 9.0)\n\n    def test_non_monotonic_timestamp_safeguard(self):\n        \"\"\"Test that negative time progression (backward clock jump) produces zero refill rather than depletion.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=10.0, refill_rate=2.0)\n        self.assertTrue(limiter.try_acquire(tokens=4.0, now=100.0))\n        self.assertEqual(limiter.available_tokens(), 6.0)\n\n        # Backward timestamp: delta clamped to 0.0, tokens deducted normally\n        self.assertTrue(limiter.try_acquire(tokens=2.0, now=90.0))\n        self.assertEqual(limiter.available_tokens(), 4.0)\n\n    def test_available_tokens_read_only_telemetry(self):\n        \"\"\"Test that available_tokens query does not mutate internal state or timestamps.\"\"\"\n        limiter = TokenBucketRateLimiter(capacity=7.0, refill_rate=1.0)\n        self.assertEqual(limiter.available_tokens(), 7.0)\n        self.assertEqual(limiter.available_tokens(), 7.0)\n        self.assertIsNone(limiter.last_timestamp)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "clean_file_sha256": "2ac04dc51dc2414d7afe5e263064c1a653fe8107222e4d7f163365e7481aacd3",
+        "deliberate_fault_injected": {
+          "injected": true,
+          "target_file": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\live_code_mission_workspace\\token_bucket.py",
+          "mutation_description": "Mutated `self.tokens >= tokens` to strict `>` (breaks exact-capacity token acquisition)"
+        },
+        "faulty_file_sha256": "2ac04dc51dc2414d7afe5e263064c1a653fe8107222e4d7f163365e7481aacd3",
+        "initial_verification_run": {
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "Could not find platform independent libraries <prefix>\ntest_available_tokens_read_only_telemetry (test_token_bucket.TestTokenBucketRateLimiter.test_available_tokens_read_only_telemetry)\nTest that available_tokens query does not mutate internal state or timestamps. ... ok\ntest_exact_boundary_acquisition_100_percent_capacity (test_token_bucket.TestTokenBucketRateLimiter.test_exact_boundary_acquisition_100_percent_capacity)\nTest exact boundary condition: acquiring 100% of capacity and verifying subsequent exhaustion. ... FAIL\ntest_initialization_invalid_capacity_raises_value_error (test_token_bucket.TestTokenBucketRateLimiter.test_initialization_invalid_capacity_raises_value_error)\nTest that non-positive capacity values raise ValueError. ... ok\ntest_initialization_invalid_refill_rate_raises_value_error (test_token_bucket.TestTokenBucketRateLimiter.test_initialization_invalid_refill_rate_raises_value_error)\nTest that non-positive refill_rate values raise ValueError. ... ok\ntest_initialization_valid (test_token_bucket.TestTokenBucketRateLimiter.test_initialization_valid)\nTest proper initialization with positive capacity and refill rate. ... ok\ntest_insufficient_tokens_returns_false_without_deduction (test_token_bucket.TestTokenBucketRateLimiter.test_insufficient_tokens_returns_false_without_deduction)\nTest that acquisition fails and state remains unchanged when requesting more tokens than available. ... ok\ntest_non_monotonic_timestamp_safeguard (test_token_bucket.TestTokenBucketRateLimiter.test_non_monotonic_timestamp_safeguard)\nTest that negative time progression (backward clock jump) produces zero refill rather than depletion. ... ok\ntest_normal_operation_default_acquire (test_token_bucket.TestTokenBucketRateLimiter.test_normal_operation_default_acquire)\nTest normal single-token acquisition using the default parameter. ... ok\ntest_normal_operation_partial_acquire (test_token_bucket.TestTokenBucketRateLimiter.test_normal_operation_partial_acquire)\nTest sequential acquisition of variable token amounts. ... ok\ntest_refill_clamped_to_maximum_capacity (test_token_bucket.TestTokenBucketRateLimiter.test_refill_clamped_to_maximum_capacity)\nTest that replenishing tokens never exceeds maximum capacity. ... ok\ntest_refill_mechanics_with_clock_progression (test_token_bucket.TestTokenBucketRateLimiter.test_refill_mechanics_with_clock_progression)\nTest token replenishment based on elapsed time between timestamps. ... FAIL\ntest_try_acquire_invalid_tokens_raises_value_error (test_token_bucket.TestTokenBucketRateLimiter.test_try_acquire_invalid_tokens_raises_value_error)\nTest that requesting non-positive tokens raises ValueError. ... ok\n\n======================================================================\nFAIL: test_exact_boundary_acquisition_100_percent_capacity (test_token_bucket.TestTokenBucketRateLimiter.test_exact_boundary_acquisition_100_percent_capacity)\nTest exact boundary condition: acquiring 100% of capacity and verifying subsequent exhaustion.\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\live_code_mission_workspace\\test_token_bucket.py\", line 66, in test_exact_boundary_acquisition_100_percent_capacity\n    self.assertTrue(acquired)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^\nAssertionError: False is not true\n\n======================================================================\nFAIL: test_refill_mechanics_with_clock_progression (test_token_bucket.TestTokenBucketRateLimiter.test_refill_mechanics_with_clock_progression)\nTest token replenishment based on elapsed time between timestamps.\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\live_code_mission_workspace\\test_token_bucket.py\", line 77, in test_refill_mechanics_with_clock_progression\n    self.assertTrue(limiter.try_acquire(tokens=10.0, now=100.0))\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 12 tests in 0.007s\n\nFAILED (failures=2)\n",
+          "notification_id": "NOTIF-MISSION-RUN-AGI17-LIVE-001-SUB-003-VERIFY-ATT1-1791660659933"
+        },
+        "repair_specialist_id": "swe_patch_minimizer",
+        "repair_execution": {
+          "execution_origin": "LIVE_MODEL_ADAPTER",
+          "repair_specialist_id": "swe_patch_minimizer",
+          "model_invoked": "gemini-3.8-flash-high",
+          "model_status": "SUCCEEDED",
+          "model_duration_sec": 35.9998,
+          "token_usage": {
+            "accounting_mode": "PROVIDER_REPORTED",
+            "input_tokens": 13564,
+            "output_tokens": 3092,
+            "thinking_tokens": 2479,
+            "total_tokens": 16656
+          },
+          "notification_id": "NOTIF-MISSION-RUN-AGI17-LIVE-001-SUB-003-REPAIR-MODEL-1791660696167",
+          "stdout_log_path": "D:\\AGI_Storage\\AGI_1_7\\logs\\processes\\MISSION-RUN-AGI17-LIVE-001-SUB-003-REPAIR-MODEL_att1_1791660660167_stdout.log",
+          "repaired_file_path": "C:\\Users\\abhis\\Downloads\\pt\\agents\\AGI_1_7\\live_code_mission_workspace\\token_bucket.py",
+          "repaired_file_sha256": "279f44d903a34c45c0db449b1f3a9e18226700e0db202df234e3b49839e07ea5",
+          "patched_code": "from __future__ import annotations\n\n\nclass TokenBucketRateLimiter:\n    \"\"\"Token bucket rate limiter supporting token replenishment and discrete acquisitions.\n\n    Attributes:\n        capacity (float): Maximum token capacity of the bucket.\n        refill_rate (float): Number of tokens added to the bucket per unit of time.\n        tokens (float): Current number of tokens in the bucket.\n        last_timestamp (float | None): Timestamp of the last observation or refill event.\n    \"\"\"\n\n    def __init__(self, capacity: float, refill_rate: float) -> None:\n        \"\"\"Initialize the TokenBucketRateLimiter.\n\n        Args:\n            capacity: Maximum burst capacity of the token bucket (must be > 0).\n            refill_rate: Rate at which tokens replenish per unit time (must be > 0).\n\n        Raises:\n            ValueError: If capacity <= 0 or refill_rate <= 0.\n        \"\"\"\n        if capacity <= 0 or refill_rate <= 0:\n            raise ValueError(\"capacity and refill_rate must be > 0\")\n\n        self.capacity: float = float(capacity)\n        self.refill_rate: float = float(refill_rate)\n        self.tokens: float = float(capacity)\n        self.last_timestamp: float | None = None\n\n    def try_acquire(self, tokens: float = 1.0, now: float | None = None) -> bool:\n        \"\"\"Attempt to acquire tokens from the bucket.\n\n        Args:\n            tokens: Number of tokens requested (default: 1.0, must be > 0).\n            now: Current timestamp in seconds. If provided, refills tokens based on elapsed time.\n\n        Returns:\n            bool: True if sufficient tokens were available and deducted, False otherwise.\n\n        Raises:\n            ValueError: If tokens <= 0.\n        \"\"\"\n        if tokens <= 0:\n            raise ValueError(\"tokens requested must be > 0\")\n\n        if now is not None:\n            now_ts = float(now)\n            if self.last_timestamp is None:\n                self.last_timestamp = now_ts\n            else:\n                delta = max(0.0, now_ts - self.last_timestamp)\n                self.tokens = min(self.capacity, self.tokens + delta * self.refill_rate)\n                self.last_timestamp = now_ts\n\n        if self.tokens >= tokens:\n            self.tokens -= float(tokens)\n            return True\n        return False\n\n    def available_tokens(self) -> float:\n        \"\"\"Return the current number of available tokens without modifying state.\n\n        Returns:\n            float: Current available tokens in the bucket.\n        \"\"\"\n        return self.tokens\n"
+        },
+        "post_repair_verification_run": {
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": "Could not find platform independent libraries <prefix>\ntest_available_tokens_read_only_telemetry (test_token_bucket.TestTokenBucketRateLimiter.test_available_tokens_read_only_telemetry)\nTest that available_tokens query does not mutate internal state or timestamps. ... ok\ntest_exact_boundary_acquisition_100_percent_capacity (test_token_bucket.TestTokenBucketRateLimiter.test_exact_boundary_acquisition_100_percent_capacity)\nTest exact boundary condition: acquiring 100% of capacity and verifying subsequent exhaustion. ... ok\ntest_initialization_invalid_capacity_raises_value_error (test_token_bucket.TestTokenBucketRateLimiter.test_initialization_invalid_capacity_raises_value_error)\nTest that non-positive capacity values raise ValueError. ... ok\ntest_initialization_invalid_refill_rate_raises_value_error (test_token_bucket.TestTokenBucketRateLimiter.test_initialization_invalid_refill_rate_raises_value_error)\nTest that non-positive refill_rate values raise ValueError. ... ok\ntest_initialization_valid (test_token_bucket.TestTokenBucketRateLimiter.test_initialization_valid)\nTest proper initialization with positive capacity and refill rate. ... ok\ntest_insufficient_tokens_returns_false_without_deduction (test_token_bucket.TestTokenBucketRateLimiter.test_insufficient_tokens_returns_false_without_deduction)\nTest that acquisition fails and state remains unchanged when requesting more tokens than available. ... ok\ntest_non_monotonic_timestamp_safeguard (test_token_bucket.TestTokenBucketRateLimiter.test_non_monotonic_timestamp_safeguard)\nTest that negative time progression (backward clock jump) produces zero refill rather than depletion. ... ok\ntest_normal_operation_default_acquire (test_token_bucket.TestTokenBucketRateLimiter.test_normal_operation_default_acquire)\nTest normal single-token acquisition using the default parameter. ... ok\ntest_normal_operation_partial_acquire (test_token_bucket.TestTokenBucketRateLimiter.test_normal_operation_partial_acquire)\nTest sequential acquisition of variable token amounts. ... ok\ntest_refill_clamped_to_maximum_capacity (test_token_bucket.TestTokenBucketRateLimiter.test_refill_clamped_to_maximum_capacity)\nTest that replenishing tokens never exceeds maximum capacity. ... ok\ntest_refill_mechanics_with_clock_progression (test_token_bucket.TestTokenBucketRateLimiter.test_refill_mechanics_with_clock_progression)\nTest token replenishment based on elapsed time between timestamps. ... ok\ntest_try_acquire_invalid_tokens_raises_value_error (test_token_bucket.TestTokenBucketRateLimiter.test_try_acquire_invalid_tokens_raises_value_error)\nTest that requesting non-positive tokens raises ValueError. ... ok\n\n----------------------------------------------------------------------\nRan 12 tests in 0.001s\n\nOK\n",
+          "notification_id": "NOTIF-MISSION-RUN-AGI17-LIVE-001-SUB-003-VERIFY-ATT2-1791660696736"
+        }
+      },
+      "duration_sec": 50.76034,
+      "verification_digest": "d94733b96158cb22bf494c130fdbb89fcf3d222e0e6bf5da75173f4346acdec8"
+    }
+  },
+  "duration_sec": 155.3609
+}

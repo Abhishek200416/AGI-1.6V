@@ -284,9 +284,20 @@ class SpecialistFactory:
 
             if custom_executor is not None:
                 custom_out = custom_executor(contract, payload)
+                exec_origin = str(custom_out.get("execution_origin") or "CUSTOM_TOOL_EXECUTOR")
+                art_verified = custom_out.get("artifact_verification_passed")
+                corr_verified = custom_out.get("task_correctness_verified")
             else:
+                exec_origin = "CONTRACT_SMOKE_STUB"
+                art_verified = None
+                corr_verified = None
                 custom_out = {
-                    "analysis": f"[{contract.display_name}] executed {contract.execution_mode} on task '{task_id}'",
+                    "execution_origin": exec_origin,
+                    "is_simulated_stub": True,
+                    "analysis": (
+                        f"[CONTRACT_SMOKE_STUB:{contract.agent_id}] Schema contract validated only "
+                        f"for task '{task_id}' (no live model or tool executed)"
+                    ),
                     "primary_capability_used": contract.primary_capabilities[0],
                     "required_tools_checked": contract.required_tools,
                     "input_chars": len(prompt),
@@ -297,6 +308,7 @@ class SpecialistFactory:
                 {
                     "agent_id": contract.agent_id,
                     "task_id": task_id,
+                    "execution_origin": exec_origin,
                     "capabilities": contract.primary_capabilities,
                     "custom_out": custom_out,
                 },
@@ -313,6 +325,10 @@ class SpecialistFactory:
                 "resource_class": contract.resource_class,
                 "task_id": task_id,
                 "status": "SUCCEEDED",
+                "execution_origin": exec_origin,
+                "schema_validation_passed": True,
+                "artifact_verification_passed": art_verified,
+                "task_correctness_verified": corr_verified,
                 "capabilities_applied": list(contract.primary_capabilities),
                 "output_summary": custom_out.get(
                     "analysis",
@@ -327,6 +343,7 @@ class SpecialistFactory:
             return (
                 result.get("agent_id") == contract.agent_id
                 and result.get("status") == "SUCCEEDED"
+                and result.get("schema_validation_passed") is True
                 and bool(result.get("capabilities_applied"))
                 and len(str(result.get("verification_digest", ""))) == 64
             )

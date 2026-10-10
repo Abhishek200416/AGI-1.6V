@@ -43,6 +43,18 @@ from .resource_governor import (
 )
 
 
+import hashlib
+import re
+
+
+def _extract_python_code(text: str) -> str:
+    """Extracts Python source code from a markdown fenced block or raw model response."""
+    blocks = re.findall(r"```(?:python)?\s*\n(.*?)```", text, flags=re.DOTALL | re.IGNORECASE)
+    if blocks:
+        return max(blocks, key=len).strip() + "\n"
+    return text.strip() + "\n"
+
+
 @dataclass
 class SubtaskSpec:
     title: str
@@ -54,6 +66,9 @@ class SubtaskSpec:
     priority: int = 50
     token_budget: int = 6000
     use_live_model: bool = False
+    target_file_path: Optional[str] = None
+    repair_target_file: Optional[str] = None
+    post_write_fault_injector: Optional[Callable[[Path], Dict[str, Any]]] = None
     executor_fn: Optional[Callable[[AgentContract, Dict[str, Any]], Dict[str, Any]]] = None
     verification_command: Optional[List[str]] = None
     verification_cwd: Optional[str] = None
@@ -121,12 +136,23 @@ class HierarchicalOrchestrator:
         task_id: Optional[str] = None,
         subtasks: Optional[Sequence[SubtaskSpec]] = None,
         force_hierarchical: bool = False,
+        use_live_model: Optional[bool] = None,
         custom_subtask_hook: Optional[Callable[[str, Dict[str, Any]], None]] = None,
         simulated_resource_snapshot: Optional[LiveResourceMetrics] = None,
     ) -> Dict[str, Any]:
-        """Executes a mission via Fast Path or Planned Hierarchical Delegation."""
+        """Executes a mission via Fast Path or Planned Hierarchical Delegation.
+
+        When `self.model_adapter` is attached and `subtasks` are not explicitly
+        stubbed (`subtasks is None`), `use_live_model` defaults to `True` so the
+        normal execution path invokes `ModelAdapter.invoke()` (`gemini-3.8-flash-high`).
+        """
         started_at = time.time()
         root_id = task_id or f"MISSION-{int(started_at * 1000)}-{uuid.uuid4().hex[:6]}"
+        effective_live_model = (
+            use_live_model
+            if use_live_model is not None
+            else bool(self.model_adapter is not None and subtasks is None)
+        )
 
         # Step 1: Mandatory pre-planning memory retrieval
         retrieved_memory = self.memory.retrieve_before_planning(
@@ -154,6 +180,7 @@ class HierarchicalOrchestrator:
                 token_budget=budget_info["max_task_tokens"],
                 metadata={
                     "execution_path": "HIERARCHICAL_DAG" if is_hierarchical else "DIRECT_FAST_PATH",
+                    "use_live_model": effective_live_model,
                     "memory_retrieval_audit_id": retrieved_memory["audit_id"],
                     "retrieved_memory_ids": retrieved_memory["retrieved_entry_ids"],
                 },
@@ -171,6 +198,7 @@ class HierarchicalOrchestrator:
                 prompt=prompt,
                 retrieved_memory=retrieved_memory,
                 started_at=started_at,
+                use_live_model=effective_live_model,
             )
 
         return self._execute_hierarchical_dag(
@@ -179,6 +207,7 @@ class HierarchicalOrchestrator:
             prompt=prompt,
             retrieved_memory=retrieved_memory,
             explicit_subtasks=subtasks,
+            use_live_model=effective_live_model,
             custom_subtask_hook=custom_subtask_hook,
             simulated_resource_snapshot=simulated_resource_snapshot,
             started_at=started_at,
@@ -192,9 +221,15 @@ class HierarchicalOrchestrator:
         prompt: str,
         retrieved_memory: Dict[str, Any],
         started_at: float,
+        use_live_model: bool = False,
     ) -> Dict[str, Any]:
         routed = self.specialist_factory.router.route(task_description=prompt, top_k=1)[0]
-        specialist = self.specialist_factory.instantiate(routed["agent_id"])
+        custom_exec = (
+            self._build_live_model_executor(root_id=root_id, child_id=root_id)
+            if (use_live_model and self.model_adapter is not None)
+            else None
+        )
+        specialist = self.specialist_factory.instantiate(routed["agent_id"], custom_executor=custom_exec)
 
         out = specialist.run(
             {
@@ -207,13 +242,14 @@ class HierarchicalOrchestrator:
             }
         )
 
-        self.token_controller.record_usage(
-            task_id=root_id,
-            agent_id=routed["agent_id"],
-            prompt_text=prompt,
-            response_text=out["output_summary"],
-            cwd_used=self.token_controller.get_execution_cwd(is_benchmark_or_single_shot=True),
-        )
+        if custom_exec is None:
+            self.token_controller.record_usage(
+                task_id=root_id,
+                agent_id=routed["agent_id"],
+                prompt_text=prompt,
+                response_text=out["output_summary"],
+                cwd_used=self.token_controller.get_execution_cwd(is_benchmark_or_single_shot=True),
+            )
 
         self.task_manager.save_checkpoint(
             root_id,
@@ -245,35 +281,40 @@ class HierarchicalOrchestrator:
             "duration_sec": round(time.time() - started_at, 4),
         }
 
-    def _build_default_subtasks(self, title: str, prompt: str) -> List[SubtaskSpec]:
+    def _build_default_subtasks(self, title: str, prompt: str, use_live_model: bool = False) -> List[SubtaskSpec]:
+        q_type = "model_call" if use_live_model else "light_in_process"
         return [
             SubtaskSpec(
                 title=f"{title} - Decomposition & Architecture",
                 description=f"Decompose mission and define interfaces for: {prompt}",
                 preferred_specialist_id="plan_mission_decomposer",
                 depends_on_indices=[],
-                queue_type="light_in_process",
+                queue_type=q_type,
+                use_live_model=use_live_model,
             ),
             SubtaskSpec(
                 title=f"{title} - Grounded Evidence & Context Synthesis",
                 description=f"Synthesize evidence and memory constraints for: {prompt}",
                 preferred_specialist_id="res_citation_auditor",
                 depends_on_indices=[0],
-                queue_type="light_in_process",
+                queue_type=q_type,
+                use_live_model=use_live_model,
             ),
             SubtaskSpec(
                 title=f"{title} - Core Implementation & Execution",
                 description=f"Execute primary engineering deliverables for: {prompt}",
                 preferred_specialist_id="swe_python_runtime_engineer",
                 depends_on_indices=[0],
-                queue_type="light_in_process",
+                queue_type=q_type,
+                use_live_model=use_live_model,
             ),
             SubtaskSpec(
                 title=f"{title} - Verification & Telemetry Reconciliation",
                 description=f"Verify outputs, checksums, and ledger reconciliation for: {prompt}",
                 preferred_specialist_id="qa_claim_to_evidence_verifier",
                 depends_on_indices=[1, 2],
-                queue_type="light_in_process",
+                queue_type=q_type,
+                use_live_model=use_live_model,
             ),
         ]
 
@@ -281,6 +322,7 @@ class HierarchicalOrchestrator:
         self,
         root_id: str,
         child_id: str,
+        sp_spec: Optional[SubtaskSpec] = None,
     ) -> Callable[[AgentContract, Dict[str, Any]], Dict[str, Any]]:
         """Creates a custom executor that invokes `gemini-3.8-flash-high` via `ModelAdapter`."""
 
@@ -305,6 +347,7 @@ class HierarchicalOrchestrator:
             full_prompt = (
                 f"You are AGI 1.7 Embedded Specialist `{contract.agent_id}` ({contract.display_name}, Family: {contract.family}).\n"
                 f"Primary Capabilities: {', '.join(contract.primary_capabilities)}\n"
+                f"IMPORTANT: Do NOT call any tools, shell commands, or file views. Respond directly in this turn.\n"
                 f"Task ({child_id}): {payload['task_prompt']}"
                 f"{upstream_summary}"
             )
@@ -317,7 +360,8 @@ class HierarchicalOrchestrator:
                 is_benchmark_or_single_shot=True,
                 tier="COMPLEX",
             )
-            return {
+            result_dict: Dict[str, Any] = {
+                "execution_origin": "LIVE_MODEL_ADAPTER",
                 "analysis": model_res["response_text"],
                 "model_invoked": model_res["model"],
                 "model_status": model_res["status"],
@@ -325,9 +369,80 @@ class HierarchicalOrchestrator:
                 "token_usage": model_res["token_usage"],
                 "notification_id": model_res["notification_id"],
                 "stdout_log_path": model_res.get("stdout_log_path"),
+                "artifact_verification_passed": None,
+                "task_correctness_verified": None,
             }
+            if sp_spec and sp_spec.target_file_path:
+                target_path = Path(sp_spec.target_file_path)
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                extracted_code = _extract_python_code(model_res["response_text"])
+                target_path.write_text(extracted_code, encoding="utf-8")
+                clean_sha256 = hashlib.sha256(target_path.read_bytes()).hexdigest()
+                result_dict["written_file_path"] = str(target_path)
+                result_dict["clean_generated_code"] = extracted_code
+                result_dict["clean_file_sha256"] = clean_sha256
+                result_dict["artifact_verification_passed"] = (
+                    target_path.exists() and target_path.stat().st_size > 0
+                )
+                if sp_spec.post_write_fault_injector is not None:
+                    fault_meta = sp_spec.post_write_fault_injector(target_path)
+                    mutated_path = Path(fault_meta.get("target_file") or target_path) if isinstance(fault_meta, dict) else target_path
+                    result_dict["deliberate_fault_injected"] = fault_meta
+                    result_dict["faulty_file_sha256"] = hashlib.sha256(mutated_path.read_bytes()).hexdigest()
+            return result_dict
 
         return _exec
+
+    def _default_live_model_repair(
+        self,
+        *,
+        root_id: str,
+        child_id: str,
+        sp_spec: SubtaskSpec,
+        failed_result: Dict[str, Any],
+        failure_details: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Invokes `ModelAdapter.invoke()` with `sp_spec.repair_specialist_id` to patch failing code."""
+        repair_file = Path(
+            sp_spec.repair_target_file
+            or sp_spec.target_file_path
+            or failed_result.get("artifacts", {}).get("written_file_path", "")
+        )
+        broken_code = repair_file.read_text(encoding="utf-8") if repair_file.is_file() else ""
+        stderr_trace = failure_details.get("stderr") or failure_details.get("stdout") or str(failure_details)
+        repair_prompt = (
+            f"You are AGI 1.7 Embedded Specialist `{sp_spec.repair_specialist_id}` (Minimal Diff & Root-Cause Patch Engineer).\n"
+            f"IMPORTANT: Do NOT call any tools or shell commands. Return ONLY the complete corrected Python file for `{repair_file.name}` inside a ```python ... ``` block.\n\n"
+            f"BROKEN PYTHON FILE (`{repair_file.name}`):\n```python\n{broken_code}\n```\n\n"
+            f"UNITTEST FAILURE OUTPUT (exit_code={failure_details.get('exit_code')}):\n```text\n{stderr_trace}\n```\n\n"
+            f"Fix all bugs causing the test failures and return the complete corrected `{repair_file.name}` in a ```python ... ``` fenced code block."
+        )
+        model_res = self.model_adapter.invoke(
+            task_id=root_id,
+            child_task_id=f"{child_id}-REPAIR",
+            prompt=repair_prompt,
+            agent_id=sp_spec.repair_specialist_id,
+            effort="high",
+            is_benchmark_or_single_shot=True,
+            tier="COMPLEX",
+        )
+        patched_code = _extract_python_code(model_res["response_text"])
+        if repair_file.name:
+            repair_file.write_text(patched_code, encoding="utf-8")
+        repaired_sha256 = hashlib.sha256(repair_file.read_bytes()).hexdigest() if repair_file.is_file() else None
+        return {
+            "execution_origin": "LIVE_MODEL_ADAPTER",
+            "repair_specialist_id": sp_spec.repair_specialist_id,
+            "model_invoked": model_res["model"],
+            "model_status": model_res["status"],
+            "model_duration_sec": model_res["duration_sec"],
+            "token_usage": model_res["token_usage"],
+            "notification_id": model_res["notification_id"],
+            "stdout_log_path": model_res.get("stdout_log_path"),
+            "repaired_file_path": str(repair_file),
+            "repaired_file_sha256": repaired_sha256,
+            "patched_code": patched_code,
+        }
 
     def _execute_hierarchical_dag(
         self,
@@ -337,11 +452,16 @@ class HierarchicalOrchestrator:
         prompt: str,
         retrieved_memory: Dict[str, Any],
         explicit_subtasks: Optional[Sequence[SubtaskSpec]],
+        use_live_model: bool = False,
         custom_subtask_hook: Optional[Callable[[str, Dict[str, Any]], None]],
         simulated_resource_snapshot: Optional[LiveResourceMetrics],
         started_at: float,
     ) -> Dict[str, Any]:
-        specs = list(explicit_subtasks) if explicit_subtasks else self._build_default_subtasks(title, prompt)
+        specs = (
+            list(explicit_subtasks)
+            if explicit_subtasks
+            else self._build_default_subtasks(title, prompt, use_live_model=use_live_model)
+        )
         if len(specs) > MAX_LOGICAL_CHILD_TASKS:
             raise ValueError(
                 f"Requested {len(specs)} child tasks exceeds MAX_LOGICAL_CHILD_TASKS ({MAX_LOGICAL_CHILD_TASKS})"
@@ -483,7 +603,11 @@ class HierarchicalOrchestrator:
                         if sp_spec.executor_fn is not None:
                             custom_exec = sp_spec.executor_fn
                         elif sp_spec.use_live_model:
-                            custom_exec = self._build_live_model_executor(root_id=root_id, child_id=cid)
+                            custom_exec = self._build_live_model_executor(
+                                root_id=root_id,
+                                child_id=cid,
+                                sp_spec=sp_spec,
+                            )
 
                     try:
                         inst = self.specialist_factory.instantiate(role_id, custom_executor=custom_exec)
@@ -550,9 +674,19 @@ class HierarchicalOrchestrator:
                         if ver_notif.exit_code != 0:
                             verification_failed = True
                             failure_details = artifacts["initial_verification_run"]
+                            res["task_correctness_verified"] = False
+                        else:
+                            res["task_correctness_verified"] = True
 
                     # Self-healing retry loop when verification fails or specialists disagree
-                    if verification_failed and sp_spec and sp_spec.repair_fn is not None:
+                    can_repair = sp_spec is not None and (
+                        sp_spec.repair_fn is not None
+                        or (
+                            self.model_adapter is not None
+                            and bool(sp_spec.repair_target_file or sp_spec.target_file_path)
+                        )
+                    )
+                    if verification_failed and can_repair and sp_spec is not None:
                         self.task_manager.transition(
                             cid,
                             TaskState.FAILED,
@@ -567,7 +701,16 @@ class HierarchicalOrchestrator:
                         self.task_manager.transition(cid, TaskState.READY, reason="Repair specialist ready")
                         self.task_manager.transition(cid, TaskState.RUNNING, reason="Executing specialist repair & re-test")
 
-                        repair_out = sp_spec.repair_fn(res, failure_details)
+                        if sp_spec.repair_fn is not None:
+                            repair_out = sp_spec.repair_fn(res, failure_details)
+                        else:
+                            repair_out = self._default_live_model_repair(
+                                root_id=root_id,
+                                child_id=cid,
+                                sp_spec=sp_spec,
+                                failed_result=res,
+                                failure_details=failure_details,
+                            )
                         artifacts["repair_specialist_id"] = sp_spec.repair_specialist_id
                         artifacts["repair_execution"] = repair_out
 
@@ -589,8 +732,10 @@ class HierarchicalOrchestrator:
                                 "notification_id": re_notif.notification_id,
                             }
                             verification_failed = re_notif.exit_code != 0
+                            res["task_correctness_verified"] = (re_notif.exit_code == 0)
                         else:
                             verification_failed = not bool(repair_out.get("verification_passed", True))
+                            res["task_correctness_verified"] = not verification_failed
 
                     if verification_failed:
                         self.task_manager.transition(
@@ -600,6 +745,7 @@ class HierarchicalOrchestrator:
                             error=failure_details,
                         )
                         res["status"] = "FAILED"
+                        res["task_correctness_verified"] = False
                         return cid, res
 
                     self.task_manager.transition(
