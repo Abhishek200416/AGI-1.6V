@@ -87,6 +87,7 @@ def call_model_gemini_38_flash_high(prompt: str, timeout_seconds: int = 180) -> 
             encoding="utf-8",
             errors="replace",
             timeout=timeout_seconds,
+            cwd=os.environ.get("AGI_ISOLATED_CWD"),
             shell=False
         )
         elapsed_ms = int((time.time() - start_time) * 1000)

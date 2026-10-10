@@ -6,4 +6,4 @@ aliases: [Mutation Testing]
 
 Autonomous code fault injection testing and baseline restoration.
 
-Registered within [[1200 Universal Capability Registry]] in [[AGI 1.5 OMEGA EVOLUTION]].
+Registered within [[1200 Universal Capability Registry]] in [[AGI 1.6 OMEGA NEXUS]].

@@ -1,19 +1,50 @@
-# AGI 1.6 — OMEGA NEXUS: Master Hub
+# AGI 1.6 ? OMEGA NEXUS
 
-**Codename:** OMEGA NEXUS  
-**Version:** 1.6.0  
-**Build:** BUILD-AGI16-20261010-0700  
-**Status:** Operational  
+**Status**: `PRODUCTION_VERIFIED` | **Version**: `1.6.0` | **Model**: `gemini-3.8-flash-high`
 
----
+## 00 - Master Hub
+- [[Running the AGI 1.6 Engine]]
 
-## 🧭 Core Architectural Pillars
+## 01 - Core Runtime & Token Economy
+- [[Directive 0 (Sole Model Policy)]]
+- [[Startup Compatibility Gate]]
+- [[Adaptive Token Economy (4-Tier Budget)]]
+- [[Central Budget & Effort Controller]]
 
-- [[Adaptive Token Economy]]: Task complexity classification, 10/60/20/10 phase allocation, append-only usage ledger, and evidence-grounded early stopping.
-- [[9-Layer Partitioned Memory]]: Structured memory separating immediate task state, conversation context, active project, episodic history, verified facts, procedural skills, failure/recovery, research indices, and long-term archive.
-- [[ACON Context Compression]]: Action-Centric Observation Compression with hard preservation guards for exact identifiers, exit codes, hashes, and error traces.
-- [[OmegaNexus Orchestrator]]: Role-bounded multi-agent execution with 9 specialized templates: Planner, Research, Execution, Coding, Terminal, Computer-Use, Memory, Verifier, Coordinator.
-- [[Adaptive Execution Scheduler]]: Dependency-aware DAG scheduling with dynamic host CPU/RAM headroom throttling.
-- [[Grounded Research Engine]]: 10-stage live knowledge pipeline enforcing RFC 9309 compliance and cryptographic citation auditing.
-- [[External Storage Volume D]]: External-drive-first persistence targeting `D:\AGI_Storage\AGI_1_6\` and `D:\AGI_Evaluation\AGI_1_6_OMEGA_NEXUS\`.
-- [[Directive 0 Sole Model Policy]]: Uncompromising execution via `gemini-3.8-flash-high` through authenticated Antigravity CLI.
+## 02 - Persistence & External Storage (D:\)
+- [[External Storage Volume D]]
+- [[12-State Disconnection Engine]]
+- [[Write-Ahead Log (WAL) Journal]]
+
+## 03 - Cognitive Memory & ACON Compression
+- [[9-Layer Partitioned Memory Engine]]
+- [[ACON Observation Compression]]
+- [[500-Stratum Memory Engine]]
+- [[Triple Ebbinghaus Scoring]]
+- [[Anti-Poisoning Quarantine Staging]]
+
+## 04 - Multi-Agent Orchestration & Concurrency
+- [[Minimal-Team Multi-Agent Orchestrator]]
+- [[Real-Time CPU-RAM Headroom Governor]]
+- [[DynTaskMAS DAG Scheduler (500 Workers)]]
+- [[Tarjan DFS Cycle Prevention]]
+
+## 05 - Capability Fabric
+- [[1200 Universal Capability Registry]]
+- [[Deterministic Preflight Execution]]
+
+## 06 - Grounded Research Pipeline
+- [[10-Stage Observable Research Pipeline]]
+- [[Scientific Evidence Hierarchy (Tier A-D)]]
+
+## 07 - Security & SSRF Shield
+- [[AgentLAB Multi-Turn Injection Shield]]
+- [[Pre-Socket SSRF Firewall]]
+- [[Emergency Kill Switch (0.08ms)]]
+
+## 08 - Verification & Benchmarks
+- [[GPQA Diamond Science Reasoning]]
+- [[Terminal-Bench OS Shell Execution]]
+- [[OSWorld-V2.1 Desktop Sandbox Isolation]]
+- [[Mutation Testing Self-Validation (100% Kill Rate)]]
+- [[112,735 Unique Test Suite]]

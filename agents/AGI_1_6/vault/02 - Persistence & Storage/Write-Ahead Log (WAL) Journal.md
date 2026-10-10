@@ -4,7 +4,7 @@ aliases: [WAL Engine, wal.jsonl]
 ---
 # Write-Ahead Log (WAL) Journal
 
-Append-only disk journal located at `D:\AGI_Storage\AGI_1_5\memory\recovery\wal.jsonl`.
+Append-only disk journal located at `D:\AGI_Storage\AGI_1_6\memory\recovery\wal.jsonl`.
 
 ## Operational Guarantees
 - Sustains up to 100 flushes/sec under multi-worker loads.

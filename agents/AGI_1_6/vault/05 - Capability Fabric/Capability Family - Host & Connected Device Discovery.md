@@ -6,4 +6,4 @@ aliases: [Host Discovery]
 
 Native Windows 11 API inspection profiling CPU, RAM, disk volumes, and 128 PnP devices.
 
-Registered within [[1200 Universal Capability Registry]] in [[AGI 1.5 OMEGA EVOLUTION]].
+Registered within [[1200 Universal Capability Registry]] in [[AGI 1.6 OMEGA NEXUS]].

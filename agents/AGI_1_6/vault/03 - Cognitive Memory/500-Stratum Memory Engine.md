@@ -4,7 +4,7 @@ aliases: [500 Strata, Omega Memory Engine]
 ---
 # 500-Stratum Memory Engine
 
-High-granularity persistent memory address space spanning 500 strata across 36 functional families in [[AGI 1.5 OMEGA EVOLUTION]].
+High-granularity persistent memory address space spanning 500 strata across 36 functional families in [[AGI 1.6 OMEGA NEXUS]].
 
 ## Core Mechanics
 - Retains up to 10,000 episodic interaction turns.

@@ -4,7 +4,7 @@ aliases: [1200 Capabilities, Capability Registry]
 ---
 # 1200 Universal Capability Registry
 
-Catalog of 1,200 deterministic, schema-validated capabilities organized across 24 functional families in [[AGI 1.5 OMEGA EVOLUTION]].
+Catalog of 1,200 deterministic, schema-validated capabilities organized across 24 functional families in [[AGI 1.6 OMEGA NEXUS]].
 
 ## Core Capability Hubs
 - [[Capability Family - Filesystem & AST Engineering]]

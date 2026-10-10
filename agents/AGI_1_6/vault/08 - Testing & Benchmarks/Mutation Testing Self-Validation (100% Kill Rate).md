@@ -10,4 +10,4 @@ Proof of test-harness sensitivity in `scripts/run_mutation_testing.py`.
 - **Result**: 8/8 mutants killed (100.0% kill rate).
 - Proves that the [[112,735 Unique Test Suite]] catches genuine code defects.
 
-Connected to: [[112,735 Unique Test Suite]], [[AGI 1.5 OMEGA EVOLUTION]]
+Connected to: [[112,735 Unique Test Suite]], [[AGI 1.6 OMEGA NEXUS]]

@@ -14,4 +14,4 @@ Mandatory diagnostic gate (`agi/runtime/compatibility_gate.py`) running on initi
 - Telemetry: Exactly 2,000 OpenTelemetry attributes across 20 namespaces
 - Rejects any stale legacy profiles with `CompatibilityGateError`.
 
-Connected to: [[AGI 1.5 OMEGA EVOLUTION]], [[External Storage Volume D]], [[500-Stratum Memory Engine]]
+Connected to: [[AGI 1.6 OMEGA NEXUS]], [[External Storage Volume D]], [[500-Stratum Memory Engine]]

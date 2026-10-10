@@ -4,7 +4,7 @@ aliases: [Volume D, D Drive Persistence]
 ---
 # External Storage Volume D
 
-Authoritative physical NTFS persistent storage root located at `D:\AGI_Storage\AGI_1_5\`.
+Authoritative physical NTFS persistent storage root located at `D:\AGI_Storage\AGI_1_6\`.
 
 ## Key Specifications
 - **Dedicated Allocation**: 1,000 GB reserved with 639+ GiB verified free headroom.

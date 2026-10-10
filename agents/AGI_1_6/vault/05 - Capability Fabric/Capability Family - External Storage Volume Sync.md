@@ -6,4 +6,4 @@ aliases: [Storage Sync]
 
 Volume detection and journal synchronization with [[External Storage Volume D]].
 
-Registered within [[1200 Universal Capability Registry]] in [[AGI 1.5 OMEGA EVOLUTION]].
+Registered within [[1200 Universal Capability Registry]] in [[AGI 1.6 OMEGA NEXUS]].

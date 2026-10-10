@@ -11,4 +11,4 @@ Adversarial defense shield in `agi/security/injection_shield.py`.
 - Intercepts DAN persona swaps, prompt leakage, memory poisoning, and indirect web injection.
 - Unverified inputs are isolated in [[Anti-Poisoning Quarantine Staging]].
 
-Connected to: [[Pre-Socket SSRF Firewall]], [[Emergency Kill Switch (0.08ms)]], [[AGI 1.5 OMEGA EVOLUTION]]
+Connected to: [[Pre-Socket SSRF Firewall]], [[Emergency Kill Switch (0.08ms)]], [[AGI 1.6 OMEGA NEXUS]]
