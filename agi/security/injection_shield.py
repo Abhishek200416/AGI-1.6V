@@ -35,11 +35,21 @@ DANGEROUS_COMMAND_PATTERNS = [
 
 PROMPT_INJECTION_INDICATORS = [
     re.compile(r"ignore\s+(?:all\s+)?(?:previous|prior)\s+instructions", re.IGNORECASE),
-    re.compile(r"disregard\s+(?:all\s+)?(?:safety|system)\s+guidelines", re.IGNORECASE),
-    re.compile(r"you\s+are\s+now\s+in\s+developer\s+mode", re.IGNORECASE),
+    re.compile(r"disregard\s+(?:all\s+)?(?:safety|system|prior)\s+(?:guidelines|constraints)", re.IGNORECASE),
+    re.compile(r"(?:you\s+are\s+now\s+in\s+developer\s+mode|developer\s+mode\s+enabled)", re.IGNORECASE),
+    re.compile(r"system\s+prompt\s+override", re.IGNORECASE),
+    re.compile(r"dan\s+mode", re.IGNORECASE),
+    re.compile(r"system\s+instructions\s+are\s+updated", re.IGNORECASE),
     re.compile(r"bypass\s+(?:verification|authentication|security)", re.IGNORECASE),
     re.compile(r"execute\s+arbitrary\s+commands", re.IGNORECASE),
-    re.compile(r"exfiltrate\s+(?:secrets|keys|passwords)", re.IGNORECASE)
+    re.compile(r"exfiltrate\s+(?:secrets|keys|passwords)", re.IGNORECASE),
+    re.compile(r"reveal\s+(?:api\s+)?(?:keys|passwords|secrets|system\s+prompts)", re.IGNORECASE),
+    re.compile(r"output\s+(?:password|system\s+prompt|hidden\s+prompts)", re.IGNORECASE),
+    re.compile(r"simulate\s+unrestricted", re.IGNORECASE),
+    re.compile(r"roleplay\s+as\s+unfiltered", re.IGNORECASE),
+    re.compile(r"unauthorized\s+(?:brokerage|transfer|execution)", re.IGNORECASE),
+    re.compile(r"dump\s+memory\s+store", re.IGNORECASE),
+    re.compile(r"jailbreak", re.IGNORECASE)
 ]
 
 

@@ -1,0 +1,293 @@
+{
+  "10-tier": {
+    "task_id": "memoryarena_shopping_eval_12",
+    "agent": "agi_0_7",
+    "memory_mode": "10-tier",
+    "total_sessions": 12,
+    "correct_count": 11,
+    "accuracy": 0.9166666666666666,
+    "tokens": 214289,
+    "thinking_tokens": 43335,
+    "latency_ms": 1096590,
+    "sessions": [
+      {
+        "session": 1,
+        "matched": true,
+        "target_asin": "B07T48N6MN",
+        "latency_ms": 32585,
+        "tokens": 4138
+      },
+      {
+        "session": 2,
+        "matched": true,
+        "target_asin": "B07T48N6MN",
+        "latency_ms": 39404,
+        "tokens": 4648
+      },
+      {
+        "session": 3,
+        "matched": true,
+        "target_asin": "B01M0A5KL8",
+        "latency_ms": 43494,
+        "tokens": 5519
+      },
+      {
+        "session": 4,
+        "matched": true,
+        "target_asin": "B01M0A5KL8",
+        "latency_ms": 36269,
+        "tokens": 4526
+      },
+      {
+        "session": 5,
+        "matched": false,
+        "target_asin": "B09K827F33",
+        "latency_ms": 180151,
+        "tokens": 0
+      },
+      {
+        "session": 6,
+        "matched": true,
+        "target_asin": "B09K827F33",
+        "latency_ms": 33437,
+        "tokens": 4268
+      },
+      {
+        "session": 7,
+        "matched": true,
+        "target_asin": "B07L2P118G",
+        "latency_ms": 46045,
+        "tokens": 6153
+      },
+      {
+        "session": 8,
+        "matched": true,
+        "target_asin": "B07L2P118G",
+        "latency_ms": 129558,
+        "tokens": 25924
+      },
+      {
+        "session": 9,
+        "matched": true,
+        "target_asin": "B09C3X9Z88",
+        "latency_ms": 44374,
+        "tokens": 6140
+      },
+      {
+        "session": 10,
+        "matched": true,
+        "target_asin": "B09C3X9Z88",
+        "latency_ms": 32796,
+        "tokens": 4148
+      },
+      {
+        "session": 11,
+        "matched": true,
+        "target_asin": "B08XJ8P34N",
+        "latency_ms": 166434,
+        "tokens": 91126
+      },
+      {
+        "session": 12,
+        "matched": true,
+        "target_asin": "B08XJ8P34N",
+        "latency_ms": 37246,
+        "tokens": 4757
+      }
+    ]
+  },
+  "stateless": {
+    "task_id": "memoryarena_shopping_eval_12",
+    "agent": "agi_0_7",
+    "memory_mode": "stateless",
+    "total_sessions": 12,
+    "correct_count": 12,
+    "accuracy": 1.0,
+    "tokens": 254050,
+    "thinking_tokens": 57825,
+    "latency_ms": 1007857,
+    "sessions": [
+      {
+        "session": 1,
+        "matched": true,
+        "target_asin": "B07T48N6MN",
+        "latency_ms": 35344,
+        "tokens": 4610
+      },
+      {
+        "session": 2,
+        "matched": true,
+        "target_asin": "B07T48N6MN",
+        "latency_ms": 38213,
+        "tokens": 4721
+      },
+      {
+        "session": 3,
+        "matched": true,
+        "target_asin": "B01M0A5KL8",
+        "latency_ms": 35514,
+        "tokens": 4950
+      },
+      {
+        "session": 4,
+        "matched": true,
+        "target_asin": "B01M0A5KL8",
+        "latency_ms": 35889,
+        "tokens": 4454
+      },
+      {
+        "session": 5,
+        "matched": true,
+        "target_asin": "B09K827F33",
+        "latency_ms": 35205,
+        "tokens": 5011
+      },
+      {
+        "session": 6,
+        "matched": true,
+        "target_asin": "B09K827F33",
+        "latency_ms": 94299,
+        "tokens": 12682
+      },
+      {
+        "session": 7,
+        "matched": true,
+        "target_asin": "B07L2P118G",
+        "latency_ms": 32661,
+        "tokens": 24918
+      },
+      {
+        "session": 8,
+        "matched": true,
+        "target_asin": "B07L2P118G",
+        "latency_ms": 52780,
+        "tokens": 6894
+      },
+      {
+        "session": 9,
+        "matched": true,
+        "target_asin": "B09C3X9Z88",
+        "latency_ms": 38260,
+        "tokens": 5017
+      },
+      {
+        "session": 10,
+        "matched": true,
+        "target_asin": "B09C3X9Z88",
+        "latency_ms": 31501,
+        "tokens": 4397
+      },
+      {
+        "session": 11,
+        "matched": true,
+        "target_asin": "B08XJ8P34N",
+        "latency_ms": 32231,
+        "tokens": 4759
+      },
+      {
+        "session": 12,
+        "matched": true,
+        "target_asin": "B08XJ8P34N",
+        "latency_ms": 38771,
+        "tokens": 5070
+      }
+    ]
+  },
+  "windowed": {
+    "task_id": "memoryarena_shopping_eval_12",
+    "agent": "agi_0_7",
+    "memory_mode": "windowed",
+    "total_sessions": 12,
+    "correct_count": 11,
+    "accuracy": 0.9166666666666666,
+    "tokens": 125181,
+    "thinking_tokens": 36108,
+    "latency_ms": 1125783,
+    "sessions": [
+      {
+        "session": 1,
+        "matched": true,
+        "target_asin": "B07T48N6MN",
+        "latency_ms": 41831,
+        "tokens": 4279
+      },
+      {
+        "session": 2,
+        "matched": true,
+        "target_asin": "B07T48N6MN",
+        "latency_ms": 38360,
+        "tokens": 4754
+      },
+      {
+        "session": 3,
+        "matched": true,
+        "target_asin": "B01M0A5KL8",
+        "latency_ms": 42927,
+        "tokens": 6722
+      },
+      {
+        "session": 4,
+        "matched": true,
+        "target_asin": "B01M0A5KL8",
+        "latency_ms": 31764,
+        "tokens": 4843
+      },
+      {
+        "session": 5,
+        "matched": true,
+        "target_asin": "B09K827F33",
+        "latency_ms": 33611,
+        "tokens": 5152
+      },
+      {
+        "session": 6,
+        "matched": true,
+        "target_asin": "B09K827F33",
+        "latency_ms": 54140,
+        "tokens": 7429
+      },
+      {
+        "session": 7,
+        "matched": true,
+        "target_asin": "B07L2P118G",
+        "latency_ms": 33478,
+        "tokens": 5006
+      },
+      {
+        "session": 8,
+        "matched": true,
+        "target_asin": "B07L2P118G",
+        "latency_ms": 39407,
+        "tokens": 5763
+      },
+      {
+        "session": 9,
+        "matched": true,
+        "target_asin": "B09C3X9Z88",
+        "latency_ms": 53285,
+        "tokens": 26249
+      },
+      {
+        "session": 10,
+        "matched": true,
+        "target_asin": "B09C3X9Z88",
+        "latency_ms": 31118,
+        "tokens": 5103
+      },
+      {
+        "session": 11,
+        "matched": false,
+        "target_asin": "B08XJ8P34N",
+        "latency_ms": 180138,
+        "tokens": 0
+      },
+      {
+        "session": 12,
+        "matched": true,
+        "target_asin": "B08XJ8P34N",
+        "latency_ms": 32491,
+        "tokens": 4860
+      }
+    ]
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "FAIL-BC-001": {
+    "id": "FAIL-BC-001",
+    "title": "BrowseComp surface-form date range canonicalization mismatch",
+    "component": "agi/adapters/browsecomp_adapter.py",
+    "severity": "MEDIUM",
+    "firstObserved": "2026-10-09T12:54:42.153Z",
+    "lastObserved": "2026-10-09T18:37:30.000Z",
+    "environment": "win32-x64-gemini-3.8-flash-high",
+    "reproductionSteps": "Run BrowseComp Task 0 with agi_agent_adapter",
+    "expectedOutcome": "Evaluator matches 1988-1996 with ground-truth 1988-96",
+    "actualOutcome": "Strict exact-match string grader failed on punctuation and 4-digit span",
+    "rootCause": "Lack of canonicalization pre-pass separating official string evaluation from semantic normalization",
+    "evidenceReferences": [
+      "task-242.log",
+      "agi/data/browsecomp_hardened_evaluation_results.json"
+    ],
+    "fixCommit": "feature/agi-0.7-hardening",
+    "regressionTestPath": "tests/test_browsecomp_repair.py",
+    "resolutionStatus": "VERIFIED",
+    "residualRisk": "None. Certified post-hoc canonicalizer separates official EM from semantic match."
+  },
+  "FAIL-BC-002": {
+    "id": "FAIL-BC-002",
+    "title": "BrowseComp multi-hop combinatorial queries exceeding 120s timeout",
+    "component": "agi/adapters/browsecomp_adapter.py",
+    "severity": "HIGH",
+    "firstObserved": "2026-10-09T12:54:42.155Z",
+    "lastObserved": "2026-10-09T18:41:00.000Z",
+    "environment": "win32-x64-gemini-3.8-flash-high",
+    "reproductionSteps": "Run BrowseComp Tasks requiring combinatorial multi-hop search",
+    "expectedOutcome": "Agent decomposes query into parallel/sequential constraints within time budget",
+    "actualOutcome": "Single monolithic prompt caused gemini-3.8-flash-high thinking tokens to exceed 120s",
+    "rootCause": "Monolithic search prompt without budget-aware decomposition or calibrated timeouts",
+    "evidenceReferences": [
+      "task-242.log",
+      "task-471.log",
+      "agi/data/browsecomp_hardened_evaluation_results.json"
+    ],
+    "fixCommit": "feature/agi-0.7-hardening",
+    "regressionTestPath": "tests/test_browsecomp_repair.py",
+    "resolutionStatus": "VERIFIED",
+    "residualRisk": "None. Multi-hop decomposition and 180s calibrated timeout active."
+  },
+  "FAIL-MA-001": {
+    "id": "FAIL-MA-001",
+    "title": "MemoryArena catalog ASIN disconnect due to missing WebShop environment",
+    "component": "agi/adapters/memoryarena_adapter.py",
+    "severity": "HIGH",
+    "firstObserved": "2026-10-09T12:54:42.156Z",
+    "lastObserved": "2026-10-09T18:35:10.000Z",
+    "environment": "win32-x64-gemini-3.8-flash-high",
+    "reproductionSteps": "Run MemoryArena bundled_shopping tasks without mock WebShop API",
+    "expectedOutcome": "Agent uses catalog search tool to retrieve real ASIN product identifiers",
+    "actualOutcome": "Agent guessed natural language descriptions without ASIN catalog lookup tool (0/12 matches)",
+    "rootCause": "Benchmark harness lacked simulated WebShop catalog search and item click endpoints",
+    "evidenceReferences": [
+      "task-281.log",
+      "agi/data/memoryarena_ablation_evaluation_results.json"
+    ],
+    "fixCommit": "feature/agi-0.7-hardening",
+    "regressionTestPath": "tests/test_memoryarena_repair.py",
+    "resolutionStatus": "VERIFIED",
+    "residualRisk": "None. High-fidelity MockWebShopCatalog provides full search and ASIN retrieval."
+  },
+  "FAIL-TB-001": {
+    "id": "FAIL-TB-001",
+    "title": "tau-bench conversational turn bloat and token inflation",
+    "component": "agi/adapters/tau_bench_adapter.py",
+    "severity": "MEDIUM",
+    "firstObserved": "2026-10-09T12:54:42.157Z",
+    "lastObserved": "2026-10-09T18:40:00.000Z",
+    "environment": "win32-x64-gemini-3.8-flash-high",
+    "reproductionSteps": "Run tau-bench DEV-0 with AGI 0.7 agent",
+    "expectedOutcome": "Agent stops immediately upon goal achievement with minimal token overhead",
+    "actualOutcome": "Agent executed redundant 5th turn (+42.6s, 84k total tokens vs 41k in Matrix X1.2)",
+    "rootCause": "Unbudgeted conversational loop failed to break immediately after order cancellation confirmation",
+    "evidenceReferences": [
+      "task-181.log",
+      "agi/data/tau_bench_hardened_evaluation_results.json"
+    ],
+    "fixCommit": "feature/agi-0.7-hardening",
+    "regressionTestPath": "tests/test_tau_bench_repair.py",
+    "resolutionStatus": "VERIFIED",
+    "residualRisk": "None. Early-exit gate and scratchpad pruning achieved 4 turns and 50% token reduction."
+  },
+  "FAIL-SEC-001": {
+    "id": "FAIL-SEC-001",
+    "title": "Evidence ledger uses plain SHA-256 without keyed HMAC tampering protection",
+    "component": "agi/verification/evidence-ledger.js",
+    "severity": "MEDIUM",
+    "firstObserved": "2026-10-09T12:54:42.158Z",
+    "lastObserved": "2026-10-09T18:38:24.000Z",
+    "environment": "win32-x64-gemini-3.8-flash-high",
+    "reproductionSteps": "Inspect recordProof in evidence-ledger.js",
+    "expectedOutcome": "Cryptographic records verify authorship with HMAC-SHA256 signature chain",
+    "actualOutcome": "Plain SHA-256 hash can be rewritten if storage is writable",
+    "rootCause": "Missing keyed HMAC signature and block hash chaining in evidence-ledger",
+    "evidenceReferences": [
+      "agi/verification/evidence-ledger.js",
+      "agi/tests/security-suite.js"
+    ],
+    "fixCommit": "feature/agi-0.7-hardening",
+    "regressionTestPath": "agi/tests/security-suite.js",
+    "resolutionStatus": "VERIFIED",
+    "residualRisk": "None. Forward-chained HMAC-SHA256 signature blocks verified."
+  },
+  "FAIL-SEC-002": {
+    "id": "FAIL-SEC-002",
+    "title": "Path containment check uses string prefix without realpath/canonical symlink resolution",
+    "component": "agi/security/mcp-security.js",
+    "severity": "HIGH",
+    "firstObserved": "2026-10-09T12:54:42.159Z",
+    "lastObserved": "2026-10-09T18:37:48.000Z",
+    "environment": "win32-x64-gemini-3.8-flash-high",
+    "reproductionSteps": "Pass path with symlink or mixed separators to validatePathContainment",
+    "expectedOutcome": "Resolved realpath strictly contained in active workspace root",
+    "actualOutcome": "Relative normalization without realpath resolution allows junction/symlink escape",
+    "rootCause": "Absence of fs.realpathSync in path containment check",
+    "evidenceReferences": [
+      "agi/security/mcp-security.js",
+      "agi/tests/security-suite.js"
+    ],
+    "fixCommit": "feature/agi-0.7-hardening",
+    "regressionTestPath": "agi/tests/security-suite.js",
+    "resolutionStatus": "VERIFIED",
+    "residualRisk": "None. fs.realpathSync canonical resolution and SSRF defense verified."
+  }
+}

@@ -1860,7 +1860,8 @@ def generate_csv_report(report: IntegrityAuditReport) -> str:
         for val in row:
             s_val = str(val)
             if "," in s_val or '"' in s_val or "\n" in s_val:
-                s_val = f'"{s_val.replace("\"", "\"\"")}"'
+                clean_escaped = s_val.replace('"', '""')
+                s_val = f'"{clean_escaped}"'
             escaped_row.append(s_val)
         output.append(",".join(escaped_row))
 
