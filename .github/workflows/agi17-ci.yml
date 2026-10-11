@@ -43,6 +43,9 @@ jobs:
       - name: Verify Zero Secret Leaks & Zero Hardcoded Local Paths
         run: python -m unittest agents/AGI_1_7/tests/test_production_hardening_sprint.py -v
 
+      - name: Run P0 Production Security Hardening & Docker Sandbox Tests
+        run: python -m unittest agents/AGI_1_7/tests/test_p0_security_and_real_docker.py -v
+
       - name: Verify 100 Specialist Contracts & Ecosystem Sync (Dry-Run, Zero Home Mutation)
         run: python agents/AGI_1_7/scripts/sync_ecosystem.py --dry-run
 

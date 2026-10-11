@@ -59,7 +59,7 @@ class TestProductionHardeningSprint(unittest.TestCase):
 
     def test_01_zero_secret_or_local_username_leaks_in_repo(self) -> None:
         proc = subprocess.run(
-            ["git", "ls-files"],
+            ["git", "-c", "safe.directory=*", "ls-files"],
             cwd=str(REPO_ROOT),
             capture_output=True,
             text=True,
@@ -186,7 +186,7 @@ class TestProductionHardeningSprint(unittest.TestCase):
             )
 
     def test_10_disposable_sandbox_runner_executes_and_cleans_up(self) -> None:
-        runner = DisposableSandboxRunner(policy=SandboxPolicy(isolation_mode="auto"))
+        runner = DisposableSandboxRunner(policy=SandboxPolicy.development())
         res = runner.run_python_unittest_sandbox(
             files={
                 "calc.py": "def mul(a: int, b: int) -> int:\n    return a * b\n",
@@ -215,7 +215,8 @@ class TestProductionHardeningSprint(unittest.TestCase):
         mock = DeterministicMockProvider()
         tc = AdaptiveTokenController(ledger_dir=self.temp_dir / "ledger", isolated_benchmark_cwd=self.temp_dir / "iso")
         adapter = ModelAdapter(token_controller=tc, mock_provider=mock)
-        agent = CIRepairAgent(model_adapter=adapter)
+        dev_sbx = DisposableSandboxRunner(policy=SandboxPolicy.development())
+        agent = CIRepairAgent(model_adapter=adapter, sandbox_runner=dev_sbx)
         res = agent.repair_workspace(workspace_dir=ws, module_filename="adder.py")
         self.assertEqual(res.status, "ALREADY_PASSING")
         self.assertEqual(res.attempts_used, 0)
@@ -235,7 +236,8 @@ class TestProductionHardeningSprint(unittest.TestCase):
         )
         tc = AdaptiveTokenController(ledger_dir=self.temp_dir / "ledger", isolated_benchmark_cwd=self.temp_dir / "iso")
         adapter = ModelAdapter(token_controller=tc, mock_provider=mock)
-        agent = CIRepairAgent(model_adapter=adapter, budget=CIRepairBudget(max_repair_attempts=2))
+        dev_sbx = DisposableSandboxRunner(policy=SandboxPolicy.development())
+        agent = CIRepairAgent(model_adapter=adapter, sandbox_runner=dev_sbx, budget=CIRepairBudget(max_repair_attempts=2))
         res = agent.repair_workspace(
             workspace_dir=ws,
             module_filename="adder.py",
@@ -313,8 +315,9 @@ class TestProductionHardeningSprint(unittest.TestCase):
         from agents.AGI_1_7.engine.agi17.orchestration.hierarchical_orchestrator import HierarchicalOrchestrator, SubtaskSpec
         from agents.AGI_1_7.engine.agi17.task_control.task_manager import DurableTaskManager
 
-        prod_pol = SandboxPolicy.production(docker_image="nonexistent-local-image:0.0.0")
+        prod_pol = SandboxPolicy.production()
         self.assertTrue(prod_pol.require_container_isolation)
+        self.assertFalse(prod_pol.allow_host_subprocess_fallback)
         self.assertEqual(prod_pol.isolation_mode, "docker")
 
         tm = DurableTaskManager(
@@ -349,13 +352,13 @@ class TestProductionHardeningSprint(unittest.TestCase):
         self.assertEqual(compute_cli_exit_code({"terminal_outcome": "PROFILE_ONLY_OK"}), 0)
         self.assertEqual(compute_cli_exit_code({"status": "ALREADY_PASSING"}), 0)
         self.assertEqual(compute_cli_exit_code({"terminal_outcome": "FAILED"}), 1)
-        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "SUCCEEDED_UNVERIFIED"}), 2)
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "BLOCKED_BY_POLICY"}), 2)
         self.assertEqual(compute_cli_exit_code({"terminal_outcome": "TIMED_OUT"}), 3)
         self.assertEqual(compute_cli_exit_code({"terminal_outcome": "CANCELLED"}), 4)
         self.assertEqual(compute_cli_exit_code({"terminal_outcome": "BUDGET_EXCEEDED"}), 5)
-        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "BLOCKED_BY_POLICY"}), 6)
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "SUCCEEDED_UNVERIFIED"}), 6)
 
-        # Verify CLI --ci-repair-dir returns 6 (BLOCKED_BY_POLICY) when given a path traversal module_filename
+        # Verify CLI --ci-repair-dir returns 2 (BLOCKED_BY_POLICY) when given a path traversal module_filename
         ws = self.temp_dir / "cli_policy_ws"
         ws.mkdir(parents=True, exist_ok=True)
         exit_blocked = cli_main(
@@ -368,25 +371,25 @@ class TestProductionHardeningSprint(unittest.TestCase):
                 "../escape.py",
             ]
         )
-        self.assertEqual(exit_blocked, 6)
+        self.assertEqual(exit_blocked, 2)
 
     def test_18_pinned_docker_digest_and_atomic_write_and_structured_approval(self) -> None:
         from agents.AGI_1_7.engine.agi17.process_supervision.sandbox_runner import (
             APPROVED_PINNED_PYTHON_IMAGE,
+            SandboxPolicyViolationError,
             atomic_write_workspace_file,
         )
 
         prod_pol = SandboxPolicy.production()
         self.assertTrue(prod_pol.require_container_isolation)
         self.assertTrue(prod_pol.require_pinned_image_digest)
+        self.assertFalse(prod_pol.allow_host_subprocess_fallback)
         self.assertIn("@sha256:", prod_pol.docker_image or "")
         self.assertEqual(prod_pol.docker_image, APPROVED_PINNED_PYTHON_IMAGE)
 
         # Unpinned image rejected when require_pinned_image_digest=True
-        unpinned_pol = SandboxPolicy.production(docker_image="python:3.12-slim")
-        runner = DisposableSandboxRunner(policy=unpinned_pol)
-        with self.assertRaises(SandboxIsolationUnavailableError):
-            runner.detect_docker_python_image()
+        with self.assertRaises(SandboxPolicyViolationError):
+            SandboxPolicy.production(docker_image="python:3.12-slim")
 
         # Atomic workspace write
         ws = self.temp_dir / "atomic_ws"
@@ -431,7 +434,7 @@ class TestProductionHardeningSprint(unittest.TestCase):
         mock_prov = DeterministicMockProvider(responder=_seq_gen)
         tc = AdaptiveTokenController(ledger_dir=self.temp_dir / "ledger19", isolated_benchmark_cwd=self.temp_dir / "iso19")
         ma = ModelAdapter(token_controller=tc, mock_provider=mock_prov)
-        sbx = DisposableSandboxRunner(policy=SandboxPolicy(isolation_mode="restricted_tempdir"))
+        sbx = DisposableSandboxRunner(policy=SandboxPolicy.development())
         agent = CIRepairAgent(model_adapter=ma, sandbox_runner=sbx)
 
         res = agent.repair_workspace(

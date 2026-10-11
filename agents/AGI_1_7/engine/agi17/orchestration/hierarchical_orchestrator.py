@@ -34,10 +34,21 @@ from agents.AGI_1_7.ecosystem.agent_registry.specialist_factory import Specialis
 from ..capabilities.resource_snapshot import LiveResourceMetrics
 from ..memory.omega_command_memory import OmegaCommandMemory
 from ..process_supervision.process_supervisor import ProcessSupervisor
-from ..process_supervision.sandbox_runner import DisposableSandboxRunner
+from ..process_supervision.sandbox_runner import (
+    DisposableSandboxRunner,
+    HighImpactApprovalGate,
+    PathTraversalBlockedError,
+    SandboxCleanupUnverifiedError,
+    SandboxPolicy,
+    SandboxPolicyViolationError,
+    atomic_write_workspace_file,
+    scan_untrusted_content,
+    validate_relative_sandbox_path,
+    validate_test_pattern,
+)
 from ..task_control.task_manager import DurableTaskManager
 from ..task_control.task_state_machine import TERMINAL_STATES, TaskState
-from ..telemetry.token_economy import AdaptiveTokenController
+from ..telemetry.token_economy import AdaptiveTokenController, TokenBudgetExceededError
 from .resource_governor import (
     MAX_AGENT_SPECIALIZATIONS,
     MAX_LOGICAL_CHILD_TASKS,
@@ -121,6 +132,7 @@ class HierarchicalOrchestrator:
         model_adapter: Optional[Any] = None,
         supervisor: Optional[ProcessSupervisor] = None,
         sandbox_runner: Optional[DisposableSandboxRunner] = None,
+        approval_gate: Optional[HighImpactApprovalGate] = None,
     ) -> None:
         self.task_manager = task_manager or DurableTaskManager()
         self.memory = memory or OmegaCommandMemory()
@@ -129,7 +141,15 @@ class HierarchicalOrchestrator:
         self.specialist_factory = specialist_factory or SpecialistFactory()
         self.ecosystem_coordinator = ecosystem_coordinator or EcosystemCoordinator()
         self.supervisor = supervisor or ProcessSupervisor(task_manager=self.task_manager)
-        self.sandbox_runner = sandbox_runner or DisposableSandboxRunner()
+        if sandbox_runner is not None:
+            self.sandbox_runner = sandbox_runner
+            self.approval_gate = approval_gate or getattr(sandbox_runner, "approval_gate", None) or HighImpactApprovalGate()
+        else:
+            self.approval_gate = approval_gate or HighImpactApprovalGate()
+            self.sandbox_runner = DisposableSandboxRunner(
+                policy=SandboxPolicy.production(),
+                approval_gate=self.approval_gate,
+            )
         self.model_adapter = model_adapter
 
     def build_code_and_test_subtasks(
@@ -146,11 +166,17 @@ class HierarchicalOrchestrator:
         adaptive_reuse_existing_tests: bool = True,
     ) -> List[SubtaskSpec]:
         """Builds a 3-specialist live-model coding + unit-testing + self-healing DAG."""
-        ws = Path(code_task_dir).resolve()
+        ws_raw = Path(code_task_dir)
+        if ws_raw.exists() and ws_raw.is_symlink():
+            raise PathTraversalBlockedError(f"Symlink workspace root blocked: {code_task_dir}")
+        ws = ws_raw.resolve()
         ws.mkdir(parents=True, exist_ok=True)
-        module_path = ws / module_filename
-        test_path = ws / test_filename
-        module_stem = module_filename[:-3] if module_filename.endswith(".py") else module_filename
+
+        # Enforce path containment and test pattern validation BEFORE reading any file or calling any model
+        module_path = validate_relative_sandbox_path(ws, module_filename, require_py_extension=True)
+        test_path = validate_relative_sandbox_path(ws, test_filename, require_py_extension=True)
+        validate_test_pattern(test_path.name)
+        module_stem = module_path.stem
 
         existing_source_block = ""
         if module_path.exists():
@@ -167,7 +193,10 @@ class HierarchicalOrchestrator:
         existing_test_files: List[Path] = []
         existing_tests_snippets: List[str] = []
         for tf in sorted(ws.glob("test_*.py")):
+            if tf.is_symlink():
+                raise PathTraversalBlockedError(f"Symlink test file blocked in workspace: {tf}")
             if tf.is_file():
+                validate_relative_sandbox_path(ws, tf.name, require_py_extension=True)
                 try:
                     t_content = tf.read_text(encoding="utf-8", errors="replace")
                     if t_content.strip():
@@ -192,6 +221,11 @@ class HierarchicalOrchestrator:
         def _inject_deliberate_fault(_target: Path) -> Dict[str, Any]:
             if not inject_deliberate_test_failure or not module_path.exists():
                 return {"injected": False}
+            self.approval_gate.check_workspace_mutation(
+                workspace_root=ws,
+                target_path=module_path,
+                operation="deliberate_fault_injection",
+            )
             original = module_path.read_text(encoding="utf-8")
             lines = original.splitlines()
             mutated_lines: List[str] = []
@@ -217,7 +251,7 @@ class HierarchicalOrchestrator:
                 mutated_lines.append("raise RuntimeError('Deliberate injected fault')")
                 mutation_desc = "Appended runtime fault trigger"
             mutated = "\n".join(mutated_lines) + "\n"
-            module_path.write_text(mutated, encoding="utf-8")
+            atomic_write_workspace_file(ws, module_path.relative_to(ws), mutated)
             return {
                 "injected": True,
                 "target_file": str(module_path),
@@ -239,6 +273,7 @@ class HierarchicalOrchestrator:
                 queue_type="model_call",
                 token_budget=16000,
                 use_live_model=True,
+                verification_cwd=str(ws),
             ),
             SubtaskSpec(
                 title=f"{title} — Stage 2: Live Model Python Implementation (`{module_filename}`)",
@@ -256,6 +291,7 @@ class HierarchicalOrchestrator:
                 use_live_model=True,
                 target_file_path=str(module_path),
                 fallback_code=fallback_module_code,
+                verification_cwd=str(ws),
             ),
             SubtaskSpec(
                 title=f"{title} — Stage 3: Live Model Unit Test Generation, Execution & Self-Healing (`{test_filename}`)",
@@ -277,19 +313,7 @@ class HierarchicalOrchestrator:
                 repair_target_file=str(module_path),
                 fallback_code=fallback_test_code,
                 post_write_fault_injector=_inject_deliberate_fault if inject_deliberate_test_failure else None,
-                verification_command=[
-                    sys.executable,
-                    "-m",
-                    "unittest",
-                    "discover",
-                    "-s",
-                    str(ws),
-                    "-t",
-                    str(ws),
-                    "-p",
-                    "test_*.py",
-                    "-v",
-                ],
+                verification_command=None,
                 verification_cwd=str(ws),
                 use_disposable_sandbox=True,
                 repair_specialist_id="swe_patch_minimizer",
@@ -298,26 +322,43 @@ class HierarchicalOrchestrator:
 
     def _run_sandboxed_workspace_tests(self, verification_cwd: str | Path, sandbox_id: str) -> Dict[str, Any]:
         """Executes workspace Python unit tests inside the disposable container / ephemeral sandbox."""
-        ws_dir = Path(verification_cwd)
+        ws_raw = Path(verification_cwd)
+        if ws_raw.exists() and ws_raw.is_symlink():
+            raise PathTraversalBlockedError(f"Symlink verification_cwd blocked: {verification_cwd}")
+        ws_dir = ws_raw.resolve()
         files_map: Dict[str, str] = {}
         if ws_dir.is_dir():
             for py_file in sorted(ws_dir.glob("*.py")):
+                if py_file.is_symlink():
+                    raise PathTraversalBlockedError(f"Symlink Python file blocked in workspace: {py_file}")
                 if py_file.is_file():
+                    validate_relative_sandbox_path(ws_dir, py_file.name, require_py_extension=True)
                     files_map[py_file.name] = py_file.read_text(encoding="utf-8", errors="replace")
         sbx_res = self.sandbox_runner.run_python_unittest_sandbox(
             files=files_map,
             test_pattern="test_*.py",
             sandbox_id=sandbox_id,
         )
+        if not sbx_res.cleanup_verified:
+            raise SandboxCleanupUnverifiedError(
+                f"Disposable sandbox cleanup unverified for {sandbox_id} "
+                f"(filesystem_cleanup_verified={sbx_res.filesystem_cleanup_verified}, "
+                f"container_cleanup_verified={sbx_res.container_cleanup_verified})"
+            )
         return {
+            "passed": sbx_res.passed,
             "exit_code": sbx_res.exit_code,
+            "timed_out": sbx_res.timed_out,
             "stdout": sbx_res.stdout,
             "stderr": sbx_res.stderr,
             "notification_id": sbx_res.sandbox_id,
             "isolation_backend": sbx_res.isolation_backend,
+            "container_image": sbx_res.container_image,
             "network_disabled": sbx_res.network_disabled,
             "verified_network_isolated": getattr(sbx_res, "verified_network_isolated", False),
             "cleanup_verified": sbx_res.cleanup_verified,
+            "filesystem_cleanup_verified": sbx_res.filesystem_cleanup_verified,
+            "container_cleanup_verified": sbx_res.container_cleanup_verified,
             "duration_sec": sbx_res.duration_sec,
         }
 
@@ -353,6 +394,8 @@ class HierarchicalOrchestrator:
         inject_deliberate_test_failure: bool = False,
         custom_subtask_hook: Optional[Callable[[str, Dict[str, Any]], None]] = None,
         simulated_resource_snapshot: Optional[LiveResourceMetrics] = None,
+        max_wall_clock_sec: Optional[float] = None,
+        max_mission_tokens: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Executes a mission via Fast Path or Planned Hierarchical Delegation.
 
@@ -362,61 +405,70 @@ class HierarchicalOrchestrator:
         """
         started_at = time.time()
         root_id = task_id or f"MISSION-{int(started_at * 1000)}-{uuid.uuid4().hex[:6]}"
-        if code_task_dir is not None and subtasks is None:
-            subtasks = self.build_code_and_test_subtasks(
-                title=title,
-                prompt=prompt,
-                code_task_dir=code_task_dir,
-                module_filename=module_filename,
-                test_filename=test_filename,
-                inject_deliberate_test_failure=inject_deliberate_test_failure,
-            )
-            force_hierarchical = True
-
-        effective_live_model = (
-            use_live_model
-            if use_live_model is not None
-            else bool(self.model_adapter is not None and subtasks is None)
-        )
-
-        # Step 1: Mandatory pre-planning memory retrieval
-        retrieved_memory = self.memory.retrieve_before_planning(
-            task_id=root_id,
-            task_description=f"{title}: {prompt}",
-        )
-
-        is_hierarchical = self.requires_hierarchical_planning(
-            prompt=prompt,
-            explicit_subtasks=subtasks,
-            force_hierarchical=force_hierarchical,
-        )
-
-        # Create root task in durable SQLite store
-        tier = "COMPLEX" if is_hierarchical else "SIMPLE"
-        budget_info = self.token_controller.allocate_budget(task_id=root_id, tier=tier)
-
-        existing = self.task_manager.store.get_task(root_id)
-        if not existing:
-            self.task_manager.create_task(
-                task_id=root_id,
-                title=title,
-                description=prompt,
-                specialist_role="plan_mission_decomposer" if is_hierarchical else "swe_python_runtime_engineer",
-                token_budget=budget_info["max_task_tokens"],
-                metadata={
-                    "execution_path": "HIERARCHICAL_DAG" if is_hierarchical else "DIRECT_FAST_PATH",
-                    "use_live_model": effective_live_model,
-                    "memory_retrieval_audit_id": retrieved_memory["audit_id"],
-                    "retrieved_memory_ids": retrieved_memory["retrieved_entry_ids"],
-                },
-            )
-
-        self.task_manager.transition(root_id, TaskState.PLANNED, reason="Completed pre-planning memory lookup & classification")
-        self.task_manager.transition(root_id, TaskState.QUEUED, reason="Queued root mission")
-        self.task_manager.transition(root_id, TaskState.READY, reason="Root mission ready")
-        self.task_manager.transition(root_id, TaskState.RUNNING, reason="Root mission execution started")
+        is_hierarchical = force_hierarchical or (subtasks is not None and len(subtasks) > 1) or (code_task_dir is not None)
 
         try:
+            if code_task_dir is not None and subtasks is None:
+                subtasks = self.build_code_and_test_subtasks(
+                    title=title,
+                    prompt=prompt,
+                    code_task_dir=code_task_dir,
+                    module_filename=module_filename,
+                    test_filename=test_filename,
+                    inject_deliberate_test_failure=inject_deliberate_test_failure,
+                )
+                force_hierarchical = True
+
+            effective_live_model = (
+                use_live_model
+                if use_live_model is not None
+                else bool(self.model_adapter is not None and subtasks is None)
+            )
+
+            # Step 1: Mandatory pre-planning memory retrieval
+            retrieved_memory = self.memory.retrieve_before_planning(
+                task_id=root_id,
+                task_description=f"{title}: {prompt}",
+            )
+
+            is_hierarchical = self.requires_hierarchical_planning(
+                prompt=prompt,
+                explicit_subtasks=subtasks,
+                force_hierarchical=force_hierarchical,
+            )
+
+            # Create root task in durable SQLite store
+            tier = "COMPLEX" if is_hierarchical else "SIMPLE"
+            budget_info = self.token_controller.allocate_budget(
+                task_id=root_id,
+                tier=tier,
+                custom_task_budget=max_mission_tokens,
+            )
+
+            existing = self.task_manager.store.get_task(root_id)
+            if not existing:
+                self.task_manager.create_task(
+                    task_id=root_id,
+                    title=title,
+                    description=prompt,
+                    specialist_role="plan_mission_decomposer" if is_hierarchical else "swe_python_runtime_engineer",
+                    token_budget=budget_info["max_task_tokens"],
+                    metadata={
+                        "execution_path": "HIERARCHICAL_DAG" if is_hierarchical else "DIRECT_FAST_PATH",
+                        "use_live_model": effective_live_model,
+                        "memory_retrieval_audit_id": retrieved_memory["audit_id"],
+                        "retrieved_memory_ids": retrieved_memory["retrieved_entry_ids"],
+                    },
+                )
+
+            self.task_manager.transition(root_id, TaskState.PLANNED, reason="Completed pre-planning memory lookup & classification")
+            self.task_manager.transition(root_id, TaskState.QUEUED, reason="Queued root mission")
+            self.task_manager.transition(root_id, TaskState.READY, reason="Root mission ready")
+            self.task_manager.transition(root_id, TaskState.RUNNING, reason="Root mission execution started")
+
+            if max_wall_clock_sec is not None and (time.time() - started_at) > max_wall_clock_sec:
+                raise TimeoutError(f"Mission {root_id} exceeded max_wall_clock_sec ({max_wall_clock_sec}s) before execution")
+
             if not is_hierarchical:
                 return self._execute_fast_path(
                     root_id=root_id,
@@ -437,6 +489,7 @@ class HierarchicalOrchestrator:
                 custom_subtask_hook=custom_subtask_hook,
                 simulated_resource_snapshot=simulated_resource_snapshot,
                 started_at=started_at,
+                max_wall_clock_sec=max_wall_clock_sec,
             )
         except Exception as exc:
             exc_name = type(exc).__name__
@@ -451,6 +504,7 @@ class HierarchicalOrchestrator:
                     "PathTraversal",
                     "UntrustedContent",
                     "HighImpactAction",
+                    "InvalidTestPattern",
                 )
             ):
                 term_outcome = "BLOCKED_BY_POLICY"
@@ -477,7 +531,7 @@ class HierarchicalOrchestrator:
                 "final_state": TaskState.FAILED.value,
                 "terminal_outcome": term_outcome,
                 "error": {"exception_type": exc_name, "message": str(exc)},
-                "memory_retrieval": retrieved_memory,
+                "memory_retrieval": locals().get("retrieved_memory"),
                 "duration_sec": round(time.time() - started_at, 4),
             }
 
@@ -588,6 +642,34 @@ class HierarchicalOrchestrator:
             ),
         ]
 
+    def _resolve_validated_workspace_target(
+        self,
+        raw_target_path: str | Path,
+        verification_cwd: Optional[str | Path] = None,
+    ) -> Tuple[Path, Path]:
+        """Validates that `raw_target_path` is a contained `.py` file inside `ws_root`."""
+        cand_path = Path(raw_target_path)
+        if verification_cwd:
+            ws_raw = Path(verification_cwd)
+            if ws_raw.exists() and ws_raw.is_symlink():
+                raise PathTraversalBlockedError(f"Symlink workspace root blocked: {verification_cwd}")
+            ws_root = ws_raw.resolve()
+            if cand_path.is_absolute():
+                try:
+                    rel_part = cand_path.resolve().relative_to(ws_root)
+                except ValueError as exc:
+                    raise PathTraversalBlockedError(
+                        f"Target path '{raw_target_path}' escapes workspace root '{ws_root}'"
+                    ) from exc
+                validated = validate_relative_sandbox_path(ws_root, rel_part, require_py_extension=True)
+            else:
+                validated = validate_relative_sandbox_path(ws_root, cand_path, require_py_extension=True)
+            return ws_root, validated
+
+        ws_root = cand_path.resolve().parent
+        validated = validate_relative_sandbox_path(ws_root, cand_path.name, require_py_extension=True)
+        return ws_root, validated
+
     def _build_live_model_executor(
         self,
         root_id: str,
@@ -599,6 +681,10 @@ class HierarchicalOrchestrator:
         def _exec(contract: AgentContract, payload: Dict[str, Any]) -> Dict[str, Any]:
             if self.model_adapter is None:
                 raise RuntimeError(f"use_live_model=True requested for {child_id}, but ModelAdapter is not configured")
+            if sp_spec and sp_spec.target_file_path:
+                # Validate target file containment BEFORE invoking the model
+                self._resolve_validated_workspace_target(sp_spec.target_file_path, sp_spec.verification_cwd)
+
             upstream = payload.get("context", {}).get("upstream_outputs", {})
             upstream_summary = ""
             if upstream:
@@ -659,8 +745,10 @@ class HierarchicalOrchestrator:
                 "task_correctness_verified": None,
             }
             if sp_spec and sp_spec.target_file_path:
-                target_path = Path(sp_spec.target_file_path)
-                target_path.parent.mkdir(parents=True, exist_ok=True)
+                ws_root, target_path = self._resolve_validated_workspace_target(
+                    sp_spec.target_file_path,
+                    sp_spec.verification_cwd,
+                )
                 extracted_code = _extract_python_code(model_res["response_text"])
                 if not _is_valid_python_syntax(extracted_code) and sp_spec.fallback_code:
                     extracted_code = sp_spec.fallback_code
@@ -670,14 +758,30 @@ class HierarchicalOrchestrator:
                         f"exit_code={model_res['exit_code']}); deterministic fallback applied."
                     )
                     result_dict["execution_origin"] = "DETERMINISTIC_FALLBACK_AFTER_MODEL_FAILURE"
-                target_path.write_text(extracted_code, encoding="utf-8")
+                scan_untrusted_content(extracted_code, source_label=f"generated:{target_path.name}")
+                self.approval_gate.check_workspace_mutation(
+                    workspace_root=ws_root,
+                    target_path=target_path,
+                    operation="orchestrator_stage_write",
+                )
+                atomic_write_workspace_file(ws_root, target_path.relative_to(ws_root), extracted_code)
+                expected_sha256 = hashlib.sha256(extracted_code.encode("utf-8")).hexdigest()
                 clean_sha256 = hashlib.sha256(target_path.read_bytes()).hexdigest()
+                sha_matches = (
+                    target_path.exists()
+                    and target_path.stat().st_size > 0
+                    and clean_sha256 == expected_sha256
+                )
+                if not sha_matches:
+                    raise RuntimeError(
+                        f"Artifact SHA-256 verification failed for {target_path}: "
+                        f"expected={expected_sha256}, actual={clean_sha256}"
+                    )
                 result_dict["written_file_path"] = str(target_path)
                 result_dict["clean_generated_code"] = extracted_code
                 result_dict["clean_file_sha256"] = clean_sha256
-                result_dict["artifact_verification_passed"] = (
-                    target_path.exists() and target_path.stat().st_size > 0
-                )
+                result_dict["expected_file_sha256"] = expected_sha256
+                result_dict["artifact_verification_passed"] = sha_matches
                 if sp_spec.post_write_fault_injector is not None:
                     fault_meta = sp_spec.post_write_fault_injector(target_path)
                     mutated_path = Path(fault_meta.get("target_file") or target_path) if isinstance(fault_meta, dict) else target_path
@@ -697,12 +801,18 @@ class HierarchicalOrchestrator:
         failure_details: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Invokes `ModelAdapter.invoke()` with `sp_spec.repair_specialist_id` to patch failing code."""
-        repair_file = Path(
+        raw_repair_target = (
             sp_spec.repair_target_file
             or sp_spec.target_file_path
             or failed_result.get("artifacts", {}).get("written_file_path", "")
         )
-        broken_code = repair_file.read_text(encoding="utf-8") if repair_file.is_file() else ""
+        ws_root, repair_file = self._resolve_validated_workspace_target(
+            raw_repair_target,
+            sp_spec.verification_cwd,
+        )
+        original_bytes = repair_file.read_bytes() if repair_file.is_file() else None
+        original_sha256 = hashlib.sha256(original_bytes).hexdigest() if original_bytes is not None else None
+        broken_code = original_bytes.decode("utf-8", errors="replace") if original_bytes is not None else ""
         stderr_trace = failure_details.get("stderr") or failure_details.get("stdout") or str(failure_details)
         try:
             repair_contract = self.specialist_factory.get_contract(sp_spec.repair_specialist_id)
@@ -714,13 +824,17 @@ class HierarchicalOrchestrator:
         )
         guardrail_section = f"\n{mem_guardrails}\n" if mem_guardrails else "\n"
         test_files_block = ""
-        if repair_file.is_file() and repair_file.parent.is_dir():
+        if ws_root.is_dir():
             test_snippets = []
-            for tf in sorted(repair_file.parent.glob("test_*.py")):
-                try:
-                    test_snippets.append(f"# {tf.name}\n{tf.read_text(encoding='utf-8')}")
-                except Exception:
-                    pass
+            for tf in sorted(ws_root.glob("test_*.py")):
+                if tf.is_symlink():
+                    raise PathTraversalBlockedError(f"Symlink test file blocked during repair: {tf}")
+                if tf.is_file():
+                    validate_relative_sandbox_path(ws_root, tf.name, require_py_extension=True)
+                    try:
+                        test_snippets.append(f"# {tf.name}\n{tf.read_text(encoding='utf-8')}")
+                    except Exception:
+                        pass
             if test_snippets:
                 test_files_block = "\n\nWORKSPACE TEST FILES:\n```python\n" + "\n\n".join(test_snippets) + "\n```"
 
@@ -753,9 +867,23 @@ class HierarchicalOrchestrator:
                 f"Repair model response had invalid/empty Python syntax (status={model_res['status']}, "
                 f"exit_code={model_res['exit_code']}); deterministic fallback applied."
             )
+        repaired_sha256: Optional[str] = None
+        expected_repaired_sha256: Optional[str] = None
         if repair_file.name and _is_valid_python_syntax(patched_code):
-            repair_file.write_text(patched_code, encoding="utf-8")
-        repaired_sha256 = hashlib.sha256(repair_file.read_bytes()).hexdigest() if repair_file.is_file() else None
+            scan_untrusted_content(patched_code, source_label=f"repair:{repair_file.name}")
+            self.approval_gate.check_workspace_mutation(
+                workspace_root=ws_root,
+                target_path=repair_file,
+                operation="orchestrator_self_healing_repair",
+            )
+            atomic_write_workspace_file(ws_root, repair_file.relative_to(ws_root), patched_code)
+            expected_repaired_sha256 = hashlib.sha256(patched_code.encode("utf-8")).hexdigest()
+            repaired_sha256 = hashlib.sha256(repair_file.read_bytes()).hexdigest()
+            if repaired_sha256 != expected_repaired_sha256:
+                raise RuntimeError(
+                    f"Repair artifact SHA-256 mismatch for {repair_file}: "
+                    f"expected={expected_repaired_sha256}, actual={repaired_sha256}"
+                )
         return {
             "execution_origin": "DETERMINISTIC_FALLBACK_AFTER_MODEL_FAILURE" if fallback_used else "LIVE_MODEL_ADAPTER",
             "ecosystem_coordination": {
@@ -776,6 +904,9 @@ class HierarchicalOrchestrator:
             "stdout_log_path": model_res.get("stdout_log_path"),
             "repaired_file_path": str(repair_file),
             "repaired_file_sha256": repaired_sha256,
+            "expected_repaired_file_sha256": expected_repaired_sha256,
+            "pre_repair_file_sha256": original_sha256,
+            "_rollback_bytes": original_bytes,
             "patched_code": patched_code,
         }
 
@@ -791,6 +922,7 @@ class HierarchicalOrchestrator:
         custom_subtask_hook: Optional[Callable[[str, Dict[str, Any]], None]],
         simulated_resource_snapshot: Optional[LiveResourceMetrics],
         started_at: float,
+        max_wall_clock_sec: Optional[float] = None,
     ) -> Dict[str, Any]:
         specs = (
             list(explicit_subtasks)
@@ -820,6 +952,12 @@ class HierarchicalOrchestrator:
                 )[0]
                 spec_id = routed["agent_id"]
 
+            self.token_controller.allocate_budget(
+                task_id=root_id,
+                tier="COMPLEX",
+                child_task_id=cid,
+                custom_child_budget=sp.token_budget,
+            )
             self.task_manager.create_task(
                 task_id=cid,
                 parent_task_id=root_id,
@@ -843,6 +981,10 @@ class HierarchicalOrchestrator:
         step_counter = 0
 
         while True:
+            if max_wall_clock_sec is not None and (time.time() - started_at) > max_wall_clock_sec:
+                raise TimeoutError(
+                    f"Mission {root_id} exceeded max_wall_clock_sec ({max_wall_clock_sec}s)"
+                )
             # 1. Process live CommandInbox at safe wave checkpoint
             inbox_actions = self.task_manager.process_inbox_checkpoint(active_task_id=root_id)
             root_rec = self.task_manager.store.get_task(root_id)
@@ -917,6 +1059,10 @@ class HierarchicalOrchestrator:
 
             def _run_child(child_record: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
                 cid = child_record["task_id"]
+                if max_wall_clock_sec is not None and (time.time() - started_at) > max_wall_clock_sec:
+                    raise TimeoutError(
+                        f"Child task {cid} aborted: mission {root_id} exceeded max_wall_clock_sec ({max_wall_clock_sec}s)"
+                    )
                 sp_spec = spec_by_cid.get(cid)
                 q_type = child_record.get("metadata", {}).get("queue_type", "light_in_process")
                 decision = self.governor.acquire_slot(queue_type=q_type, snap=simulated_resource_snapshot)
@@ -976,6 +1122,12 @@ class HierarchicalOrchestrator:
                     )
 
                     if sp_spec is None or not sp_spec.use_live_model:
+                        self.token_controller.check_pre_call_admission(
+                            task_id=root_id,
+                            child_task_id=cid,
+                            estimated_tokens=max(1, len(child_record["description"]) // 4),
+                            tier="COMPLEX",
+                        )
                         self.token_controller.record_usage(
                             task_id=root_id,
                             child_task_id=cid,
@@ -985,13 +1137,28 @@ class HierarchicalOrchestrator:
                             cwd_used=self.token_controller.get_execution_cwd(is_benchmark_or_single_shot=True),
                         )
 
+                    # Post-call cumulative budget check
+                    with self.token_controller._lock:
+                        t_used = self.token_controller._task_consumed.get(root_id, 0)
+                        t_lim = self.token_controller._task_budgets.get(root_id)
+                        if t_lim is not None and t_used > t_lim:
+                            raise TokenBudgetExceededError(
+                                f"Task {root_id} cumulative token budget exceeded: used={t_used} > limit={t_lim}"
+                            )
+                        c_used = self.token_controller._child_consumed.get(cid, 0)
+                        c_lim = self.token_controller._child_budgets.get(cid)
+                        if c_lim is not None and c_used > c_lim:
+                            raise TokenBudgetExceededError(
+                                f"Child task {cid} token budget exceeded: used={c_used} > limit={c_lim}"
+                            )
+
                     self.task_manager.transition(cid, TaskState.VERIFYING, reason="Verifying specialist output")
 
                     # Check verification command or custom executor verification flag
                     verification_failed = False
                     failure_details: Dict[str, Any] = {}
                     artifacts = res.get("artifacts") or {}
-                    if artifacts.get("verification_passed") is False:
+                    if artifacts.get("verification_passed") is False or artifacts.get("artifact_verification_passed") is False:
                         verification_failed = True
                         failure_details = dict(artifacts)
 
@@ -1001,7 +1168,18 @@ class HierarchicalOrchestrator:
                                 sp_spec.verification_cwd,
                                 sandbox_id=f"{cid}-VERIFY-ATT1",
                             )
+                            init_passed = bool(
+                                artifacts["initial_verification_run"].get(
+                                    "passed",
+                                    artifacts["initial_verification_run"]["exit_code"] == 0,
+                                )
+                            )
                         else:
+                            if self.sandbox_runner.policy.require_container_isolation:
+                                raise SandboxPolicyViolationError(
+                                    f"Host verification_command is forbidden for {cid} when require_container_isolation=True; "
+                                    "use disposable sandbox execution."
+                                )
                             ver_notif = self.supervisor.run_supervised(
                                 task_id=f"{cid}-VERIFY-ATT1",
                                 command=sp_spec.verification_command,
@@ -1012,12 +1190,14 @@ class HierarchicalOrchestrator:
                             stdout_txt = Path(ver_notif.stdout_log_path).read_text(encoding="utf-8", errors="replace") if Path(ver_notif.stdout_log_path).exists() else ""
                             stderr_txt = Path(ver_notif.stderr_log_path).read_text(encoding="utf-8", errors="replace") if Path(ver_notif.stderr_log_path).exists() else ""
                             artifacts["initial_verification_run"] = {
+                                "passed": ver_notif.exit_code == 0,
                                 "exit_code": ver_notif.exit_code,
                                 "stdout": stdout_txt,
                                 "stderr": stderr_txt,
                                 "notification_id": ver_notif.notification_id,
                             }
-                        if artifacts["initial_verification_run"]["exit_code"] != 0:
+                            init_passed = ver_notif.exit_code == 0
+                        if not init_passed:
                             verification_failed = True
                             failure_details = artifacts["initial_verification_run"]
                             res["task_correctness_verified"] = False
@@ -1057,6 +1237,7 @@ class HierarchicalOrchestrator:
                                 failed_result=res,
                                 failure_details=failure_details,
                             )
+                        rollback_bytes = repair_out.pop("_rollback_bytes", None) if isinstance(repair_out, dict) else None
                         artifacts["repair_specialist_id"] = sp_spec.repair_specialist_id
                         artifacts["repair_execution"] = repair_out
 
@@ -1066,10 +1247,19 @@ class HierarchicalOrchestrator:
                                 sp_spec.verification_cwd,
                                 sandbox_id=f"{cid}-VERIFY-ATT2",
                             )
-                            re_exit = artifacts["post_repair_verification_run"]["exit_code"]
-                            verification_failed = re_exit != 0
-                            res["task_correctness_verified"] = (re_exit == 0)
+                            re_passed = bool(
+                                artifacts["post_repair_verification_run"].get(
+                                    "passed",
+                                    artifacts["post_repair_verification_run"]["exit_code"] == 0,
+                                )
+                            )
+                            verification_failed = not re_passed
+                            res["task_correctness_verified"] = re_passed
                         elif sp_spec.verification_command:
+                            if self.sandbox_runner.policy.require_container_isolation:
+                                raise SandboxPolicyViolationError(
+                                    f"Host verification_command is forbidden for {cid} when require_container_isolation=True"
+                                )
                             re_notif = self.supervisor.run_supervised(
                                 task_id=f"{cid}-VERIFY-ATT2",
                                 command=sp_spec.verification_command,
@@ -1080,6 +1270,7 @@ class HierarchicalOrchestrator:
                             re_stdout = Path(re_notif.stdout_log_path).read_text(encoding="utf-8", errors="replace") if Path(re_notif.stdout_log_path).exists() else ""
                             re_stderr = Path(re_notif.stderr_log_path).read_text(encoding="utf-8", errors="replace") if Path(re_notif.stderr_log_path).exists() else ""
                             artifacts["post_repair_verification_run"] = {
+                                "passed": re_notif.exit_code == 0,
                                 "exit_code": re_notif.exit_code,
                                 "stdout": re_stdout,
                                 "stderr": re_stderr,
@@ -1090,6 +1281,25 @@ class HierarchicalOrchestrator:
                         else:
                             verification_failed = not bool(repair_out.get("verification_passed", True))
                             res["task_correctness_verified"] = not verification_failed
+
+                        if verification_failed and rollback_bytes is not None and isinstance(repair_out, dict):
+                            rep_path_str = repair_out.get("repaired_file_path")
+                            if rep_path_str:
+                                ws_root_rb, rep_target_rb = self._resolve_validated_workspace_target(
+                                    rep_path_str,
+                                    sp_spec.verification_cwd,
+                                )
+                                atomic_write_workspace_file(
+                                    ws_root_rb,
+                                    rep_target_rb.relative_to(ws_root_rb),
+                                    rollback_bytes,
+                                )
+                                rb_sha = hashlib.sha256(rep_target_rb.read_bytes()).hexdigest()
+                                repair_out["rolled_back_on_failed_verification"] = True
+                                repair_out["rollback_restored_sha256"] = rb_sha
+                                repair_out["rollback_verified"] = (
+                                    rb_sha == repair_out.get("pre_repair_file_sha256")
+                                )
 
                         if not verification_failed:
                             target_mod = Path(

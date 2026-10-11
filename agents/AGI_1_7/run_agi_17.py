@@ -69,6 +69,12 @@ def _spawn_detached(args: argparse.Namespace, storage_root: Path, effective_code
         cmd.append("--inject-deliberate-test-failure")
     if args.save_execution_log:
         cmd.extend(["--save-execution-log", str(args.save_execution_log)])
+    if getattr(args, "ci_repair_dir", None):
+        cmd.extend(["--ci-repair-dir", str(args.ci_repair_dir)])
+    if getattr(args, "apply_approved_patch", False):
+        cmd.append("--apply-approved-patch")
+    if getattr(args, "test_pattern", None):
+        cmd.extend(["--test-pattern", str(args.test_pattern)])
 
     creationflags = 0
     if os.name == "nt":
@@ -94,6 +100,8 @@ def _spawn_detached(args: argparse.Namespace, storage_root: Path, effective_code
 
     payload = {
         "status": "DETACHED_RUNNING",
+        "terminal_outcome": "DETACHED_LAUNCHED_UNVERIFIED",
+        "mission_verified": False,
         "survives_antigravity_close": True,
         "started_at_epoch": time.time(),
         "pid": proc.pid,
@@ -110,7 +118,13 @@ def _spawn_detached(args: argparse.Namespace, storage_root: Path, effective_code
     return 0
 
 
-def _update_detached_pid_file(pid_file_path: str | None, status: str, final_state: str, exit_code: int) -> None:
+def _update_detached_pid_file(
+    pid_file_path: str | None,
+    status: str,
+    final_state: str,
+    exit_code: int,
+    terminal_outcome: str | None = None,
+) -> None:
     if not pid_file_path:
         return
     p = Path(pid_file_path)
@@ -118,8 +132,11 @@ def _update_detached_pid_file(pid_file_path: str | None, status: str, final_stat
         return
     try:
         data = json.loads(p.read_text(encoding="utf-8"))
+        eff_outcome = terminal_outcome or final_state
         data["status"] = status
         data["final_state"] = final_state
+        data["terminal_outcome"] = eff_outcome
+        data["mission_verified"] = bool(exit_code == 0 and eff_outcome == "SUCCEEDED_AND_VERIFIED")
         data["exit_code"] = exit_code
         data["completed_at_epoch"] = time.time()
         p.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -131,12 +148,12 @@ TERMINAL_OUTCOME_EXIT_CODES: dict[str, int] = {
     "SUCCEEDED_AND_VERIFIED": 0,
     "PROFILE_ONLY_OK": 0,
     "ALREADY_PASSING": 0,
-    "SUCCEEDED_UNVERIFIED": 2,
+    "FAILED": 1,
+    "BLOCKED_BY_POLICY": 2,
     "TIMED_OUT": 3,
     "CANCELLED": 4,
     "BUDGET_EXCEEDED": 5,
-    "BLOCKED_BY_POLICY": 6,
-    "FAILED": 1,
+    "SUCCEEDED_UNVERIFIED": 6,
 }
 
 
@@ -167,6 +184,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--text-only", action="store_true", help="Run text-only mission without writing/testing code files")
     parser.add_argument("--module-filename", default="token_bucket.py", help="Target Python module filename for coding workflow")
     parser.add_argument("--test-filename", default="test_token_bucket.py", help="Target unittest filename for coding workflow")
+    parser.add_argument("--test-pattern", default="test_*.py", help="Strict unittest discovery pattern (e.g., test_*.py)")
     parser.add_argument(
         "--inject-deliberate-test-failure",
         action="store_true",
@@ -211,6 +229,7 @@ def main(argv: list[str] | None = None) -> int:
             repair_res = adapter.run_ci_repair(
                 workspace_dir=args.ci_repair_dir,
                 module_filename=args.module_filename,
+                test_pattern=args.test_pattern,
                 issue_description=args.prompt or "Fix failing Python unit tests with minimal diff.",
                 write_patch_to_workspace=bool(args.apply_approved_patch),
                 apply_approved_patch=bool(args.apply_approved_patch),
@@ -219,10 +238,23 @@ def main(argv: list[str] | None = None) -> int:
             exc_name = type(exc).__name__
             if "BudgetExceeded" in exc_name:
                 term = "BUDGET_EXCEEDED"
-            elif any(k in exc_name for k in ("Sandbox", "PathTraversal", "UntrustedContent", "HighImpactAction", "Policy")):
+            elif any(
+                k in exc_name
+                for k in (
+                    "Sandbox",
+                    "PathTraversal",
+                    "UntrustedContent",
+                    "HighImpactAction",
+                    "Policy",
+                    "InvalidTestPattern",
+                    "DirectiveZeroViolation",
+                )
+            ):
                 term = "BLOCKED_BY_POLICY"
             elif "Timeout" in exc_name:
                 term = "TIMED_OUT"
+            elif "Cancel" in exc_name:
+                term = "CANCELLED"
             else:
                 term = "FAILED"
             repair_res = {
@@ -234,8 +266,16 @@ def main(argv: list[str] | None = None) -> int:
             out_p = Path(args.save_execution_log)
             out_p.parent.mkdir(parents=True, exist_ok=True)
             out_p.write_text(json.dumps(repair_res, indent=2, default=str), encoding="utf-8")
+        ci_exit_code = compute_cli_exit_code(repair_res)
+        _update_detached_pid_file(
+            args.detached_pid_file,
+            "DETACHED_COMPLETED" if ci_exit_code == 0 else "DETACHED_FAILED",
+            str(repair_res.get("status", "UNKNOWN")),
+            ci_exit_code,
+            terminal_outcome=str(repair_res.get("terminal_outcome", "FAILED")),
+        )
         print(json.dumps(repair_res, indent=2, default=str), flush=True)
-        return compute_cli_exit_code(repair_res)
+        return ci_exit_code
 
     if args.profile_only or not args.prompt:
         profile = adapter.profiler.build_full_profile()
@@ -252,7 +292,13 @@ def main(argv: list[str] | None = None) -> int:
                 "docker_available": profile["virtualization_and_runtimes"]["docker_engine_available"],
             },
         }
-        _update_detached_pid_file(args.detached_pid_file, "DETACHED_COMPLETED", "PROFILE_ONLY_OK", 0)
+        _update_detached_pid_file(
+            args.detached_pid_file,
+            "DETACHED_COMPLETED",
+            "PROFILE_ONLY_OK",
+            0,
+            terminal_outcome="PROFILE_ONLY_OK",
+        )
         print(json.dumps(out_payload, indent=2), flush=True)
         return 0
 
@@ -271,11 +317,13 @@ def main(argv: list[str] | None = None) -> int:
         out_p.parent.mkdir(parents=True, exist_ok=True)
         out_p.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
     exit_code = compute_cli_exit_code(result)
+    term_out = str(result.get("terminal_outcome") or result.get("final_state", "UNKNOWN"))
     _update_detached_pid_file(
         args.detached_pid_file,
-        "DETACHED_COMPLETED",
-        str(result.get("terminal_outcome") or result.get("final_state", "UNKNOWN")),
+        "DETACHED_COMPLETED" if exit_code == 0 else "DETACHED_FAILED",
+        str(result.get("final_state", term_out)),
         exit_code,
+        terminal_outcome=term_out,
     )
     print(json.dumps(result, indent=2, default=str), flush=True)
     return exit_code
