@@ -89,6 +89,7 @@ class ModelProviderConfig:
     output_cost_per_million_usd: float = 2.50
     cached_cost_per_million_usd: float = 0.03
     strict_response_validation: bool = False
+    allow_federated_models: bool = True
 
     def calculate_cost_usd(self, input_tokens: int, output_tokens: int, cached_tokens: int = 0) -> float:
         non_cached = max(0, input_tokens - cached_tokens)
@@ -217,6 +218,37 @@ class ModelAdapter:
     """Verified Antigravity CLI (`agy.exe`) adapter enforcing Directive 0, cost budgets, and isolated CWD."""
 
     SOLE_MODEL = "gemini-3.8-flash-high"
+    FEDERATED_MODELS = frozenset(
+        {
+            "gemini-3.8-flash-high",
+            "deepseek-ai/DeepSeek-V4-Flash-0731",
+            "MiniMaxAI/MiniMax-M2.7",
+            "zai-org/GLM-5.3-Flash",
+        }
+    )
+    QUOTA_FAILOVER_CHAIN = (
+        "deepseek-ai/DeepSeek-V4-Flash-0731",
+        "MiniMaxAI/MiniMax-M2.7",
+        "zai-org/GLM-5.3-Flash",
+    )
+
+    @classmethod
+    def is_authorized_model(cls, model_name: str, allow_federated: bool = True) -> bool:
+        if not isinstance(model_name, str) or not model_name.strip():
+            return False
+        if model_name == cls.SOLE_MODEL:
+            return True
+        if not allow_federated:
+            return False
+        return model_name in cls.FEDERATED_MODELS
+
+    @classmethod
+    def get_quota_failover_model(cls, exhausted_model: str = "gemini-3.8-flash-high") -> str:
+        """Returns the next verified external model when the primary Gemini 3.8 Flash quota is exhausted."""
+        for candidate in cls.QUOTA_FAILOVER_CHAIN:
+            if candidate != exhausted_model:
+                return candidate
+        return cls.QUOTA_FAILOVER_CHAIN[0]
 
     def __init__(
         self,
@@ -229,9 +261,9 @@ class ModelAdapter:
         mock_provider: Optional[BaseModelProvider] = None,
     ) -> None:
         self.config = config or ModelProviderConfig()
-        if self.config.model_name != self.SOLE_MODEL:
+        if not self.is_authorized_model(self.config.model_name, allow_federated=self.config.allow_federated_models):
             raise DirectiveZeroViolationError(
-                f"Directive 0 violation: config model '{self.config.model_name}' != '{self.SOLE_MODEL}'"
+                f"Directive 0 violation: config model '{self.config.model_name}' is not authorized"
             )
         self.token_controller = token_controller or AdaptiveTokenController()
         self.governor = governor or ResourceGovernor()

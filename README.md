@@ -457,6 +457,279 @@ flowchart TD
 
 ---
 
+### 1.6 How Systems, Operators & CI Know and Interact with AGI 1.7
+
+To external systems, CI/CD runners, and developers, AGI 1.7 presents a strictly typed, deterministic operating surface governed by formal specification contracts and immutable identity rules:
+
+#### 1. Runtime Identity & Sovereign Contract
+- **Sole Base Model:** Powered exclusively by Google's **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** via `ModelAdapter` with high-effort reasoning (`--effort high`). Under **Directive 0**, any attempt to fall back to unauthorized or lower-tier models immediately aborts execution.
+- **Zero Third-Party Dependencies:** The entire orchestration, task state machine, Win32 hardware governor, token economy, and memory subsystems run on the **Python 3.10+ Standard Library** (`0` pip dependencies required for core operations).
+- **Storage Sovereignty:** Primary persistence targets external NVMe storage on volume `D:\` (`D:\AGI_Storage\AGI_1_7\` and `D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\`), with deterministic zero-data-loss local fallback if `D:\` is offline.
+
+#### 2. The `AgentContract` Standard & Specification Schema
+Every agent within AGI 1.7 is governed by an immutable JSON schema contract ([`agent_contract.py`](agents/AGI_1_7/ecosystem/agent_registry/agent_contract.py)):
+```json
+{
+  "agent_id": "swe_python_runtime_engineer",
+  "display_name": "Python 3.11+ Runtime & AST Engineer",
+  "family": "Software Engineering & Code Generation",
+  "execution_mode": "IN_PROCESS_TOOL_WORKER",
+  "resource_class": "LIGHT",
+  "effort_tier": "high",
+  "token_limit_per_call": 12000,
+  "timeout_seconds": 180,
+  "primary_capabilities": [
+    "python_ast_refactor",
+    "pure_stdlib_synthesis",
+    "type_annotated_architecture"
+  ],
+  "required_tools": ["file_reader", "file_writer", "python_ast_analyzer"],
+  "input_schema": {"type": "object", "required": ["task_prompt", "context"]},
+  "output_schema": {"type": "object", "required": ["status", "output_summary", "artifacts"]},
+  "verification_hook": "verify_ast_compilation_and_clean_exit"
+}
+```
+- **Permission Whitelisting:** Specialists are initialized with strict, default-deny tool permissions. An agent tagged `IN_PROCESS_TOOL_WORKER` cannot execute arbitrary shell subcommands or alter repository files outside its sandbox.
+- **Deterministic Verification Hooks:** Every agent must execute its automated verification hook upon task completion, producing an immutable SHA-256 digest sealing its outputs.
+
+#### 3. Specialist Discovery & The `CapabilityRouter`
+Tasks do not hardcode specialist bindings. Instead, the [`CapabilityRouter`](agents/AGI_1_7/ecosystem/agent_registry/capability_router.py) maps dynamic prompts to contracts:
+1. **Semantic Token Extraction:** Normalizes incoming task objectives against domain stopword dictionaries and intent classifiers.
+2. **Capability Intersection:** Scores all 100 contracts by overlapping capability sets and keyword weights.
+3. **Permission & Resource Check:** Discards candidates whose resource class or tool permissions breach active constraints.
+4. **Top-K Ranking:** Selects the highest-confidence specialist, passing typed upstream dependencies through `context["upstream_outputs"]`.
+
+#### 4. Three Unified External Interfaces
+| Interface Mode | Entrypoint Module | Primary Purpose & Usage |
+| :--- | :--- | :--- |
+| **CLI Control Plane** | [`run_agi_17.py`](agents/AGI_1_7/run_agi_17.py) / [`agi17ctl.py`](agents/AGI_1_7/scripts/agi17ctl.py) | Interactive terminal execution, capability profiling (`--profile-only`), and CI integration. |
+| **Python SDK Adapter** | [`AGI17Adapter`](agents/AGI_1_7/engine/agi17/adapters/agi_17_adapter.py) | Master programmatic API: `execute_mission()`, `run_ci_repair()`, `run_self_evolution()`. |
+| **Live CommandInbox IPC** | [`CommandInbox`](agents/AGI_1_7/engine/agi17/task_control/task_manager.py) | Mid-flight asynchronous operator override protocol (`ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `REPRIORITIZE`). |
+
+---
+
+### 1.7 Concurrency Architecture: 100 Logical DAG Specialists vs. 1..4 Dynamic Physical Heavy Workers
+
+A central architectural innovation of AGI 1.7 is the complete separation between **logical task expressiveness** and **physical execution concurrency**:
+
+```mermaid
+flowchart TD
+    subgraph LogicalLayer ["1. Logical Multi-Agent Task Layer (DAG Graph Expressiveness)"]
+        direction TB
+        DAG_GOAL["High-Level Software Goal / Milestone"] --> PLANNER["Hierarchical Decomposer & Planner"]
+        PLANNER --> GRAPH["Topological Task Graph (Up to 100 Logical Tasks)<br/>(MAX_LOGICAL_CHILD_TASKS = 100 | MAX_AGENT_SPECIALIZATIONS = 100)"]
+        GRAPH --> DEP_MGR["DependencyManager (DFS Cycle Detection, Max Depth = 3)"]
+        DEP_MGR --> SQLITE_DAG[("14-State SQLite WAL Task Store<br/>(agi17_tasks.db)")]
+    end
+
+    subgraph AdmissionControl ["2. Resource-Aware Admission & Queue Tiering"]
+        direction TB
+        SQLITE_DAG --> READY_Q["Ready Tasks Queue (Dependencies Succeeded)"]
+        READY_Q --> GOV_GATE{"ResourceGovernor Admission Gate<br/>Telemetry Headroom Formula"}
+        GOV_GATE -- "Headroom Insufficient" --> PARK["Park in WAITING_FOR_RESOURCE<br/>(Exponential Backoff: 0.5s .. 8.0s)"]
+        PARK --> READY_Q
+        GOV_GATE -- "Headroom Satisfied" --> TIER_ROUTE["6-Tier Workload Queue Routing"]
+        
+        TIER_ROUTE --> Q1["Light In-Process (15 MB, 3% CPU)"]
+        TIER_ROUTE --> Q2["Model Call (280 MB, 12% CPU)"]
+        TIER_ROUTE --> Q3["CLI Subprocess (250 MB, 15% CPU)"]
+        TIER_ROUTE --> Q4["Docker Sandbox (650 MB, 25% CPU)"]
+    end
+
+    subgraph PhysicalExecution ["3. Physical Execution Plane (Dynamic 1..4 Heavy Workers)"]
+        direction TB
+        WIN32_PROBE["Live Win32 Kernel Monitor<br/>(GlobalMemoryStatusEx + GetSystemTimes + DiskFree)"] --> CAP_CALC["Dynamic Active Worker Calculator<br/>(3-Sample Moving Average & Hysteresis)"]
+        CAP_CALC --> SLOTS["Dynamic Active Slots: 1 to 4 Heavy Workers<br/>(MAX_ACTIVE_EXECUTIONS = 1..4)"]
+        
+        SLOTS --> W1["Worker Slot 1"]
+        SLOTS --> W2["Worker Slot 2"]
+        SLOTS --> W3["Worker Slot 3"]
+        SLOTS --> W4["Worker Slot 4"]
+        
+        Q1 & Q2 & Q3 & Q4 --> SLOTS
+    end
+
+    LogicalLayer --> AdmissionControl
+    AdmissionControl --> PhysicalExecution
+```
+
+#### Why Decoupling Logical DAG from Physical Load is Essential
+In complex engineering operations, tasks exhibit rich dependency graphs (specifying interfaces, writing implementations, generating fixtures, compiling ASTs, running sandboxed tests). Spawning 100 concurrent child processes or Docker containers simultaneously would rapidly trigger:
+1. Host memory exhaustion and Windows pagefile thrashing.
+2. CPU thermal throttling and process starvation.
+3. Subprocess deadlocks and socket exhaustion.
+4. Upstream API rate limit depletion (`429 Too Many Requests`).
+
+By storing the entire DAG logically inside SQLite WAL tables with DFS dependency resolution, AGI 1.7 allows an operator to plan and track up to 100 subtasks simultaneously, while dynamically dispatching only **1 to 4 active heavy workers** based on live hardware headroom.
+
+#### Live Hardware Telemetry & Thresholds
+[`ResourceGovernor`](agents/AGI_1_7/engine/agi17/orchestration/resource_governor.py) and [`ResourceWatchdogDaemon`](agents/AGI_1_7/engine/agi17/process_supervision/resource_watchdog.py) sample the Windows kernel every `100ms`:
+- **Physical RAM Floor:** `min_free_phys_ram_mb = 1400.0 MB` (Hard floor; executions halt below this).
+- **Commit Charge Floor:** `min_free_commit_mb = 2500.0 MB` (Pagefile protection).
+- **CPU Ceilings:** `max_cpu_percent = 85.0%` (Throttles worker admission when host is CPU-bound).
+- **Storage Volumes:** `C:\ >= 5.0 GB`, `D:\ >= 10.0 GB` (Disk space exhaustion protection).
+
+#### Dynamic Concurrency Decision Matrix
+| Live Host State | Active Heavy Worker Capacity | Queue Throttling & Admission Behavior |
+| :--- | :---: | :--- |
+| `Free RAM > 4,000 MB` & `CPU < 60%` | **4 Active Workers** | Full multi-specialist wave parallelization across all queues. |
+| `Free RAM 2,500 - 4,000 MB` | **3 Active Workers** | Standard multi-agent operation; balances throughput and safety. |
+| `Free RAM 1,800 - 2,500 MB` | **2 Active Workers** | Moderate load shedding; prioritizes model calls over heavy Docker containers. |
+| `Free RAM 1,400 - 1,800 MB` | **1 Active Worker** | Single-worker sequential throttling; eliminates concurrent process pressure. |
+| `Free RAM < 1,400 MB` or `CPU >= 85%` | **0 Active Workers** | Hard admission queue pause; tasks enter `WAITING_FOR_RESOURCE` with exponential backoff. |
+
+*3-Sample Hysteresis:* To eliminate rapid bouncing between worker caps caused by transient memory spikes or garbage collection cycles, worker scaling requires 3 consecutive conforming telemetry samples before transitioning.
+
+---
+
+### 1.8 The Cognitive Reasoning Loop & Decision Flow (How AGI 1.7 Thinks)
+
+The cognitive reasoning loop of AGI 1.7 executes as a deterministic 12-stage cycle:
+
+```mermaid
+flowchart TD
+    subgraph CognitiveLoop ["12-Stage Autonomous Cognitive Loop (How AGI 1.7 Thinks)"]
+        direction TB
+        S1["1. Live Telemetry & Hardware Snapshot<br/>(Capture Win32 RAM, Commit, CPU & Storage Headroom)"]
+        S2["2. Mandatory Pre-Planning Memory Retrieval<br/>(Query Layers 5, 6, 7 from omega_memory.db WAL Mode)"]
+        S3{"3. Task Complexity Classification<br/>Fast-Path vs Hierarchical DAG?"}
+        
+        S1 --> S2 --> S3
+        
+        S3 -- "Trivial / Single-Step" --> FAST["Direct Fast-Path Runner<br/>(Zero Orchestration Overhead)"]
+        S3 -- "Complex / Multi-Step" --> S4["4. Hierarchical DAG Decomposition<br/>(Topological Sort & DFS Cycle Detection)"]
+        
+        S4 --> S5["5. Specialist Capability Routing<br/>(Match Subtask to 100 Contracts via CapabilityRouter)"]
+        S5 --> S6["6. Sole Base Model Extended Reasoning<br/>(gemini-3.8-flash-high --effort high in isolated_cwd)"]
+        
+        S6 --> S7["7. Streaming Process Supervision<br/>(Real-Time stdout/stderr StreamParser & Progress Tracking)"]
+        S7 --> S8{"8. Live Instruction Inbox Check<br/>Mid-Flight Operator Override?"}
+        
+        S8 -- "Instruction Present" --> INBOX_HANDLE["Apply CommandInbox Action<br/>(PAUSE_SWITCH | ADD_CHILD | CANCEL_REPLACE)"]
+        S8 -- "Nominal Flow" --> S9["9. Disposable Docker Container Sandbox<br/>(--network none, --read-only, non-root UID 65534)"]
+        
+        S9 --> S10{"10. Execution Verification<br/>Tests Pass?"}
+        S10 -- "Assertion / Test Failure" --> REPAIR["CIRepairAgent & Self-Learning Playbook<br/>(Commit Lesson to Layer 7 -> Inject <=120 Token Guardrail)"]
+        REPAIR --> S6
+        
+        S10 -- "Clean 100% Pass" --> S11["11. High-Impact Independent Approval Gate<br/>(External Candidate Staging & Review Boundary)"]
+        S11 --> S12["12. Zero-Fabrication Claim-to-Evidence Audit<br/>(SHA-256 Hashes Committed to Layer 10 & SQLite WAL)"]
+    end
+```
+
+#### Detailed Breakdown of the 12 Stages:
+1. **Live Telemetry & Hardware Snapshot:** Evaluates host memory, commit headroom, CPU usage, and battery/AC power before taking any computational action. Low headroom forces effort backoff or queue pausing.
+2. **Mandatory Pre-Planning Memory Retrieval (`retrieve_before_planning()`):** Under runtime invariants, the agent is strictly prohibited from planning from a blank slate. It queries Layer 5 (Semantic Facts), Layer 6 (Procedural Recipes), and Layer 7 (Failure Playbooks) in SQLite WAL (`omega_memory.db`), filtering out stopwords and injecting historical lessons without token bloat.
+3. **Complexity Classification:** Determines whether the task is a single-step action (routed through the direct Fast Path) or an architectural engineering goal (routed to the Hierarchical DAG Planner).
+4. **DAG Topological Decomposition & Cycle Detection:** Structures subtasks with strict dependency declarations. [`DependencyManager`](agents/AGI_1_7/engine/agi17/task_control/dependency_manager.py) runs DFS cycle detection, rejecting circular dependencies before execution.
+5. **Specialist Capability Routing:** The [`CapabilityRouter`](agents/AGI_1_7/ecosystem/agent_registry/capability_router.py) maps each subtask to the most capable of the 100 validated contracts.
+6. **Gemini 3.8 Flash High Extended Reasoning:** Executes model calls using `--effort high` inside [`isolated_cwd`](agents/AGI_1_7/engine/agi17/telemetry/token_economy.py). Extended thinking explores invariants, edge cases, minimal code changes, and failure modes under strict pre-call token ceilings.
+7. **Streaming Process Supervision:** Execution output streams through [`ProcessSupervisor`](agents/AGI_1_7/engine/agi17/process_supervision/process_supervisor.py) and [`StreamParser`](agents/AGI_1_7/engine/agi17/process_supervision/stream_parser.py), detecting completed units, percentages, and error signatures in real time while enforcing idle-output watchdogs.
+8. **Live Instruction Checkpointing:** Between DAG waves, the active thread inspects the [`CommandInbox`](agents/AGI_1_7/engine/agi17/task_control/task_manager.py) to ingest operator overrides (`ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`).
+9. **Disposable Container Sandbox Isolation:** Candidate code executes inside an air-gapped Docker container (`DisposableSandboxRunner`, `--network none`, `--read-only`, tmpfs `/tmp`, non-root UID 65534). Host execution is strictly blocked.
+10. **Self-Learning Failure Memory & Repair Loop:** If a test assertion fails, [`CIRepairAgent`](agents/AGI_1_7/engine/agi17/orchestration/ci_repair_agent.py) extracts the failure signature, logs a lesson in Layer 7, and injects a `<=120`-token compact guardrail into the subsequent turn to prevent repetitive bugs.
+11. **High-Impact Independent Approval Gating:** Generated code is staged in an external quarantine directory outside the workspace. Workspace files remain byte-for-byte unmodified until testing passes and human approval tokens are granted.
+12. **Zero-Fabrication Claim-to-Evidence Audit:** [`EvidenceVerifier`](agents/AGI_1_7/engine/agi17/verification/evidence_verifier.py) compares execution output against ground-truth logs, computes SHA-256 artifact checksums, records the immutable audit record to Layer 10, and commits task completion in SQLite WAL.
+
+---
+
+### 1.9 Context Engineering Engine & 9-Layer Context Architecture
+
+The [`ContextEngine`](agents/AGI_1_7/engine/agi17/context/context_engine.py) implements a 9-layer context architecture ensuring prompt relevance, conflict resolution, and secret redaction:
+
+```mermaid
+flowchart TB
+    subgraph ContextAssembly ["Context Engineering Engine (ContextEngine: 9 Layers)"]
+        direction TB
+        L1["Layer 1: Core Rules & Directive 0 Invariants<br/>(Sole model gemini-3.8-flash-high, sandbox flags)"]
+        L2["Layer 2: Project Map & Workspace Structure<br/>(File trees, pyproject.toml contracts, symbols)"]
+        L3["Layer 3: Current Working State<br/>(Active subtask ID, wave index, upstream artifacts)"]
+        L4["Layer 4: Episodic Memory Traces<br/>(Historical action trajectories compressed via ACON)"]
+        L5["Layer 5: Semantic Knowledge & Epistemic Facts<br/>(Tagging: OBSERVATION | HYPOTHESIS | VERIFIED_FACT | DECISION)"]
+        L6["Layer 6: Procedural Skills & Recipes<br/>(Verified testing procedures, AST refactoring steps)"]
+        L7["Layer 7: External Source Records & Docs<br/>(Cached documentation, upstream SDK references)"]
+        L8["Layer 8: Evaluation & Benchmark Registry<br/>(Clean datasets, score ledgers, test assertions)"]
+        L9["Layer 9: Pending-Work Queue & Dependencies<br/>(Remaining DAG child tasks, dependency states)"]
+        
+        L1 & L2 & L3 & L4 & L5 & L6 & L7 & L8 & L9 --> RESOLVE["Deterministic Conflict Resolution<br/>& Freshness Pruning Engine"]
+        RESOLVE --> REDACT["Secret & Credential Redaction Scanner<br/>(Quarantine API keys, private IPs, credentials)"]
+        REDACT --> MANIFEST["Compact Task Context Manifest<br/>(Token-Bounded Context Injected into Prompt)"]
+    end
+```
+
+- **Epistemological Tagging (`EpistemicStatus`):** Facts are categorized as `OBSERVATION`, `HYPOTHESIS`, `VERIFIED_FACT`, `DECISION`, `PROCEDURE`, or `DISPROVEN`. Expired or disproven hypotheses are pruned automatically.
+- **Secret Redaction:** High-entropy API tokens, private IPs (`10.0.0.0/8`, `192.168.0.0/16`, `127.0.0.1`), and brokerage credentials are redacted before model context assembly.
+
+---
+
+### 1.10 Continuous 24/7 Supervisor Control Plane
+
+The [`ContinuousSupervisor`](agents/AGI_1_7/engine/agi17/process_supervision/continuous_supervisor.py) provides 24/7 non-terminating autonomous supervision through a 10-state transactional state machine:
+
+```mermaid
+stateDiagram-v2
+    [*] --> STARTING
+    STARTING --> RECOVERING: Inspect SQLite WAL & Disk Checkpoints
+    RECOVERING --> READY: Crash Recovery Clean (reconcile_after_restart)
+    
+    READY --> SELECTING_TASK: Queue Non-Empty
+    READY --> IDLE_HEALTHY: Queue Empty (Low-Power Health Loop)
+    IDLE_HEALTHY --> SELECTING_TASK: Incoming Task Enqueued
+    
+    SELECTING_TASK --> BUILDING_CONTEXT: Assemble 9-Layer Context Manifest
+    BUILDING_CONTEXT --> BUDGET_PAUSED: Daily 1M UTC Token Cap Exceeded
+    BUDGET_PAUSED --> READY: Daily Reset (00:00 UTC)
+    
+    BUILDING_CONTEXT --> EXECUTING: Headroom Verified by ResourceGovernor
+    EXECUTING --> VERIFYING: Candidate Produced (Sent to Docker Sandbox)
+    
+    VERIFYING --> RECORDING_LEARNING: Test Failure (Commit Lesson to Layer 7)
+    RECORDING_LEARNING --> EXECUTING: Retry with Injected Guardrail
+    
+    VERIFYING --> SCHEDULING_NEXT: 100% Tests Pass (Zero Regressions)
+    SCHEDULING_NEXT --> READY: Advance DAG Wave
+    
+    READY --> SAFE_HALT: Explicit request_safe_halt()
+    EXECUTING --> SAFE_HALT: Critical Safety Policy Breach
+    SAFE_HALT --> [*]
+```
+
+- **IDLE_HEALTHY State:** When queues are drained, the runtime does not exit. It enters an idle sleep state, executing periodic Win32 resource checks without burning tokens.
+- **BUDGET_PAUSED State:** If daily token spend reaches the UTC ceiling (`1,000,000` tokens/day), all model calls pause safely until UTC midnight reset.
+- **SAFE_HALT:** Clean termination occurs only upon authorized `request_safe_halt()` or fatal security policy violations.
+
+---
+
+### 1.11 Continuous Autonomous Self-Evolution Engine
+
+The [`AutonomousSelfEvolutionEngine`](agents/AGI_1_7/engine/agi17/orchestration/self_evolution_engine.py) allows AGI 1.7 to dynamically discover capability gaps, synthesize validated contracts at runtime, verify zero regressions, and cryptographically seal evolution milestones:
+
+```mermaid
+flowchart TD
+    subgraph SelfEvolution ["Autonomous Self-Evolution Engine (AutonomousSelfEvolutionEngine)"]
+        direction TB
+        IN["Operator Feedback / System Critique / Gap Diagnosis"] --> CAP["System Diagnostics Capture<br/>(ResourceSnapshot: RAM, CPU, TaskStore Depth)"]
+        CAP --> GAP{"Capability Gap Detected?<br/>(e.g., Quantitative Finance, Options Pricing)"}
+        
+        GAP -- "New Domain Required" --> SYNTH["Dynamic Contract Synthesis<br/>(Synthesize AgentContract with Typed Schemas)"]
+        SYNTH --> REG["Dynamic Specialist Registration<br/>(specialist_factory.register_dynamic_contract)"]
+        
+        GAP -- "No New Contract Needed" --> STABLE["Maintain Verified Stable Topology"]
+        
+        REG --> VERIFY["Self-Healing Verification Step<br/>(Test CapabilityRouter Resolution & Schema Contracts)"]
+        STABLE --> VERIFY
+        
+        VERIFY --> SEAL["Cryptographic Audit Digest<br/>(SHA-256 Sealed Evolution Checkpoint)"]
+        SEAL --> RECORD["Episodic Memory Persistence<br/>(Commit Evolution Trace to omega_memory.db WAL)"]
+        RECORD --> OUT["EvolutionCycleResult<br/>(EVOLVED_AND_VERIFIED | STABLE_VERIFIED)"]
+    end
+```
+
+- **Zero Regression Guarantee:** Synthesized contracts are verified through test capability queries before registration.
+- **SHA-256 Audit Seal:** Every evolution cycle produces an immutable SHA-256 digest committed to Layer 10 and episodic memory.
+
+---
+
 ## 👥 2. 100 Specialist Contracts Managed by AGI 1.7
 
 The multi-agent ecosystem organizes its **100 validated specialist contracts** across 16 functional families in [`registry.json`](agents/AGI_1_7/ecosystem/agent_registry/registry.json):

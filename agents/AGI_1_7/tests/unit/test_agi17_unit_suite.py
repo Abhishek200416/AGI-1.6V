@@ -406,11 +406,14 @@ class TestAGI17UnitSuite(unittest.TestCase):
 
     # 23. Claim-to-evidence verifier rejecting unsupported score claims
     def test_23_claim_to_evidence_verifier_rejecting_unsupported_claims(self) -> None:
+        gpqa_path = self.tmp_path / "gpqa.jsonl"
+        import json
+        gpqa_path.write_text("\n".join(json.dumps({"gpqa_correct": 174, "id": i}) for i in range(174)) + "\n", encoding="utf-8")
         chk_pass = EvidenceVerifier.verify_claim_against_ledger(
             claim_name="gpqa_correct",
             claimed_value=174,
             observed_value=174,
-            evidence_path="gpqa.jsonl",
+            evidence_path=gpqa_path,
         )
         self.assertTrue(chk_pass.passed)
 
@@ -418,7 +421,7 @@ class TestAGI17UnitSuite(unittest.TestCase):
             claim_name="gpqa_fabricated_score",
             claimed_value=189,
             observed_value=174,
-            evidence_path="gpqa.jsonl",
+            evidence_path=gpqa_path,
         )
         self.assertFalse(chk_fail.passed)
 
