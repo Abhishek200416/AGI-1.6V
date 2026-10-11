@@ -19,15 +19,15 @@
 
 ---
 
-## 🏛️ 1. Deep-Dive Agent Architecture & Orchestration Model
+## 🏛️ 1. Exhaustive Architectural Blueprint of AGI 1.7
 
-AGI 1.7 is architected around deterministic coordination, transactional state guarantees, hardware resource awareness, and defense-in-depth isolation.
+AGI 1.7 is engineered as a defense-in-depth, transactional multi-agent operating runtime. It eliminates unbounded token expansion, non-deterministic execution loops, and insecure host code execution through formal control planes and container sandboxing.
 
-### 1.1 System Topology & Component Hierarchy
+### 1.1 Complete Multi-Tier System Topology
 
 ```mermaid
 flowchart TB
-    subgraph Boundary ["1. Presentation & Safety Boundary"]
+    subgraph Boundary ["1. Presentation & Safety Gatekeeper"]
         CLI["User CLI / CI Trigger / PR Hook"] --> GATE["HighImpactApprovalGate & Untrusted Content Scanner"]
         GATE --> INBOX["Live CommandInbox (Pause / Reprioritize / Add Task)"]
     end
@@ -36,6 +36,7 @@ flowchart TB
         INBOX --> ORCH["HierarchicalOrchestrator (Mission Decomposer & DAG Planner)"]
         ORCH <--> TASKDB[("14-State SQLite WAL Task Store (agi17_tasks.db) & Event Log")]
         ORCH <--> CHECK["CheckpointManager (SHA-256 State Signatures & Crash Recovery)"]
+        ORCH <--> DEP["DependencyManager (DFS Cycle Detection, Max Depth = 3)"]
     end
 
     subgraph Governance ["3. Hardware Governance & Capability Routing"]
@@ -45,7 +46,7 @@ flowchart TB
         ROUTER --> MA
     end
 
-    subgraph Execution ["4. Disposable Sandbox Execution & Supervision"]
+    subgraph Execution ["4. Disposable Sandbox Execution & Process Supervision"]
         ORCH --> SBX["DisposableSandboxRunner (--network none --read-only --user 65534)"]
         SBX <--> SUP["ProcessSupervisor & StreamParser (Live stdout/stderr Inspection)"]
         SBX --> INSP["Docker Engine Inspect API (Container Termination Verification)"]
@@ -53,7 +54,8 @@ flowchart TB
 
     subgraph MemoryPlane ["5. Cross-Session Memory & Self-Learning"]
         ORCH <--> MEM[("10-Layer SQLite Memory (omega_memory.db)")]
-        MEM <--> ACON["ACONCompressor & Layer 7 Failure Playbooks"]
+        MEM <--> ACON["ACONCompressor (Structural Anchor Preservation)"]
+        MEM <--> PLAY["Layer 7 Failure Playbooks (record_failure_lesson)"]
     end
 
     subgraph Verification ["6. Evidence Verification & Output Staging"]
@@ -65,145 +67,186 @@ flowchart TB
 
 ---
 
-### 1.2 The 14-State Transactional Task Lifecycle
+### 1.2 The Enforced 14-State Task State Machine
 
-Every logical task and child subtask is tracked deterministically within an ACID-compliant SQLite WAL store (`agi17_tasks.db`) and validated across a strict 14-state machine:
+Every mission, subtask, and repair loop transitions through an enforced 14-state machine managed by [`TaskStateMachine`](agents/AGI_1_7/engine/agi17/task_control/task_state_machine.py). Invalid transitions are rejected at runtime rather than silently accepted:
 
 ```mermaid
 stateDiagram-v2
     [*] --> CREATED
     CREATED --> QUEUED: Task Enqueued & Validated
-    QUEUED --> PREFLIGHT_PASS: Path Containment & Content Safe
-    PREFLIGHT_PASS --> RUNNING: Dispatched to Active Worker
-    RUNNING --> SUPERVISED: Streaming Process Monitored
-    SUPERVISED --> VERIFYING: Candidate in Disposable Sandbox
+    CREATED --> PLANNED: DAG Subtask Generated
+    PLANNED --> QUEUED: Dependencies Ready
+    QUEUED --> READY: Worker Slot Available
+    READY --> RUNNING: Dispatched to Active Worker
     
-    VERIFYING --> SUCCEEDED_AND_VERIFIED: All Tests Pass (Zero Regressions)
-    VERIFYING --> REPAIRING: Test Failure Detected
-    REPAIRING --> VERIFYING: Patch Synthesized & Staged
-    REPAIRING --> PENDING_APPROVAL: Patch Requires Human Review
-    PENDING_APPROVAL --> SUCCEEDED_AND_VERIFIED: Approval Granted & Atomically Written
+    RUNNING --> WAITING_FOR_RESOURCE: RAM / CPU Throttle Exceeded
+    WAITING_FOR_RESOURCE --> READY: Headroom Restored
+    RUNNING --> WAITING_FOR_INPUT: CommandInbox Pause
+    WAITING_FOR_INPUT --> READY: Operator Resumes
     
-    RUNNING --> BLOCKED_BY_POLICY: Path Traversal / Injection Blocked
-    RUNNING --> TIMED_OUT: Wall-Clock / Output Timeout
-    RUNNING --> BUDGET_EXCEEDED: Token / USD Ceiling Reached
-    RUNNING --> CANCELLED: CommandInbox Override Received
-    VERIFYING --> FAILED: Max Repair Cycles Exceeded
+    RUNNING --> VERIFYING: Candidate Generated, Sent to Sandbox
+    VERIFYING --> SUCCEEDED: 100% Tests Pass (Zero Regressions)
+    VERIFYING --> REPAIRING: Failure Detected
+    REPAIRING --> VERIFYING: Minimal Patch Synthesized
     
-    SUCCEEDED_AND_VERIFIED --> [*]
-    BLOCKED_BY_POLICY --> [*]
+    RUNNING --> BLOCKED: Security Policy Block
+    RUNNING --> INTERRUPTED: Host Crash / Signal
+    INTERRUPTED --> READY: reconcile_after_restart()
+    RUNNING --> TIMED_OUT: Wall-Clock Limit Exceeded
+    RUNNING --> CANCELED: Operator Command Cancellation
+    VERIFYING --> FAILED: Max Repair Attempts Exhausted
+    
+    SUCCEEDED --> [*]
+    BLOCKED --> [*]
     TIMED_OUT --> [*]
-    BUDGET_EXCEEDED --> [*]
-    CANCELLED --> [*]
+    CANCELED --> [*]
     FAILED --> [*]
 ```
 
+#### Transition Invariants Table
+| Initial State | Permitted Next States | Rejection Behavior |
+| :--- | :--- | :--- |
+| `CREATED` | `PLANNED`, `QUEUED`, `READY`, `BLOCKED`, `CANCELED` | Invalid transition raises `InvalidStateTransitionError` |
+| `PLANNED` | `QUEUED`, `READY`, `WAITING_FOR_RESOURCE`, `BLOCKED`, `CANCELED` | Cannot jump directly to `RUNNING` without queueing |
+| `QUEUED` | `READY`, `WAITING_FOR_RESOURCE`, `WAITING_FOR_INPUT`, `BLOCKED`, `CANCELED` | Cannot bypass resource validation |
+| `READY` | `RUNNING`, `WAITING_FOR_RESOURCE`, `WAITING_FOR_INPUT`, `QUEUED`, `BLOCKED`, `CANCELED` | Enforces `ResourceGovernor` worker admission |
+| `RUNNING` | `VERIFYING`, `WAITING_FOR_RESOURCE`, `WAITING_FOR_INPUT`, `FAILED`, `TIMED_OUT`, `CANCELED`, `INTERRUPTED`, `BLOCKED` | Monitored by `ProcessSupervisor` with idle timeout |
+| `VERIFYING` | `SUCCEEDED`, `REPAIRING`, `FAILED`, `TIMED_OUT`, `CANCELED`, `BLOCKED` | Sandboxed test execution inside disposable container |
+| `Terminal` (`SUCCEEDED`, `FAILED`, `TIMED_OUT`, `CANCELED`) | `None` (Final States) | Immutable; state machine locks terminal records |
+
 ---
 
-### 1.3 Multi-Agent Execution & Self-Healing Sequence
+### 1.3 End-to-End Orchestration & Self-Healing Sequence
 
-The interaction below illustrates the end-to-end lifecycle when an engineering task is decomposed, executed in isolation, healed via persistent failure memory, and staged for human review:
+The sequence below traces the execution of a multi-specialist coding and self-healing mission, from CLI ingestion through resource-governed dispatch, sandboxed test execution, and persistent failure memory learning:
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as User / CI Pipeline
-    participant Gate as Approval Gate
-    participant Orch as Hierarchical Orchestrator
-    participant Gov as Resource Governor
-    participant Spec as Specialist Agents (100 Contracts)
+    participant Gate as HighImpactApprovalGate
+    participant Orch as HierarchicalOrchestrator
+    participant Gov as ResourceGovernor (Win32 Telemetry)
+    participant Spec as SpecialistFactory (100 Contracts)
     participant Model as ModelAdapter (Gemini 3.8 Flash High)
-    participant Box as Disposable Docker Sandbox
-    participant Mem as SQLite Memory (Layer 7 Playbooks)
+    participant Box as DisposableSandboxRunner (Docker)
+    participant Mem as OmegaCommandMemory (SQLite WAL)
 
-    User->>Gate: Execute CI-Repair / Coding Mission
-    Gate->>Gate: Validate Path Containment & Content Safety
-    Gate->>Orch: Hand-off Verified Mission
-    Orch->>Gov: Request Execution Slot
-    Gov->>Gov: Poll Win32 RAM (1,400 MB Floor) & CPU Load
-    Gov-->>Orch: Grant Worker Slot (1..4 Concurrent Workers)
+    User->>Gate: Execute Mission Request
+    Gate->>Gate: Check Canonical Paths & Scan Untrusted Content
+    Gate->>Orch: Safe Mission Hand-off
     
-    Note over Orch,Spec: Stage 1 — Architectural Specification
-    Orch->>Spec: Dispatch plan_systems_architect
-    Spec->>Model: Synthesize Module Contract
-    Model-->>Spec: Contract Specification
+    Note over Orch,Gov: Resource Allocation & Hardware Safeguards
+    Orch->>Gov: Request Heavy Worker Slot (model_call / container)
+    Gov->>Gov: Evaluate: RAM Free >= 1,400 MB & CPU < 85%
+    Gov-->>Orch: Grant Worker Slot (1..4 active concurrent)
     
-    Note over Orch,Spec: Stage 2 — Python Implementation
-    Orch->>Spec: Dispatch swe_python_runtime_engineer
-    Spec->>Model: Synthesize Code Implementation
-    Model-->>Spec: Implementation Code
+    Note over Orch,Spec: Stage 1 — Architectural Contract Synthesis
+    Orch->>Spec: Route to plan_systems_architect
+    Spec->>Model: Prompt with Context & Schemas
+    Model-->>Spec: Typed Module Specification
     
-    Note over Orch,Box: Stage 3 — Disposable Sandboxed Testing & Self-Healing
-    Orch->>Box: Run Full Test Suite in Disposable Container
-    Box->>Box: Execute inside --network none --read-only --user 65534
+    Note over Orch,Spec: Stage 2 — Code Implementation
+    Orch->>Spec: Route to swe_python_runtime_engineer
+    Spec->>Model: Synthesize Python Implementation
+    Model-->>Spec: Implementation Source Code
     
-    alt Initial Execution Fails
-        Box-->>Orch: Exit Code 1 (Traceback & Failure Extracted)
-        Orch->>Mem: Record Root Cause in Layer 7 Failure Playbook
-        Mem-->>Orch: Return Compact <=120 Token Guardrail
-        Orch->>Spec: Dispatch swe_patch_minimizer (with Guardrail)
-        Spec->>Model: Synthesize Minimal Diff
-        Model-->>Spec: Minimal Root-Cause Patch
-        Orch->>Box: Re-verify Patch in Fresh Disposable Container
-        Box-->>Orch: Exit Code 0 (Full-Suite Pass & Zero Regressions)
+    Note over Orch,Box: Stage 3 — Disposable Container Verification
+    Orch->>Box: Spin Up Ephemeral Container (--network none --read-only)
+    Box->>Box: Run test suite with non-root UID 65534
+    
+    alt Test Suite Fails (Boundary Failure / Assertion Error)
+        Box-->>Orch: Return Exit Code 1 + Failure Traceback
+        Orch->>Box: Verify Named Container Removal via Docker Inspect
+        
+        Note over Orch,Mem: Layer 7 Persistent Failure-Playbook Learning
+        Orch->>Mem: record_failure_lesson(subject, error, root_cause, fix_rule)
+        Mem-->>Orch: Return Injected <=120 Token Compact Guardrail
+        
+        Note over Orch,Spec: Self-Healing Patch Minimization
+        Orch->>Spec: Route to swe_patch_minimizer (with Guardrail)
+        Spec->>Model: Synthesize Minimal Diff Addressing Traceback
+        Model-->>Spec: Minimal Targeted Patch
+        
+        Orch->>Box: Spin Up Clean Container to Re-verify Patch
+        Box->>Box: Execute Full-Suite Regression Tests
+        Box-->>Orch: Return Exit Code 0 (Full Pass, Zero Regressions)
     else First Pass Succeeds
-        Box-->>Orch: Exit Code 0 (All Tests Passed)
+        Box-->>Orch: Return Exit Code 0 (All Tests Pass)
     end
-
-    Note over Orch,Gate: Stage 4 — Safe Staging & Output Delivery
-    Orch->>Gate: Stage Patch in External Directory (Workspace Untouched)
-    Gate-->>User: Return Reviewable Unified Diff & PR Payload
+    
+    Box->>Orch: Confirm Container Termination & Teardown
+    Orch->>Gate: Stage Candidate Patch in External Staging Dir
+    Gate-->>User: Deliver Reviewable Unified Diff & PR Payload
 ```
 
 ---
 
-### 1.4 Detailed Subsystem Specifications
+### 1.4 Detailed Subsystem Internals
 
-#### 1. Hierarchical DAG Orchestration & Dynamic Concurrency Governance
-- **Logical vs. Physical Separation:** The orchestrator accepts up to **100 logical child tasks** (`MAX_LOGICAL_CHILD_TASKS = 100`) per mission, constructing a typed Directed Acyclic Graph (DAG) with topological sorting and DFS cycle detection. Physical concurrency is strictly governed between **`1` and `4` heavy workers** (`MAX_ACTIVE_EXECUTIONS = 1..4`).
-- **Live Win32 Headroom Throttling:** [`ResourceGovernor`](agents/AGI_1_7/engine/agi17/orchestration/resource_governor.py) queries live Win32 memory status (`GlobalMemoryStatusEx`) and CPU utilization (`GetSystemTimes`). If free physical RAM falls below the **`1,400 MB` safety floor** or CPU load spikes, the governor throttles active child tasks using a 3-sample hysteresis window and exponential backoff.
+#### 1. Hierarchical DAG Orchestrator (`HierarchicalOrchestrator`)
+- **Fast Path vs. Hierarchical DAG:** Trivial, single-file requests bypass multi-agent overhead via the direct *Fast Path*. Complex missions trigger the *Hierarchical DAG Planner*, which decomposes the goal into a topological graph of up to **100 logical subtasks** (`MAX_LOGICAL_CHILD_TASKS = 100`).
+- **Dependency Resolution & Cycle Detection:** [`DependencyManager`](agents/AGI_1_7/engine/agi17/task_control/dependency_manager.py) enforces a maximum delegation depth of `3` (`max_delegation_depth = 3`) and detects circular dependencies via depth-first search (`DependencyCycleError`).
+- **Inter-Specialist Context Pipeline:** Upstream artifacts and verified contracts pass between agents via typed dictionaries (`context["upstream_outputs"]`), preventing lost context across multi-stage lifecycles.
 
-#### 2. 14-State Transactional Task Control Plane & Live CommandInbox
-- **Durable State Storage:** All task transitions are atomically written to SQLite in WAL mode (`agi17_tasks.db`) and appended to an immutable JSONL audit stream (`task_events.jsonl`). Tasks use unique `idempotency_key` hashes to prevent duplicate executions across restarts.
-- **Mid-Flight Instruction Ingestion:** The runtime continuously polls [`CommandInbox`](agents/AGI_1_7/engine/agi17/task_control/task_manager.py), allowing operators to inject live overrides without aborting the mission:
-  - `ADD_CHILD_TASK`: Injects a new subtask into the active DAG on the fly.
-  - `PAUSE_CURRENT_AND_SWITCH`: Pauses the current worker, writes a state checkpoint, and switches focus.
-  - `CANCEL_AND_REPLACE`: Cancels an in-flight branch and substitutes an alternative approach.
-  - `REPRIORITIZE`: Re-orders task priority queues dynamically.
-- **Automatic Crash Reconciliation:** If an unhandled host shutdown occurs, `reconcile_after_restart()` walks the SQLite WAL store and event log, verifies SHA-256 state signatures, and transitions interrupted tasks safely without data corruption.
+#### 2. Dynamic Concurrency & Resource Governor (`ResourceGovernor`)
+- **Decoupling Logical DAG from Physical Load:** While 100 subtasks may exist logically in SQLite, physical concurrency is governed dynamically: **`1` to `4` active heavy executions** (`MAX_ACTIVE_EXECUTIONS = 1..4`).
+- **Telemetry Admission Formula:** Admission is granted only when:
+  $$\text{current\_usage}(r) + \text{estimated\_new\_load}(r) \le \text{safe\_capacity}(r)$$
+  Across Win32 physical RAM (`min_free_phys_ram_mb = 1400.0`), commit charge (`min_free_commit_mb = 2500.0`), and CPU load (`max_cpu_percent = 85.0`).
+- **Workload Footprint Matrix:**
+  | Queue Type | Estimated RAM | Estimated Commit | Estimated CPU | Subprocess | Container |
+  | :--- | :---: | :---: | :---: | :---: | :---: |
+  | `light_in_process` | `15.0 MB` | `20.0 MB` | `3.0%` | No | No |
+  | `model_call` | `280.0 MB` | `350.0 MB` | `12.0%` | Yes | No |
+  | `cli_subprocess` | `250.0 MB` | `320.0 MB` | `15.0%` | Yes | No |
+  | `docker_container` | `650.0 MB` | `800.0 MB` | `25.0%` | Yes | Yes |
+  | `browser` | `450.0 MB` | `550.0 MB` | `20.0%` | Yes | No |
+  | `heavy_download` | `120.0 MB` | `160.0 MB` | `8.0%` | Yes | No |
 
-#### 3. Disposable Container Sandbox & Process Supervision
-- **Container Hardening Parameters:** All untrusted repository and model-generated code runs inside ephemeral Docker containers managed by [`DisposableSandboxRunner`](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py):
-  - Image: Pinned digest `python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1`
-  - Network: Strictly disabled (`--network none`)
-  - Privileges: Dropped all capabilities (`--cap-drop ALL`, `--security-opt no-new-privileges`)
-  - Filesystem: Mounted read-only (`--read-only`), with a temporary in-memory scratch space (`--tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m`)
-  - User: Non-root UID `65534:65534` (`nobody:nogroup`)
-  - Resources: Capped at `1.0` CPU cores, `512m` RAM, and `64` max PIDs
-- **Fail-Closed Policy & Host Isolation:** Subprocess fallback to host Python is strictly disabled in production (`allow_host_subprocess_fallback=False`). Missing Docker or non-compliant configurations fail closed with `SandboxIsolationUnavailableError` or `SandboxPolicyViolationError`.
-- **Verified Teardown:** After execution, container termination and removal are verified via the Docker Engine API (`docker container inspect`). If a container remains orphaned, execution aborts with `SandboxCleanupUnverifiedError`.
+#### 3. 14-State Transactional Control Plane & Live CommandInbox
+- **WAL Durability & Event Auditing:** Every task event is committed to SQLite in WAL mode (`agi17_tasks.db`) and journaled to `task_events.jsonl` with an `idempotency_key` preventing redundant executions upon resume.
+- **Mid-Flight Instruction Ingestion:** Operators can interact with running missions via [`CommandInbox`](agents/AGI_1_7/engine/agi17/task_control/task_manager.py):
+  - `ADD_CHILD_TASK`: Dynamically appends a new node to the active DAG without aborting parent progress.
+  - `PAUSE_CURRENT_AND_SWITCH`: Suspends active execution, captures a SHA-256 checkpoint, and shifts resources.
+  - `CANCEL_AND_REPLACE`: Cancels an executing branch and substitutes an alternative execution strategy.
+  - `REPRIORITIZE`: Re-orders queue priorities dynamically.
+- **Crash Recovery Protocol (`reconcile_after_restart()`):** Scans the SQLite WAL store upon startup, inspects `task_events.jsonl`, validates disk checkpoint hashes via [`CheckpointManager`](agents/AGI_1_7/engine/agi17/task_control/checkpoint_manager.py), and safely moves un-finalized tasks to `READY` or `FAILED`.
 
-#### 4. 10-Layer Cross-Session Memory & Self-Learning Failure Playbooks
-[`OmegaCommandMemory`](agents/AGI_1_7/engine/agi17/memory/omega_command_memory.py) maintains persistent knowledge in an ACID SQLite WAL database across 10 distinct architectural layers:
+#### 4. Disposable Container Sandbox & Process Supervision
+- **Container Hardening Parameters:** All untrusted code executes inside ephemeral containers managed by [`DisposableSandboxRunner`](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py):
+  - **Image:** `python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1`
+  - **Isolation Flags:** `--rm --name agi17-sbx-<uuid> --network none --cap-drop ALL --security-opt no-new-privileges --read-only`
+  - **Scratch Space:** `--tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m`
+  - **Resource Bounds:** `--cpus 1.0 --memory 512m --pids-limit 64 --user 65534:65534`
+- **Fail-Closed Guarantee:** Host subprocess fallback is disabled in production (`allow_host_subprocess_fallback = False`). If Docker Engine is unreachable or image digest validation fails, execution terminates with `SandboxIsolationUnavailableError`.
+- **Teardown Verification:** Container termination is verified directly through the Docker Engine inspect API. Orphaned containers trigger `SandboxCleanupUnverifiedError`.
+- **External Staging Directory:** Generated candidate code is stored and tested in an external staging path outside the repository. Workspace files remain byte-for-byte unmodified until testing succeeds and human approval is received.
 
-```text
-Layer 10: Compressed Episodic Memory (ACON Anchor-Preserving Compression)
-Layer 09: User Preferences & Security Boundary Guardrails
-Layer 08: Self-Correction & Reflection Ledger
-Layer 07: Failure Patterns & Playbooks (Self-Learning Repair Loop)
-Layer 06: Grounded Web & Research Citations
-Layer 05: Cross-Session Fact Base with Deterministic Supersession
-Layer 04: Verified Tool Call & Execution Traces
-Layer 03: Architectural Decision Records (ADRs)
-Layer 02: Entity & Dependency Knowledge Graph
-Layer 01: Ephemeral Context & Active Mission Scratchpad
-```
+#### 5. 10-Layer Cross-Session Memory & Self-Learning Playbooks
+[`OmegaCommandMemory`](agents/AGI_1_7/engine/agi17/memory/omega_command_memory.py) maintains cross-session persistent knowledge across 10 structured layers in SQLite WAL (`omega_memory.db`):
 
-- **Self-Learning Failure Playbook Loop:** When a test or repair fails, `record_failure_lesson()` extracts the error signature, root cause, and minimal fix rule into Layer 7 (`FAILURE_PATTERNS_AND_PLAYBOOKS`). During the next planning pass, `build_compact_memory_prompt_block()` injects a compact `<=120`-token guardrail directly into the coder's prompt, preventing recurring regressions across runs.
+| Layer | Layer Identifier | Retention & Function |
+| :---: | :--- | :--- |
+| **1** | `ACTIVE_TURN_SCRATCHPAD` | In-flight reasoning scratchpad and prompt context |
+| **2** | `TASK_WORKING_MEMORY` | Active task parameters, subtask states, and intermediate outputs |
+| **3** | `SUBAGENT_SHARED_ARTIFACTS` | Shared structured payloads between specialist agents |
+| **4** | `COMPRESSED_EPISODIC_TRACE` | Historical turn trajectories compressed via `ACONCompressor` |
+| **5** | `CROSS_SESSION_SEMANTIC_FACTS` | Persistent domain facts with supersession tracking (`supersedes_id`) |
+| **6** | `PROCEDURAL_WORKFLOW_RECIPES` | Verified engineering recipes and build procedures |
+| **7** | `FAILURE_PATTERNS_AND_PLAYBOOKS` | Self-learning repair memory storing root causes and fix rules |
+| **8** | `RESOURCE_AND_ENV_PROFILES` | Hardware headroom baselines and container performance profiles |
+| **9** | `VERIFIED_RESEARCH_CACHE` | Fact-checked references and verified tool call outputs |
+| **10** | `IMMUTABLE_AUDIT_AND_BENCHMARK_LEDGER` | SHA-256 sealed benchmark evaluation ledgers and test audits |
 
-#### 5. Sole Foundation Model Policy (Directive 0) & Token Economy
-- **Pinned Model:** The sole foundation model is **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** routed via `ModelAdapter` (`agy.exe --model gemini-3.8-flash-high --effort high`). Silent fallbacks to low effort or external models are prohibited.
-- **Budget Governance:** Hard token and USD ceilings are enforced per request and cumulative per mission (`ModelCostBudgetExceededError`).
+- **Structural ACON Compression:** [`ACONCompressor`](agents/AGI_1_7/engine/agi17/memory/omega_command_memory.py) compresses execution observations while preserving critical anchor tokens: SHA-256 hashes (`[a-f0-9]{64}`), exit codes (`exit_code: 0`), file paths, error types (`OutOfMemoryError`), and task IDs (`TASK-xxx`).
+- **Continuous Failure-Playbook Learning:** When a test fails, `record_failure_lesson()` records `(subject_key, error_signature, root_cause, minimal_fix_rule)`. During subsequent planning, `build_compact_memory_prompt_block()` injects a `<=120`-token guardrail directly into the coder's prompt, ensuring self-healing without token bloat.
+
+#### 6. Sole Foundation Model Policy (Directive 0) & Token Economy
+- **Pinned Model:** The sole foundation model is **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** via `ModelAdapter` (`agy.exe --model gemini-3.8-flash-high --effort high`). Silent fallbacks to low effort or external models are blocked.
+- **Budget Governance:** Per-call and cumulative mission cost/token ceilings are enforced (`ModelCostBudgetExceededError`).
+- **Dual-Source Accounting:** Every usage record is tagged as `PROVIDER_REPORTED` (exact tokens from CLI output) or `LOCAL_ESTIMATE` (character-heuristic fallback).
 - **Isolated CWD Prompt Optimization:** Executing model invocations inside an isolated working directory (`isolated_cwd`) prevents directory context injection, reducing input prompt overhead by **`-88.2%`** (`2,683` vs `22,728` input tokens on identical prompts).
 
 ---
@@ -233,25 +276,15 @@ The multi-agent ecosystem organizes its **100 validated specialist contracts** a
 
 ---
 
-## 📊 3. Verified Benchmark & Evaluation Dossier
+## 📊 3. Verified Benchmark & Evaluation Scores
 
-All reported results represent verified executions with reproducible logs, SHA-256 artifact hashes, and network-isolated container enforcement.
+All reported evaluation results represent verified executions with reproducible logs, SHA-256 artifact hashes, and network-isolated container enforcement.
 
-### 3.1 Visual Evaluation Dossier
-
-![Overall Scoreboard](agents/AGI_1_7/benchmarks/graphs_70/00_overall_70_benchmark_scoreboard.png)
-
-![Master 70 Benchmark Comparison](agents/AGI_1_7/benchmarks/graphs_70/01_master_70_benchmarks_comparison.png)
-
-![Architectural Delta Chart](agents/AGI_1_7/benchmarks/graphs_70/09_why_agi_17_is_special_delta_chart.png)
-
----
-
-### 3.2 Performance Scorecard
+### 3.1 Verification Scorecard
 
 | Evaluation Category | Verified Metric | Result | Verification Standard & Sandbox Policy |
 | :--- | :--- | :---: | :--- |
-| **Repository CI & Hardening Suite** | Full Test Coverage | **`88 / 88` (`100%`)** | Passing across Ubuntu and Windows runners ([Run #38163065437](https://github.com/Abhishek200416/AGI-1.7V/actions/runs/38163065437)) |
+| **Repository CI & Hardening Suite** | Full Test Coverage | **`88 / 88` (`100%`)** | Passing across Ubuntu and Windows runners ([Run #38163862109](https://github.com/Abhishek200416/AGI-1.7V/actions/runs/38163862109)) |
 | **Real Docker Container Isolation** | Security Integration | **`5 / 5` (`100%`)** | Verified `--network none`, `--read-only`, non-root user, container teardown |
 | **Python Coding & Repair Suite** | Verified Task Completion | **`3 / 3` (`100.0%`)** | 100% of unseen held-out tests pass inside network-isolated container |
 | | Unseen Unit Tests Passed | **`9 / 9` (`100.0%`)** | Evaluated across token-bucket, interval-merger, and AST tasks |
