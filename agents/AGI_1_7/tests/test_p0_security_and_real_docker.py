@@ -645,6 +645,33 @@ class TestP0SecurityHardeningOffline(unittest.TestCase):
         self.assertEqual(det_data["terminal_outcome"], "DETACHED_LAUNCHED_UNVERIFIED")
         self.assertFalse(det_data["mission_verified"])
 
+    # ------------------------------------------------------------------
+    # M. POSIX / Android Termux binary resolution & graceful missing-CLI handling
+    # ------------------------------------------------------------------
+    def test_9M_posix_termux_agy_resolution_and_missing_binary_fallback(self) -> None:
+        import os as _os
+        from agents.AGI_1_7.engine.agi17.process_supervision.process_supervisor import ProcessSupervisor
+
+        # 1. On POSIX/Termux without AGY_PATH or PATH binary, ModelAdapter must never construct a Windows AppData path
+        with mock.patch("shutil.which", return_value=None), mock.patch.dict(_os.environ, {}, clear=False):
+            _os.environ.pop("AGY_PATH", None)
+            resolved_posix = ModelAdapter.resolve_agy_path(platform_os_name="posix")
+            self.assertNotIn("AppData", str(resolved_posix))
+            self.assertEqual(resolved_posix.name, "agy")
+
+        # 2. ProcessSupervisor must return exit_code=127 (FAILED) instead of raising FileNotFoundError on missing binary
+        sup = ProcessSupervisor(logs_dir=self.temp_dir / "sup_logs_m")
+        notif = sup.run_supervised(
+            task_id="MISSING-BIN-01",
+            command=["/data/data/com.termux/files/usr/bin/nonexistent_agy_binary", "--version"],
+            wall_timeout_sec=5.0,
+            idle_timeout_sec=5.0,
+        )
+        self.assertEqual(notif.final_status, "FAILED")
+        self.assertEqual(notif.exit_code, 127)
+        self.assertTrue(any("Command launch failed" in line for line in notif.stderr_tail))
+
+
 
 class TestP0RealDockerEngineIntegration(unittest.TestCase):
     """Phase 10 (1–5): Mandatory Real Docker Engine Integration Tests."""

@@ -29,6 +29,11 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from agents.AGI_1_7.engine.agi17.adapters.agi_17_adapter import AGI17Adapter
+from agents.AGI_1_7.engine.agi17.process_supervision.sandbox_runner import (
+    DisposableSandboxRunner,
+    HighImpactApprovalGate,
+    SandboxPolicy,
+)
 
 
 FALLBACK_MODULE_CODE = '''"""Deterministic fallback implementation for interval_merger.py (used ONLY if CLI fails)."""
@@ -104,7 +109,17 @@ def main() -> int:
         shutil.rmtree(demo_root, ignore_errors=True)
     demo_code_dir.mkdir(parents=True, exist_ok=True)
 
-    adapter = AGI17Adapter(storage_root=demo_storage, eval_root=demo_eval)
+    prod_policy = SandboxPolicy.production()
+    docker_ready = bool(DisposableSandboxRunner(policy=prod_policy).detect_docker_python_image())
+    demo_policy = prod_policy if docker_ready else SandboxPolicy.dev_tempdir()
+    demo_gate = HighImpactApprovalGate(approval_callback=lambda _desc, _cat: True, block_workspace_mutations=False)
+
+    adapter = AGI17Adapter(
+        storage_root=demo_storage,
+        eval_root=demo_eval,
+        sandbox_policy=demo_policy,
+        approval_gate=demo_gate,
+    )
     mission_id = "MISSION-LIVE-CODE-FIX-001"
     prompt = (
         "Implement `merge_overlapping_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]` "
@@ -124,7 +139,7 @@ def main() -> int:
         fallback_test_code=FALLBACK_TEST_CODE,
     )
 
-    print(f"[DEMO] Launching 4-Call Live Model Multi-Agent Mission: {mission_id}")
+    print(f"[DEMO] Launching 4-Call Live Model Multi-Agent Mission: {mission_id} (sandbox_mode={demo_policy.isolation_mode})")
     result = adapter.execute_mission(
         title="Multi-Agent Interval Merger Specification, Implementation, Test Failure Detection & Self-Healing Patch",
         prompt=prompt,
@@ -153,10 +168,13 @@ def main() -> int:
     total_think = sum(int(r.get("thinking_tokens", 0)) for r in token_records)
     total_tok = sum(int(r.get("total_tokens", 0)) for r in token_records)
 
+    any_fallback = bool(result.get("fallback_summary", {}).get("any_fallback_used"))
     report_payload: Dict[str, Any] = {
         "mission_id": mission_id,
         "final_state": result["final_state"],
+        "terminal_outcome": result.get("terminal_outcome"),
         "duration_sec": result["duration_sec"],
+        "sandbox_isolation_mode": demo_policy.isolation_mode,
         "cli_and_model_metadata": {
             "cli_binary": str(adapter.model_adapter.agy_path),
             "cli_version": _get_agy_cli_version(adapter.model_adapter.agy_path),
@@ -166,7 +184,7 @@ def main() -> int:
         "fallback_summary": result.get("fallback_summary", {}),
         "ecosystem_coordination_summary": result.get("ecosystem_coordination_summary", {}),
         "token_and_cost_summary": {
-            "live_model_calls_count": len(token_records),
+            "live_model_calls_count": 0 if any_fallback else len(token_records),
             "total_input_tokens": total_in,
             "total_output_tokens": total_out,
             "total_thinking_tokens": total_think,
@@ -178,7 +196,10 @@ def main() -> int:
         "sqlite_event_journal": events,
     }
 
-    report_path = REPO_ROOT / "agents" / "AGI_1_7" / "reports" / "LIVE_MULTI_AGENT_EXECUTION_LOG.json"
+    if any_fallback or result.get("final_state") != "SUCCEEDED":
+        report_path = demo_root / "DEMO_FALLBACK_EXECUTION_LOG.json"
+    else:
+        report_path = REPO_ROOT / "agents" / "AGI_1_7" / "reports" / "LIVE_MULTI_AGENT_EXECUTION_LOG.json"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report_payload, indent=2, default=str), encoding="utf-8")
 
@@ -187,10 +208,12 @@ def main() -> int:
             {
                 "mission_id": mission_id,
                 "final_state": result["final_state"],
+                "terminal_outcome": result.get("terminal_outcome"),
+                "sandbox_isolation_mode": demo_policy.isolation_mode,
                 "duration_sec": result["duration_sec"],
-                "live_model_calls_count": len(token_records),
+                "live_model_calls_count": 0 if any_fallback else len(token_records),
                 "total_tokens": total_tok,
-                "any_fallback_used": result.get("fallback_summary", {}).get("any_fallback_used"),
+                "any_fallback_used": any_fallback,
                 "fallback_count": result.get("fallback_summary", {}).get("fallback_count"),
                 "report_saved": str(report_path),
             },

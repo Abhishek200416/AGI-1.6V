@@ -95,6 +95,7 @@ class SubtaskSpec:
     target_file_path: Optional[str] = None
     repair_target_file: Optional[str] = None
     fallback_code: Optional[str] = None
+    repair_fallback_code: Optional[str] = None
     post_write_fault_injector: Optional[Callable[[Path], Dict[str, Any]]] = None
     executor_fn: Optional[Callable[[AgentContract, Dict[str, Any]], Dict[str, Any]]] = None
     verification_command: Optional[List[str]] = None
@@ -312,6 +313,7 @@ class HierarchicalOrchestrator:
                 target_file_path=None if reuse_existing_tests_in_stage3 else str(test_path),
                 repair_target_file=str(module_path),
                 fallback_code=fallback_test_code,
+                repair_fallback_code=fallback_module_code,
                 post_write_fault_injector=_inject_deliberate_fault if inject_deliberate_test_failure else None,
                 verification_command=None,
                 verification_cwd=str(ws),
@@ -860,8 +862,9 @@ class HierarchicalOrchestrator:
         patched_code = _extract_python_code(model_res["response_text"])
         fallback_used = False
         fallback_reason = None
-        if not _is_valid_python_syntax(patched_code) and sp_spec.fallback_code:
-            patched_code = sp_spec.fallback_code
+        repair_fallback = getattr(sp_spec, "repair_fallback_code", None) or sp_spec.fallback_code
+        if not _is_valid_python_syntax(patched_code) and repair_fallback:
+            patched_code = repair_fallback
             fallback_used = True
             fallback_reason = (
                 f"Repair model response had invalid/empty Python syntax (status={model_res['status']}, "

@@ -238,15 +238,35 @@ class ModelAdapter:
         self.supervisor = supervisor or ProcessSupervisor()
         self.mock_provider = mock_provider
 
-        local_app_data = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local"))
-        default_agy = local_app_data / "agy" / "bin" / "agy.exe"
-        if not default_agy.exists():
-            default_agy = default_agy.with_suffix(".cmd")
-        self.agy_path = Path(agy_path) if agy_path else default_agy
+        self.agy_path = self.resolve_agy_path(agy_path)
 
         self._lock = threading.Lock()
         self._last_request_ts: float = 0.0
         self._cumulative_mission_cost_usd: float = 0.0
+
+    @classmethod
+    def resolve_agy_path(
+        cls,
+        agy_path: Optional[str | Path] = None,
+        *,
+        platform_os_name: Optional[str] = None,
+    ) -> Path:
+        eff_os = platform_os_name or os.name
+        env_agy = os.environ.get("AGY_PATH")
+        which_agy = shutil.which("agy") or (shutil.which("agy.exe") if eff_os == "nt" else None)
+        if agy_path:
+            return Path(agy_path)
+        if env_agy:
+            return Path(env_agy)
+        if which_agy:
+            return Path(which_agy)
+        if eff_os == "nt":
+            local_app_data = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local"))
+            default_agy = local_app_data / "agy" / "bin" / "agy.exe"
+            if not default_agy.exists():
+                default_agy = default_agy.with_suffix(".cmd")
+            return default_agy
+        return Path("agy")
 
     @property
     def cumulative_mission_cost_usd(self) -> float:
