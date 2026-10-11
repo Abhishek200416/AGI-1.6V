@@ -185,6 +185,7 @@ class AGI17Adapter:
         inject_deliberate_test_failure: bool = False,
         fallback_module_code: Optional[str] = None,
         fallback_test_code: Optional[str] = None,
+        apply_approved_patch: bool = False,
     ) -> list[SubtaskSpec]:
         """Delegates to `HierarchicalOrchestrator.build_code_and_test_subtasks`."""
         return self.orchestrator.build_code_and_test_subtasks(
@@ -196,6 +197,7 @@ class AGI17Adapter:
             inject_deliberate_test_failure=inject_deliberate_test_failure,
             fallback_module_code=fallback_module_code,
             fallback_test_code=fallback_test_code,
+            apply_approved_patch=apply_approved_patch,
         )
 
     def run_ci_repair(
@@ -206,7 +208,7 @@ class AGI17Adapter:
         test_pattern: str = "test_*.py",
         issue_description: str = "Fix failing Python unit tests with minimal diff.",
         write_patch_to_workspace: bool = False,
-        apply_approved_patch: bool = False,
+        apply_approved_patch: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """Executes the focused Python CI-Repair product workflow inside a disposable sandbox."""
         res = self.ci_repair_agent.repair_workspace(
@@ -234,6 +236,7 @@ class AGI17Adapter:
         module_filename: str = "token_bucket.py",
         test_filename: str = "test_token_bucket.py",
         inject_deliberate_test_failure: bool = False,
+        apply_approved_patch: bool = False,
         max_wall_clock_sec: Optional[float] = None,
         max_mission_tokens: Optional[int] = None,
     ) -> Dict[str, Any]:
@@ -249,6 +252,7 @@ class AGI17Adapter:
             module_filename=module_filename,
             test_filename=test_filename,
             inject_deliberate_test_failure=inject_deliberate_test_failure,
+            apply_approved_patch=apply_approved_patch,
             max_wall_clock_sec=max_wall_clock_sec,
             max_mission_tokens=max_mission_tokens,
         )
