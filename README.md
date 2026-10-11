@@ -490,9 +490,9 @@ All reported evaluation results represent verified executions with reproducible 
 
 The visual charts below provide a direct, standalone head-to-head evaluation strictly comparing the **Antigravity Basic Agent (Baseline)** against **AGI 1.7 — OMEGA COMMAND** across verified operational capabilities and 70 benchmark categories in 7 domains:
 
-![AGI 1.7 vs Antigravity Basic Overall Comparison](assets/graphs/antigravity_vs_agi17_overall_comparison.svg)
+![AGI 1.7 vs Antigravity Basic Overall Comparison](assets/graphs/antigravity_vs_agi17_overall_comparison.png)
 
-![AGI 1.7 vs Antigravity Basic 7-Domain Breakdown](assets/graphs/antigravity_vs_agi17_domain_comparison.svg)
+![AGI 1.7 vs Antigravity Basic 7-Domain Breakdown](assets/graphs/antigravity_vs_agi17_domain_comparison.png)
 
 ### 3.2 Standalone Verification Scorecard
 
