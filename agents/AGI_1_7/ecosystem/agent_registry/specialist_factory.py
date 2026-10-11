@@ -255,6 +255,12 @@ class SpecialistFactory:
             raise KeyError(f"Specialist '{agent_id}' not found in 100-agent registry")
         return self._by_id[agent_id]
 
+    def register_dynamic_contract(self, contract: AgentContract) -> None:
+        """Dynamically registers a newly synthesized specialist contract into the active registry."""
+        self.contracts.append(contract)
+        self._by_id[contract.agent_id] = contract
+        self.router = CapabilityRouter(self.contracts)
+
     @staticmethod
     def write_registry_file(target_path: str | Path) -> Path:
         contracts = build_default_contracts()
@@ -322,6 +328,11 @@ class SpecialistFactory:
             ).encode("utf-8")
             digest = hashlib.sha256(digest_input).hexdigest()
 
+            exec_status = "FAILED" if (
+                custom_out.get("status") == "FAILED"
+                or custom_out.get("model_status") == "FAILED"
+            ) else "SUCCEEDED"
+
             return {
                 "agent_id": contract.agent_id,
                 "display_name": contract.display_name,
@@ -329,7 +340,7 @@ class SpecialistFactory:
                 "execution_mode": contract.execution_mode,
                 "resource_class": contract.resource_class,
                 "task_id": task_id,
-                "status": "SUCCEEDED",
+                "status": exec_status,
                 "execution_origin": exec_origin,
                 "schema_validation_passed": True,
                 "artifact_verification_passed": art_verified,

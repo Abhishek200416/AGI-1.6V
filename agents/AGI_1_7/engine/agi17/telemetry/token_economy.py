@@ -15,6 +15,7 @@ import threading
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -83,6 +84,9 @@ class AdaptiveTokenController:
             "max_turns": 250,
         },
     }
+
+    MAX_DAILY_UTC_TOKENS: int = 1_000_000
+    SOFT_BUDGET_THRESHOLD: int = 800_000
 
     def __init__(
         self,
@@ -170,6 +174,33 @@ class AdaptiveTokenController:
                 },
             }
 
+    def get_daily_utc_usage(self, utc_date_str: Optional[str] = None) -> int:
+        """Calculates total tokens consumed on the given UTC date across all providers."""
+        target_date = utc_date_str or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        total = 0
+        with self._lock:
+            # Check persisted ledger
+            if self.ledger_file.exists():
+                try:
+                    with open(self.ledger_file, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line:
+                                continue
+                            rec = json.loads(line)
+                            ts = rec.get("timestamp")
+                            if ts:
+                                dt = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
+                                if dt == target_date:
+                                    total += int(rec.get("total_tokens", 0))
+                except Exception:
+                    pass
+        return total
+
+    def is_daily_budget_exhausted(self) -> bool:
+        """Returns True if the global 1,000,000 UTC token budget has been exhausted."""
+        return self.get_daily_utc_usage() >= self.MAX_DAILY_UTC_TOKENS
+
     def check_pre_call_admission(
         self,
         *,
@@ -179,8 +210,17 @@ class AdaptiveTokenController:
         campaign_id: Optional[str] = None,
         tier: str = "STANDARD",
     ) -> Dict[str, Any]:
-        """Verifies that a model call will not breach call, child, task, or campaign budgets."""
+        """Verifies that a model call will not breach daily, call, child, task, or campaign budgets."""
         with self._lock:
+            now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            daily_used = self.get_daily_utc_usage(now_utc)
+            if daily_used + estimated_tokens > self.MAX_DAILY_UTC_TOKENS:
+                raise TokenBudgetExceededError(
+                    f"Global daily UTC token budget cap ({self.MAX_DAILY_UTC_TOKENS}) exceeded: "
+                    f"used={daily_used} + est={estimated_tokens} > limit={self.MAX_DAILY_UTC_TOKENS} "
+                    f"(UTC date: {now_utc}). Transition to BUDGET_PAUSED."
+                )
+
             spec = self.TIER_LIMITS.get(tier, self.TIER_LIMITS["STANDARD"])
             call_limit = spec["max_call_tokens"]
             if estimated_tokens > call_limit:
@@ -217,6 +257,10 @@ class AdaptiveTokenController:
                 "task_used": task_used,
                 "task_limit": task_limit,
                 "remaining_task_tokens": task_limit - task_used,
+                "daily_utc_tokens_used": daily_used,
+                "daily_utc_cap": self.MAX_DAILY_UTC_TOKENS,
+                "daily_budget_remaining": max(0, self.MAX_DAILY_UTC_TOKENS - daily_used),
+                "soft_budget_alert": daily_used >= self.SOFT_BUDGET_THRESHOLD,
                 "compress_context_recommended": remaining_task_ratio < 0.35,
                 "downgrade_effort_recommended": remaining_task_ratio < 0.20,
             }

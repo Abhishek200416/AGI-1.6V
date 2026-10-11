@@ -24,6 +24,7 @@ from ..memory.omega_command_memory import OmegaCommandMemory
 from ..orchestration.ci_repair_agent import CIRepairAgent
 from ..orchestration.hierarchical_orchestrator import HierarchicalOrchestrator, SubtaskSpec
 from ..orchestration.resource_governor import ResourceGovernor
+from ..orchestration.self_evolution_engine import AutonomousSelfEvolutionEngine
 from ..process_supervision.process_supervisor import ProcessSupervisor
 from ..process_supervision.sandbox_runner import (
     DisposableSandboxRunner,
@@ -130,6 +131,11 @@ class AGI17Adapter:
         )
         self.research_engine = GroundedResearchEngine(memory=self.memory)
         self.verifier = EvidenceVerifier()
+        self.evolution_engine = AutonomousSelfEvolutionEngine(
+            specialist_factory=self.specialist_factory,
+            memory=self.memory,
+            task_store=self.task_manager.store,
+        )
 
     def get_security_diagnostics(self) -> Dict[str, Any]:
         """Returns a safe, credential-free diagnostic representation of the effective sandbox policy and runner identity across all subsystems."""
