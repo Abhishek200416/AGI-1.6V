@@ -49,12 +49,20 @@ class UntrustedContentSecurityError(SandboxSecurityError):
     """Raised when malicious code or prompt-injection attempts to exfiltrate secrets or attack the host."""
 
 
+import stat
+
+APPROVED_PINNED_PYTHON_IMAGE = (
+    "python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1"
+)
+
+
 @dataclass
 class SandboxPolicy:
     """Resource, network, filesystem, and container isolation policy for untrusted execution."""
 
     isolation_mode: str = "auto"  # "docker" | "auto" | "restricted_tempdir"
     require_container_isolation: bool = False
+    require_pinned_image_digest: bool = False
     network_enabled: bool = False
     cpu_limit: float = 1.0
     memory_limit_mb: int = 256
@@ -66,16 +74,17 @@ class SandboxPolicy:
 
     @classmethod
     def production(cls, docker_image: Optional[str] = None) -> "SandboxPolicy":
-        """Fail-closed production policy: requires disposable Docker container isolation and never silently downgrades to host."""
+        """Fail-closed production policy: requires disposable Docker container isolation pinned by SHA-256 digest and never silently downgrades to host."""
         return cls(
             isolation_mode="docker",
             require_container_isolation=True,
+            require_pinned_image_digest=True,
             network_enabled=False,
             cpu_limit=1.0,
             memory_limit_mb=256,
             pids_limit=64,
             wall_timeout_sec=30.0,
-            docker_image=docker_image,
+            docker_image=docker_image or APPROVED_PINNED_PYTHON_IMAGE,
             block_dangerous_code_patterns=True,
         )
 
@@ -85,6 +94,7 @@ class SandboxPolicy:
         return cls(
             isolation_mode="auto",
             require_container_isolation=False,
+            require_pinned_image_digest=False,
             network_enabled=False,
             block_dangerous_code_patterns=True,
         )
@@ -128,7 +138,7 @@ _DANGEROUS_CODE_PATTERNS = [
 ]
 
 _HIGH_IMPACT_ACTION_PATTERNS = [
-    (re.compile(r"(?i)\bgit\s+push\b"), "git_push"),
+    (re.compile(r"(?i)\bgit\s+(push|merge)\b"), "git_push_or_merge"),
     (re.compile(r"(?i)\b(pip|pip3)\s+install\b"), "package_install"),
     (re.compile(r"(?i)\b(rm\s+-rf|Remove-Item\s+.*-Recurse)\b"), "destructive_delete"),
     (re.compile(r"(?i)\b(curl|wget|Invoke-WebRequest)\b"), "external_network_fetch"),
@@ -136,11 +146,66 @@ _HIGH_IMPACT_ACTION_PATTERNS = [
 
 
 class HighImpactApprovalGate:
-    """Requires explicit human approval before executing high-impact actions."""
+    """Centralized policy gate requiring explicit human approval before executing high-impact actions."""
+
+    ALLOWLISTED_SAFE_ACTIONS = frozenset({"run_unittest", "read_workspace", "syntax_check", "stage_diff"})
+    HIGH_IMPACT_ACTION_TYPES = frozenset(
+        {
+            "git_push",
+            "git_merge",
+            "deploy",
+            "file_delete",
+            "package_install",
+            "external_network_call",
+            "credential_access",
+            "auth_policy_change",
+            "db_migration",
+            "destructive_command",
+            "apply_workspace_patch",
+        }
+    )
 
     def __init__(self, approval_callback: Optional[Callable[[str, str], bool]] = None) -> None:
         self.approval_callback = approval_callback
         self.audit_log: List[Dict[str, Any]] = []
+
+    def check_structured_action(
+        self,
+        *,
+        action_type: str,
+        argv: Sequence[str],
+        action_description: str = "",
+        approved: bool = False,
+    ) -> None:
+        """Validates structured action type and argv before any side effect is performed."""
+        desc = action_description or f"{action_type}: {' '.join(str(a) for a in argv)}"
+        joined_argv = " ".join(str(a) for a in argv)
+        requires_approval = action_type in self.HIGH_IMPACT_ACTION_TYPES or action_type not in self.ALLOWLISTED_SAFE_ACTIONS
+        matched_categories: List[str] = [action_type] if requires_approval else []
+        for pattern, category in _HIGH_IMPACT_ACTION_PATTERNS:
+            if pattern.search(joined_argv) and category not in matched_categories:
+                matched_categories.append(category)
+
+        if not matched_categories:
+            return
+
+        is_approved = approved
+        if not is_approved and self.approval_callback is not None:
+            is_approved = bool(self.approval_callback(desc, ",".join(matched_categories)))
+
+        self.audit_log.append(
+            {
+                "timestamp": time.time(),
+                "action": desc,
+                "argv": list(argv),
+                "categories": matched_categories,
+                "approved": is_approved,
+            }
+        )
+        if not is_approved:
+            raise HighImpactActionBlockedError(
+                f"High-impact action blocked ({', '.join(matched_categories)}): '{desc}' requires explicit human approval."
+            )
 
     def check_command(self, action_description: str, command_or_code: str, approved: bool = False) -> None:
         matched_categories: List[str] = []
@@ -169,8 +234,21 @@ class HighImpactApprovalGate:
             )
 
 
+def _reject_special_filesystem_objects(path_obj: Path, label: str) -> None:
+    """Rejects FIFOs, character/block devices, and sockets."""
+    try:
+        st = os.lstat(path_obj)
+    except FileNotFoundError:
+        return
+    mode = st.st_mode
+    if stat.S_ISLNK(mode):
+        raise PathTraversalViolationError(f"Symlink escape rejected in sandbox path: '{label}'")
+    if stat.S_ISFIFO(mode) or stat.S_ISCHR(mode) or stat.S_ISBLK(mode) or stat.S_ISSOCK(mode):
+        raise PathTraversalViolationError(f"Special/device filesystem object rejected in sandbox path: '{label}'")
+
+
 def validate_relative_sandbox_path(sandbox_root: Path, candidate_path: str | Path) -> Path:
-    """Ensures `candidate_path` resolves strictly inside `sandbox_root` with zero traversal or symlink escape."""
+    """Ensures `candidate_path` resolves strictly inside `sandbox_root` with zero traversal, symlink, or device-file escape."""
     root_resolved = sandbox_root.resolve()
     cand_str = str(candidate_path)
     if os.path.isabs(cand_str) or cand_str.startswith(("/", "\\")) or ":" in cand_str:
@@ -179,14 +257,15 @@ def validate_relative_sandbox_path(sandbox_root: Path, candidate_path: str | Pat
     if ".." in norm_parts:
         raise PathTraversalViolationError(f"Parent directory traversal ('..') rejected in sandbox path: '{cand_str}'")
     raw_target = root_resolved / cand_str
-    # Check intermediate and final path components for symlinks before resolving
     cur_check = root_resolved
     for part in norm_parts:
         cur_check = cur_check / part
         if cur_check.is_symlink():
             raise PathTraversalViolationError(f"Symlink escape rejected in sandbox path: '{cand_str}'")
+        _reject_special_filesystem_objects(cur_check, cand_str)
     if raw_target.is_symlink():
         raise PathTraversalViolationError(f"Symlink escape rejected in sandbox path: '{cand_str}'")
+    _reject_special_filesystem_objects(raw_target, cand_str)
     target = raw_target.resolve()
     try:
         target.relative_to(root_resolved)
@@ -194,6 +273,26 @@ def validate_relative_sandbox_path(sandbox_root: Path, candidate_path: str | Pat
         raise PathTraversalViolationError(
             f"Sandbox path '{cand_str}' resolved outside sandbox root '{root_resolved}'"
         ) from exc
+    return target
+
+
+def atomic_write_workspace_file(workspace_root: Path, relative_path: str | Path, content: str) -> Path:
+    """Safely stages content to a temp file in the target directory and atomically replaces the target file."""
+    target = validate_relative_sandbox_path(workspace_root, relative_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f".stage_{target.name}_", dir=str(target.parent))
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(content)
+            fh.flush()
+            os.fsync(fh.fileno())
+        if target.is_symlink():
+            raise PathTraversalViolationError(f"TOCTOU symlink swap detected before atomic replace: '{relative_path}'")
+        os.replace(str(tmp_path), str(target))
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
     return target
 
 
@@ -222,9 +321,9 @@ class DisposableSandboxRunner:
     """Executes untrusted Python code and unit tests inside a disposable container or isolated ephemeral workspace."""
 
     CANDIDATE_PYTHON_IMAGES = (
+        APPROVED_PINNED_PYTHON_IMAGE,
         "python:3.12-slim",
         "python:3.11-slim",
-        "alexgshaw/db-wal-recovery:20251031",
     )
 
     def __init__(
@@ -238,18 +337,36 @@ class DisposableSandboxRunner:
         self._docker_checked: bool = False
 
     def detect_docker_python_image(self) -> Optional[str]:
-        """Checks if Docker daemon is reachable and a local Python 3 image is available."""
+        """Checks if Docker daemon is reachable and an approved Python 3 image is available locally."""
         if self._docker_checked:
             return self._cached_docker_image
         self._docker_checked = True
         if self.policy.docker_image:
-            self._cached_docker_image = self.policy.docker_image
-            return self._cached_docker_image
+            if self.policy.require_pinned_image_digest and "@sha256:" not in self.policy.docker_image:
+                raise SandboxIsolationUnavailableError(
+                    f"SandboxPolicy requires an immutable @sha256 digest, but got unpinned image: '{self.policy.docker_image}'"
+                )
+            if not shutil.which("docker"):
+                return None
+            try:
+                proc = subprocess.run(
+                    ["docker", "image", "inspect", self.policy.docker_image],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                    check=False,
+                )
+                if proc.returncode == 0:
+                    self._cached_docker_image = self.policy.docker_image
+                    return self._cached_docker_image
+            except Exception:
+                return None
+            return None
         if not shutil.which("docker"):
             return None
         try:
             proc = subprocess.run(
-                ["docker", "images", "--format", "{{.Repository}}:{{.Tag}}"],
+                ["docker", "images", "--digests", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}} {{.Repository}}:{{.Tag}}"],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -257,8 +374,14 @@ class DisposableSandboxRunner:
             )
             if proc.returncode != 0:
                 return None
-            available = {ln.strip() for ln in proc.stdout.splitlines() if ln.strip()}
+            available: set[str] = set()
+            for ln in proc.stdout.splitlines():
+                for tok in ln.strip().split():
+                    if tok:
+                        available.add(tok)
             for candidate in self.CANDIDATE_PYTHON_IMAGES:
+                if self.policy.require_pinned_image_digest and "@sha256:" not in candidate:
+                    continue
                 if candidate in available:
                     self._cached_docker_image = candidate
                     return candidate
@@ -268,19 +391,25 @@ class DisposableSandboxRunner:
 
     @staticmethod
     def _build_sanitized_host_env(temp_root: Path) -> Dict[str, str]:
-        """Strips all host credentials, tokens, and user environment variables."""
+        """Strips all host credentials, tokens, and user environment variables while preserving stdlib lookup."""
+        stdlib_paths = [
+            p
+            for p in sys.path
+            if p and any(k in p for k in ("Lib", "DLLs", "lib", ".zip")) and "site-packages" not in p
+        ]
         safe_env: Dict[str, str] = {
             "PATH": os.environ.get("PATH", ""),
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONNOUSERSITE": "1",
             "PYTHONIOENCODING": "utf-8",
+            "PYTHONPATH": os.pathsep.join([str(temp_root), *stdlib_paths]),
             "HOME": str(temp_root),
             "USERPROFILE": str(temp_root),
             "TEMP": str(temp_root),
             "TMP": str(temp_root),
         }
         if os.name == "nt":
-            for win_key in ("SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT"):
+            for win_key in ("SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "SYSTEMDRIVE"):
                 if win_key in os.environ:
                     safe_env[win_key] = os.environ[win_key]
         return safe_env
@@ -312,7 +441,7 @@ class DisposableSandboxRunner:
             docker_img = self.detect_docker_python_image()
             if not docker_img:
                 raise SandboxIsolationUnavailableError(
-                    "SandboxPolicy requires isolation_mode='docker', but Docker daemon or local Python image is unavailable."
+                    "SandboxPolicy requires isolation_mode='docker', but Docker daemon or approved Python image is unavailable."
                 )
             use_docker = True
         elif self.policy.isolation_mode == "auto":
@@ -321,7 +450,7 @@ class DisposableSandboxRunner:
                 use_docker = True
             elif self.policy.require_container_isolation:
                 raise SandboxIsolationUnavailableError(
-                    "SandboxPolicy require_container_isolation=True, but Docker daemon or local Python image is unavailable."
+                    "SandboxPolicy require_container_isolation=True, but Docker daemon or approved Python image is unavailable."
                 )
         elif self.policy.isolation_mode == "restricted_tempdir":
             if self.policy.require_container_isolation:
@@ -332,6 +461,7 @@ class DisposableSandboxRunner:
             raise ValueError(f"Unsupported isolation_mode: '{self.policy.isolation_mode}'")
 
         staging_dir = Path(tempfile.mkdtemp(prefix=f"agi17_sbx_{sid}_"))
+        container_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", f"agi17_sbx_{sid}_{int(time.time() * 1000)}")[:60]
         t0 = time.perf_counter()
         exit_code = -1
         timed_out = False
@@ -353,6 +483,8 @@ class DisposableSandboxRunner:
                     "docker",
                     "run",
                     "--rm",
+                    "--name",
+                    container_name,
                     "--user",
                     "65534:65534",
                     "--cap-drop",
@@ -397,12 +529,14 @@ class DisposableSandboxRunner:
                 cmd_executed = [
                     py_bin,
                     "-B",
-                    "-I",
+                    "-s",
                     "-m",
                     "unittest",
                     "discover",
                     "-v",
                     "-s",
+                    ".",
+                    "-t",
                     ".",
                     "-p",
                     test_pattern,
@@ -423,6 +557,16 @@ class DisposableSandboxRunner:
         except subprocess.TimeoutExpired as exc:
             timed_out = True
             exit_code = 124
+            if use_docker:
+                try:
+                    subprocess.run(
+                        ["docker", "rm", "-f", container_name],
+                        capture_output=True,
+                        timeout=5,
+                        check=False,
+                    )
+                except Exception:
+                    pass
             stdout_str = (exc.stdout.decode("utf-8", errors="replace") if isinstance(exc.stdout, bytes) else (exc.stdout or ""))
             stderr_str = (exc.stderr.decode("utf-8", errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")) + "\nSandbox execution timed out."
         finally:

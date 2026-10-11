@@ -342,6 +342,140 @@ class TestProductionHardeningSprint(unittest.TestCase):
         )
         self.assertEqual(res_failed["terminal_outcome"], "FAILED")
 
+    def test_17_cli_exit_codes_for_all_terminal_states(self) -> None:
+        from agents.AGI_1_7.run_agi_17 import compute_cli_exit_code, main as cli_main
+
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "SUCCEEDED_AND_VERIFIED"}), 0)
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "PROFILE_ONLY_OK"}), 0)
+        self.assertEqual(compute_cli_exit_code({"status": "ALREADY_PASSING"}), 0)
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "FAILED"}), 1)
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "SUCCEEDED_UNVERIFIED"}), 2)
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "TIMED_OUT"}), 3)
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "CANCELLED"}), 4)
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "BUDGET_EXCEEDED"}), 5)
+        self.assertEqual(compute_cli_exit_code({"terminal_outcome": "BLOCKED_BY_POLICY"}), 6)
+
+        # Verify CLI --ci-repair-dir returns 6 (BLOCKED_BY_POLICY) when given a path traversal module_filename
+        ws = self.temp_dir / "cli_policy_ws"
+        ws.mkdir(parents=True, exist_ok=True)
+        exit_blocked = cli_main(
+            [
+                "--storage-root",
+                str(self.temp_dir / "cli_store"),
+                "--ci-repair-dir",
+                str(ws),
+                "--module-filename",
+                "../escape.py",
+            ]
+        )
+        self.assertEqual(exit_blocked, 6)
+
+    def test_18_pinned_docker_digest_and_atomic_write_and_structured_approval(self) -> None:
+        from agents.AGI_1_7.engine.agi17.process_supervision.sandbox_runner import (
+            APPROVED_PINNED_PYTHON_IMAGE,
+            atomic_write_workspace_file,
+        )
+
+        prod_pol = SandboxPolicy.production()
+        self.assertTrue(prod_pol.require_container_isolation)
+        self.assertTrue(prod_pol.require_pinned_image_digest)
+        self.assertIn("@sha256:", prod_pol.docker_image or "")
+        self.assertEqual(prod_pol.docker_image, APPROVED_PINNED_PYTHON_IMAGE)
+
+        # Unpinned image rejected when require_pinned_image_digest=True
+        unpinned_pol = SandboxPolicy.production(docker_image="python:3.12-slim")
+        runner = DisposableSandboxRunner(policy=unpinned_pol)
+        with self.assertRaises(SandboxIsolationUnavailableError):
+            runner.detect_docker_python_image()
+
+        # Atomic workspace write
+        ws = self.temp_dir / "atomic_ws"
+        ws.mkdir(parents=True, exist_ok=True)
+        target = atomic_write_workspace_file(ws, "pkg/mod.py", "VALUE = 42\n")
+        self.assertTrue(target.is_file())
+        self.assertEqual(target.read_text(encoding="utf-8"), "VALUE = 42\n")
+
+        # Structured approval gate
+        gate = HighImpactApprovalGate()
+        gate.check_structured_action(action_type="run_unittest", argv=["python", "-m", "unittest"], approved=False)
+        with self.assertRaises(HighImpactActionBlockedError):
+            gate.check_structured_action(action_type="git_push", argv=["git", "push", "origin", "main"], approved=False)
+        gate.check_structured_action(action_type="git_push", argv=["git", "push", "origin", "feat/x"], approved=True)
+
+    def test_19_nested_package_ci_repair_and_regression_suite_protection(self) -> None:
+        ws = self.temp_dir / "nested_ci_ws"
+        (ws / "pkg").mkdir(parents=True, exist_ok=True)
+        (ws / "pkg" / "__init__.py").write_text("", encoding="utf-8")
+        (ws / "pkg" / "calc.py").write_text(
+            "def add(a: int, b: int) -> int:\n    return a - b\n\ndef multiply(a: int, b: int) -> int:\n    return a * b\n",
+            encoding="utf-8",
+        )
+        (ws / "test_add.py").write_text(
+            "import unittest\nfrom pkg.calc import add\nclass TAdd(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(add(2, 3), 5)\n",
+            encoding="utf-8",
+        )
+        (ws / "test_mul_regression.py").write_text(
+            "import unittest\nfrom pkg.calc import multiply\nclass TMul(unittest.TestCase):\n    def test_mul(self):\n        self.assertEqual(multiply(3, 4), 12)\n",
+            encoding="utf-8",
+        )
+        # Attempt 1 fixes add() but breaks multiply() (caught by independent regression check!).
+        # Attempt 2 fixes both add() and multiply().
+        call_counter = {"n": 0}
+
+        def _seq_gen(_req: ModelRequest) -> str:
+            call_counter["n"] += 1
+            if call_counter["n"] == 1:
+                return "```python\ndef add(a: int, b: int) -> int:\n    return a + b\n\ndef multiply(a: int, b: int) -> int:\n    return 0\n```"
+            return "```python\ndef add(a: int, b: int) -> int:\n    return a + b\n\ndef multiply(a: int, b: int) -> int:\n    return a * b\n```"
+
+        mock_prov = DeterministicMockProvider(responder=_seq_gen)
+        tc = AdaptiveTokenController(ledger_dir=self.temp_dir / "ledger19", isolated_benchmark_cwd=self.temp_dir / "iso19")
+        ma = ModelAdapter(token_controller=tc, mock_provider=mock_prov)
+        sbx = DisposableSandboxRunner(policy=SandboxPolicy(isolation_mode="restricted_tempdir"))
+        agent = CIRepairAgent(model_adapter=ma, sandbox_runner=sbx)
+
+        res = agent.repair_workspace(
+            workspace_dir=ws,
+            module_filename="pkg/calc.py",
+            test_pattern="test_add.py",
+            apply_approved_patch=True,
+        )
+        self.assertEqual(res.status, "REPAIRED_AND_VERIFIED")
+        self.assertEqual(res.attempts_used, 2)
+        self.assertTrue(res.patch_applied_to_workspace)
+        self.assertIn("return a + b", (ws / "pkg" / "calc.py").read_text(encoding="utf-8"))
+        self.assertIn("return a * b", (ws / "pkg" / "calc.py").read_text(encoding="utf-8"))
+
+    def test_20_corrupted_checkpoint_and_repeated_reconcile_idempotency(self) -> None:
+        from agents.AGI_1_7.engine.agi17.task_control.task_manager import DurableTaskManager, TaskState
+
+        tm = DurableTaskManager(
+            db_path=self.temp_dir / "rec_tasks.db",
+            events_jsonl_path=self.temp_dir / "rec_events.jsonl",
+            checkpoints_dir=self.temp_dir / "rec_chk",
+        )
+        t = tm.create_task(task_id="T-CRASH-01", title="Crash Test", description="Simulate crash")
+        tm.transition(t["task_id"], TaskState.PLANNED, reason="plan")
+        tm.transition(t["task_id"], TaskState.QUEUED, reason="queue")
+        tm.transition(t["task_id"], TaskState.READY, reason="ready")
+        tm.transition(t["task_id"], TaskState.RUNNING, reason="run")
+        chk = tm.save_checkpoint(t["task_id"], step_index=1, state_payload={"progress": 50})
+        loaded_ok = tm.checkpoints.load_checkpoint(t["task_id"])
+        self.assertIsNotNone(loaded_ok)
+
+        # Corrupt checkpoint file on disk and verify SHA-256 tamper detection raises ValueError
+        chk_file = Path(chk["checkpoint_path"])
+        chk_file.write_text('{"checkpoint_sha256": "deadbeef", "state_payload": {"tampered": true}}', encoding="utf-8")
+        with self.assertRaises(ValueError):
+            tm.checkpoints.load_checkpoint(t["task_id"])
+
+        # Reconcile after restart twice; second call must be a no-op (idempotent)
+        rec1 = tm.reconcile_after_restart()
+        self.assertEqual(len(rec1), 1)
+        self.assertEqual(rec1[0]["action"], "MARKED_INTERRUPTED_CORRUPTED_CHECKPOINT")
+        rec2 = tm.reconcile_after_restart()
+        self.assertEqual(len(rec2), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -127,7 +127,31 @@ def _update_detached_pid_file(pid_file_path: str | None, status: str, final_stat
         pass
 
 
-def main() -> int:
+TERMINAL_OUTCOME_EXIT_CODES: dict[str, int] = {
+    "SUCCEEDED_AND_VERIFIED": 0,
+    "PROFILE_ONLY_OK": 0,
+    "ALREADY_PASSING": 0,
+    "SUCCEEDED_UNVERIFIED": 2,
+    "TIMED_OUT": 3,
+    "CANCELLED": 4,
+    "BUDGET_EXCEEDED": 5,
+    "BLOCKED_BY_POLICY": 6,
+    "FAILED": 1,
+}
+
+
+def compute_cli_exit_code(result: dict) -> int:
+    """Returns 0 strictly for SUCCEEDED_AND_VERIFIED (or PROFILE_ONLY_OK/ALREADY_PASSING), and distinct non-zero codes otherwise."""
+    outcome = str(result.get("terminal_outcome") or "")
+    if outcome in TERMINAL_OUTCOME_EXIT_CODES:
+        return TERMINAL_OUTCOME_EXIT_CODES[outcome]
+    status = str(result.get("status") or "")
+    if status == "ALREADY_PASSING":
+        return 0
+    return 1
+
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="AGI 1.7.0 — OMEGA COMMAND Runtime")
     parser.add_argument("--title", default="AGI 1.7 Mission", help="Mission title")
     parser.add_argument("--prompt", default=None, help="Mission prompt to execute")
@@ -165,7 +189,7 @@ def main() -> int:
         help="Run in an OS-detached background process that keeps working even after closing Antigravity IDE",
     )
     parser.add_argument("--detached-pid-file", default=None, help=argparse.SUPPRESS)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     storage_root = _resolve_storage_root(args.storage_root)
 
@@ -183,18 +207,35 @@ def main() -> int:
     startup = adapter.run_startup_reconciliation()
 
     if args.ci_repair_dir:
-        repair_res = adapter.run_ci_repair(
-            workspace_dir=args.ci_repair_dir,
-            module_filename=args.module_filename,
-            issue_description=args.prompt or "Fix failing Python unit tests with minimal diff.",
-            write_patch_to_workspace=bool(args.apply_approved_patch),
-        )
+        try:
+            repair_res = adapter.run_ci_repair(
+                workspace_dir=args.ci_repair_dir,
+                module_filename=args.module_filename,
+                issue_description=args.prompt or "Fix failing Python unit tests with minimal diff.",
+                write_patch_to_workspace=bool(args.apply_approved_patch),
+                apply_approved_patch=bool(args.apply_approved_patch),
+            )
+        except Exception as exc:
+            exc_name = type(exc).__name__
+            if "BudgetExceeded" in exc_name:
+                term = "BUDGET_EXCEEDED"
+            elif any(k in exc_name for k in ("Sandbox", "PathTraversal", "UntrustedContent", "HighImpactAction", "Policy")):
+                term = "BLOCKED_BY_POLICY"
+            elif "Timeout" in exc_name:
+                term = "TIMED_OUT"
+            else:
+                term = "FAILED"
+            repair_res = {
+                "status": "REPAIR_FAILED",
+                "terminal_outcome": term,
+                "error": {"exception_type": exc_name, "message": str(exc)},
+            }
         if args.save_execution_log:
             out_p = Path(args.save_execution_log)
             out_p.parent.mkdir(parents=True, exist_ok=True)
             out_p.write_text(json.dumps(repair_res, indent=2, default=str), encoding="utf-8")
         print(json.dumps(repair_res, indent=2, default=str), flush=True)
-        return 0 if repair_res.get("terminal_outcome") == "SUCCEEDED_AND_VERIFIED" or repair_res.get("status") in ("REPAIRED_AND_VERIFIED", "ALREADY_PASSING") else 1
+        return compute_cli_exit_code(repair_res)
 
     if args.profile_only or not args.prompt:
         profile = adapter.profiler.build_full_profile()
@@ -229,7 +270,7 @@ def main() -> int:
         out_p = Path(args.save_execution_log)
         out_p.parent.mkdir(parents=True, exist_ok=True)
         out_p.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
-    exit_code = 0 if result.get("terminal_outcome") == "SUCCEEDED_AND_VERIFIED" else 1
+    exit_code = compute_cli_exit_code(result)
     _update_detached_pid_file(
         args.detached_pid_file,
         "DETACHED_COMPLETED",
