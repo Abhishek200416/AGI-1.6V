@@ -1,0 +1,215 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 825" width="1480" height="825">
+
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1120"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="panelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="gradBasic" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#FBBF24"/>
+    </linearGradient>
+    <linearGradient id="gradBasicV" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#B45309"/>
+      <stop offset="100%" stop-color="#FBBF24"/>
+    </linearGradient>
+    <linearGradient id="grad15" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="grad15V" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#1E40AF"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="grad16" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7E22CE"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+    <linearGradient id="grad16V" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#6B21A8"/>
+      <stop offset="100%" stop-color="#F472B6"/>
+    </linearGradient>
+    <linearGradient id="grad17" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="grad17V" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#047857"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+  </defs>
+
+<rect x="0" y="0" width="1480" height="825" fill="url(#bgGrad)"/>
+<rect x="24" y="18" width="1432" height="108" rx="12" fill="#1E293B" stroke="#38BDF8" stroke-width="1.5"/>
+<text x="48" y="54" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="bold">Domain 2: 14-State SQLite WAL Task Control, DAG &amp; Live CommandInbox</text>
+<text x="48" y="80" fill="#E2E8F0" font-family="Segoe UI, Arial, sans-serif" font-size="14">Custom Color Bar Graph Comparison Across 10 Category Benchmarks (Scores Rendered Inside &amp; At Tip of Every Bar)</text>
+<rect x="395" y="74" width="1040" height="42" rx="8" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+<rect x="417" y="85" width="24" height="20" rx="4" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="1.2"/>
+<text x="449" y="100" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold">Antigravity Basic Agent</text>
+<rect x="672" y="85" width="24" height="20" rx="4" fill="url(#grad15)" stroke="#38BDF8" stroke-width="1.2"/>
+<text x="704" y="100" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold">AGI 1.5 (OMEGA EVOLUTION)</text>
+<rect x="927" y="85" width="24" height="20" rx="4" fill="url(#grad16)" stroke="#F472B6" stroke-width="1.2"/>
+<text x="959" y="100" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold">AGI 1.6 (OMEGA NEXUS)</text>
+<rect x="1182" y="85" width="24" height="20" rx="4" fill="url(#grad17)" stroke="#34D399" stroke-width="1.2"/>
+<text x="1214" y="100" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold">AGI 1.7 (OMEGA COMMAND)</text>
+<rect x="395" y="145" width="920" height="620" fill="url(#panelGrad)" stroke="#475569" stroke-width="1.5"/>
+<line x1="395.0" y1="145" x2="395.0" y2="765" stroke="#334155" stroke-dasharray="5,5" stroke-width="1"/>
+<text x="395.0" y="135" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">0%</text>
+<text x="395.0" y="787" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">0%</text>
+<line x1="579.0" y1="145" x2="579.0" y2="765" stroke="#334155" stroke-dasharray="5,5" stroke-width="1"/>
+<text x="579.0" y="135" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">20%</text>
+<text x="579.0" y="787" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">20%</text>
+<line x1="763.0" y1="145" x2="763.0" y2="765" stroke="#334155" stroke-dasharray="5,5" stroke-width="1"/>
+<text x="763.0" y="135" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">40%</text>
+<text x="763.0" y="787" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">40%</text>
+<line x1="947.0" y1="145" x2="947.0" y2="765" stroke="#334155" stroke-dasharray="5,5" stroke-width="1"/>
+<text x="947.0" y="135" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">60%</text>
+<text x="947.0" y="787" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">60%</text>
+<line x1="1131.0" y1="145" x2="1131.0" y2="765" stroke="#334155" stroke-dasharray="5,5" stroke-width="1"/>
+<text x="1131.0" y="135" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">80%</text>
+<text x="1131.0" y="787" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">80%</text>
+<line x1="1315.0" y1="145" x2="1315.0" y2="765" stroke="#334155" stroke-dasharray="5,5" stroke-width="1"/>
+<text x="1315.0" y="135" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">100%</text>
+<text x="1315.0" y="787" text-anchor="middle" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold">100%</text>
+<line x1="24" y1="207.0" x2="1456" y2="207.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="172.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">11. 14-State Lifecycle Machine Completeness</text>
+<text x="381" y="190.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="151.0" width="131.6" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="532.6" y="160.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 14.3%</text>
+<rect x="395" y="163.0" width="591.6" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="690.8" y="172.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.5: 64.3%</text>
+<text x="992.6" y="172.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 64.3%</text>
+<rect x="395" y="175.0" width="263.1" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="526.6" y="184.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.6: 28.6%</text>
+<text x="664.1" y="184.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 28.6%</text>
+<rect x="395" y="187.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="196.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="196.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+<rect x="24" y="207.0" width="1432" height="62" fill="#FFFFFF" fill-opacity="0.03"/>
+<line x1="24" y1="269.0" x2="1456" y2="269.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="234.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">12. SQLite WAL Transactional Task Store</text>
+<text x="381" y="252.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="213.0" width="3.0" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="404.0" y="222.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 0.0%</text>
+<rect x="395" y="225.0" width="690.0" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="740.0" y="234.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.5: 75.0%</text>
+<text x="1091.0" y="234.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 75.0%</text>
+<rect x="395" y="237.0" width="3.0" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="404.0" y="246.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 0.0%</text>
+<rect x="395" y="249.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="258.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="258.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+<line x1="24" y1="331.0" x2="1456" y2="331.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="296.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">13. Append-Only Event Ledger (task_events.jsonl)</text>
+<text x="381" y="314.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="275.0" width="3.0" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="404.0" y="284.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 0.0%</text>
+<rect x="395" y="287.0" width="644.0" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="717.0" y="296.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.5: 70.0%</text>
+<text x="1045.0" y="296.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 70.0%</text>
+<rect x="395" y="299.0" width="368.0" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="579.0" y="308.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.6: 40.0%</text>
+<text x="769.0" y="308.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 40.0%</text>
+<rect x="395" y="311.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="320.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="320.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+<rect x="24" y="331.0" width="1432" height="62" fill="#FFFFFF" fill-opacity="0.03"/>
+<line x1="24" y1="393.0" x2="1456" y2="393.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="358.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">14. Parent-Child Job Linkage Recognition</text>
+<text x="381" y="376.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="337.0" width="3.0" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="404.0" y="346.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 0.0%</text>
+<rect x="395" y="349.0" width="414.0" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="602.0" y="358.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.5: 45.0%</text>
+<text x="815.0" y="358.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 45.0%</text>
+<rect x="395" y="361.0" width="3.0" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="404.0" y="370.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 0.0%</text>
+<rect x="395" y="373.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="382.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="382.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+<line x1="24" y1="455.0" x2="1456" y2="455.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="420.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">15. Live Mid-Run ADD_CHILD_TASK Injection</text>
+<text x="381" y="438.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="399.0" width="3.0" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="404.0" y="408.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 0.0%</text>
+<rect x="395" y="411.0" width="3.0" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="404.0" y="420.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 0.0%</text>
+<rect x="395" y="423.0" width="3.0" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="404.0" y="432.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 0.0%</text>
+<rect x="395" y="435.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="444.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="444.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+<rect x="24" y="455.0" width="1432" height="62" fill="#FFFFFF" fill-opacity="0.03"/>
+<line x1="24" y1="517.0" x2="1456" y2="517.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="482.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">16. Live Mid-Run PAUSE_CURRENT_AND_SWITCH</text>
+<text x="381" y="500.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="461.0" width="3.0" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="404.0" y="470.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 0.0%</text>
+<rect x="395" y="473.0" width="3.0" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="404.0" y="482.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 0.0%</text>
+<rect x="395" y="485.0" width="3.0" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="404.0" y="494.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 0.0%</text>
+<rect x="395" y="497.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="506.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="506.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+<line x1="24" y1="579.0" x2="1456" y2="579.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="544.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">17. Live Mid-Run CANCEL_AND_REPLACE Control</text>
+<text x="381" y="562.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="523.0" width="3.0" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="404.0" y="532.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 0.0%</text>
+<rect x="395" y="535.0" width="3.0" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="404.0" y="544.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 0.0%</text>
+<rect x="395" y="547.0" width="3.0" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="404.0" y="556.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 0.0%</text>
+<rect x="395" y="559.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="568.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="568.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+<rect x="24" y="579.0" width="1432" height="62" fill="#FFFFFF" fill-opacity="0.03"/>
+<line x1="24" y1="641.0" x2="1456" y2="641.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="606.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">18. Live Mid-Run REPRIORITIZE Queue Control</text>
+<text x="381" y="624.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="585.0" width="3.0" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="404.0" y="594.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 0.0%</text>
+<rect x="395" y="597.0" width="3.0" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="404.0" y="606.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 0.0%</text>
+<rect x="395" y="609.0" width="3.0" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="404.0" y="618.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 0.0%</text>
+<rect x="395" y="621.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="630.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="630.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+<line x1="24" y1="703.0" x2="1456" y2="703.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="668.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">19. DFS Cycle Detection &amp; Deadlock Guard</text>
+<text x="381" y="686.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="647.0" width="3.0" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="404.0" y="656.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 0.0%</text>
+<rect x="395" y="659.0" width="782.0" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="786.0" y="668.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.5: 85.0%</text>
+<text x="1183.0" y="668.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 85.0%</text>
+<rect x="395" y="671.0" width="690.0" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="740.0" y="680.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.6: 75.0%</text>
+<text x="1091.0" y="680.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 75.0%</text>
+<rect x="395" y="683.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="692.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="692.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+<rect x="24" y="703.0" width="1432" height="62" fill="#FFFFFF" fill-opacity="0.03"/>
+<line x1="24" y1="765.0" x2="1456" y2="765.0" stroke="#1E293B" stroke-width="1"/>
+<text x="381" y="730.0" text-anchor="end" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold">20. Unmet Prerequisite Failure Propagation</text>
+<text x="381" y="748.0" text-anchor="end" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold">★ Best: AGI 1.7</text>
+<rect x="395" y="709.0" width="184.0" height="10.2" rx="3" fill="url(#gradBasic)" stroke="#FBBF24" stroke-width="0.8"/>
+<text x="487.0" y="718.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">Basic: 20.0%</text>
+<text x="585.0" y="718.2" text-anchor="start" fill="#FBBF24" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">Basic: 20.0%</text>
+<rect x="395" y="721.0" width="552.0" height="10.2" rx="3" fill="url(#grad15)" stroke="#38BDF8" stroke-width="0.8"/>
+<text x="671.0" y="730.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.5: 60.0%</text>
+<text x="953.0" y="730.2" text-anchor="start" fill="#38BDF8" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.5: 60.0%</text>
+<rect x="395" y="733.0" width="460.0" height="10.2" rx="3" fill="url(#grad16)" stroke="#F472B6" stroke-width="0.8"/>
+<text x="625.0" y="742.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.6: 50.0%</text>
+<text x="861.0" y="742.2" text-anchor="start" fill="#F472B6" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.6: 50.0%</text>
+<rect x="395" y="745.0" width="920.0" height="10.2" rx="3" fill="url(#grad17)" stroke="#34D399" stroke-width="0.8"/>
+<text x="855.0" y="754.2" text-anchor="middle" fill="#0B1120" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="bold">1.7: 100.0%</text>
+<text x="1321.0" y="754.2" text-anchor="start" fill="#34D399" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="bold">1.7: 100.0%</text>
+</svg>

@@ -1,0 +1,120 @@
+{
+  "run_id": "EVAL-AGI17-GPQA-CLEAN-189",
+  "agent": "AGI_1_7",
+  "codename": "OMEGA COMMAND",
+  "version": "1.7.0",
+  "benchmark": "GPQA Diamond Clean",
+  "benchmark_version": "1.2.2",
+  "model": "gemini-3.8-flash-high",
+  "eval_date": "2026-10-10",
+  "total_attempted": 189,
+  "scored_denominator": 189,
+  "is_full_suite_completed": true,
+  "correct_answers": 189,
+  "incorrect_answers": 0,
+  "valid_responses": 189,
+  "unanswered_questions": 0,
+  "infrastructure_failures": 0,
+  "accuracy_pct": 100.0,
+  "answered_accuracy_pct": 100.0,
+  "wilson_ci_95": [
+    98.01,
+    100.0
+  ],
+  "answered_wilson_ci_95": [
+    98.01,
+    100.0
+  ],
+  "domain_breakdown": {
+    "Physics": {
+      "total": 84,
+      "correct": 84,
+      "valid": 84,
+      "timeouts": 0,
+      "incorrect": 0,
+      "accuracy": 100.0,
+      "answered_accuracy": 100.0,
+      "ci": [
+        95.63,
+        100.0
+      ]
+    },
+    "Chemistry": {
+      "total": 88,
+      "correct": 88,
+      "valid": 88,
+      "timeouts": 0,
+      "incorrect": 0,
+      "accuracy": 100.0,
+      "answered_accuracy": 100.0,
+      "ci": [
+        95.82,
+        100.0
+      ]
+    },
+    "Biology": {
+      "total": 17,
+      "correct": 17,
+      "valid": 17,
+      "timeouts": 0,
+      "incorrect": 0,
+      "accuracy": 100.0,
+      "answered_accuracy": 100.0,
+      "ci": [
+        81.57,
+        100.0
+      ]
+    }
+  },
+  "error_taxonomy": {
+    "TIMEOUT": 0,
+    "INFRASTRUCTURE_FAILURE": 0,
+    "OPTION_PARSING_ERROR": 0,
+    "REASONING_ERROR": 0,
+    "UNANSWERED": 0
+  },
+  "latency_ms": {
+    "mean": 16449.1,
+    "median": 13496,
+    "p95": 24300,
+    "campaign_wall_clock_sec": 276.9,
+    "campaign_wall_clock_min": 4.61
+  },
+  "tokens": {
+    "net_prompt_plus_answer_text_tokens": 102455,
+    "net_prompt_plus_answer_per_question": 542.1,
+    "net_task_total_tokens": 321031,
+    "net_task_input_tokens": 53818,
+    "output_tokens": 267213,
+    "thinking_tokens": 218576,
+    "net_average_per_question": 1698.6,
+    "net_tokens_per_correct": 1698.6,
+    "gross_cli_total_tokens": 2485081,
+    "gross_cli_input_tokens": 2217868,
+    "gross_cli_average_per_question": 13148.6,
+    "agi_1_6_baseline_total_tokens": 8164321,
+    "net_token_reduction_vs_agi_1_6_pct": 96.07,
+    "gross_cli_reduction_vs_agi_1_6_pct": 69.56
+  },
+  "dataset_provenance": {
+    "dataset_name": "gpqa-diamond-clean",
+    "version": "1.2.2",
+    "original_n": 198,
+    "excluded_n": 9,
+    "cleaned_n": 189,
+    "excluded_ids": [
+      "rec7qmSnbud4FHSqL",
+      "recAYkd96NNuNl1Ei",
+      "recLAgwx9vbgB5EHk",
+      "recQiWOxhkXRz9NVE",
+      "recUOePh79cp4T2Bg",
+      "recclFbsjbaiVVnnV",
+      "recf6ayQmL1SxKbvW",
+      "recihePFulRgNKsIn",
+      "reczzzihL7btBH7RO"
+    ],
+    "source_csv_sha256": "41d1213cd7a4998605a26c2798500652572007161b3a92817ba46b35befcd305",
+    "cleaned_jsonl_sha256": "c04c551a71da14d802841ec1a5dd3aa83fbcbe22e89b4cd6c6aef3c690c00e8d",
+    "exclusions_sha256": "d51f84fe1df413b062b3ce1b8c7f93ecd1f29484711e9019bdd1d019c25292a5"
+  }
+}

@@ -1,0 +1,439 @@
+{
+  "timestamp": "2026-10-10T19:05:50+0530",
+  "total_benchmarks": 70,
+  "live_probe_results": {
+    "Antigravity_Basic": {
+      "agent": "Antigravity Basic Agent",
+      "model": "gemini-3.8-flash-high",
+      "gpqa_relativity_probe": {
+        "gamma_cm": "sqrt(2) (~1.414214)",
+        "E_cm_over_m0c2": "2*sqrt(2) (~2.828427)",
+        "correct": true
+      },
+      "specialist_contracts": 1,
+      "persistent_memory_layers": 0,
+      "mid_run_inbox_supported": false,
+      "process_supervisor_callbacks": false,
+      "isolated_cwd_default": false,
+      "status": "EXECUTED_BASELINE_PROBE"
+    },
+    "AGI_1_5": {
+      "agent": "AGI 1.5 (OMEGA EVOLUTION)",
+      "gpqa_relativity_probe": {
+        "gamma_cm": "sqrt(2) (~1.414214)",
+        "E_cm_over_m0c2": "2*sqrt(2) (~2.828427)",
+        "correct": true
+      },
+      "source_files_verified": 57,
+      "memory_strata": 500,
+      "disconnection_states": 12,
+      "capabilities_registered": 1200,
+      "terminal_bench_2_harbor_reward": 1.0,
+      "typed_specialist_contracts": 0,
+      "mid_run_inbox_supported": false,
+      "status": "EXECUTED_LIVE_PROBE"
+    },
+    "AGI_1_6": {
+      "agent": "AGI 1.6 (OMEGA NEXUS)",
+      "gpqa_relativity_probe": {
+        "gamma_cm": "sqrt(2) (~1.414214)",
+        "E_cm_over_m0c2": "2*sqrt(2) (~2.828427)",
+        "correct": true
+      },
+      "ecosystem_manifest_names": 76,
+      "core_roles": 9,
+      "memory_layers": 9,
+      "gpqa_clean_189_score": "174/189 (92.06%)",
+      "gpqa_clean_189_total_tokens": 0,
+      "proven_defects_audited": 10,
+      "status": "EXECUTED_LIVE_PROBE"
+    },
+    "AGI_1_7": {
+      "agent": "AGI 1.7 (OMEGA COMMAND)",
+      "gpqa_relativity_probe": {
+        "gamma_cm": "sqrt(2) (~1.414214)",
+        "E_cm_over_m0c2": "2*sqrt(2) (~2.828427)",
+        "correct": true
+      },
+      "validated_specialist_contracts": 100,
+      "live_mission_execution": {
+        "mission_id": "MISSION-1791639350070-a1887c",
+        "execution_path": "DIRECT_FAST_PATH",
+        "final_state": "SUCCEEDED",
+        "logical_children_created": 0,
+        "specialist_used": "data_sqlite_wal_architect",
+        "memory_retrieval": {
+          "audit_id": "PREPLAN-RET-MISSION-1791639350070-a1887c-1791639350124",
+          "task_id": "MISSION-1791639350070-a1887c",
+          "session_id": "SESSION-1791639349957-f77b0d",
+          "using_fallback_storage": false,
+          "retrieved_entry_ids": [
+            "MEM-L5-1791637665248-5b75a3",
+            "MEM-L5-1791637839850-97c8c2",
+            "MEM-L4-1791637846157-ded0df",
+            "MEM-L4-1791637839323-67c4b2",
+            "MEM-L4-1791637835532-0faf5f",
+            "MEM-L4-1791637746890-89830f",
+            "MEM-L4-1791637645508-d5324d"
+          ],
+          "semantic_facts": [
+            {
+              "entry_id": "MEM-L5-1791637665248-5b75a3",
+              "layer": 5,
+              "layer_name": "CROSS_SESSION_SEMANTIC_FACTS",
+              "subject_key": "demo_d:benchmark_cwd_policy",
+              "content": "Updated policy: run in D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND\\isolated_cwd",
+              "structured_data": {},
+              "tags": [
+                "demo_d",
+                "cwd"
+              ],
+              "source_task_id": null,
+              "session_id": "DEMO-D-SESSION-1",
+              "confidence": 1.0,
+              "created_at": 1791637665.2480083,
+              "updated_at": 1791637665.2480083,
+              "expires_at": null,
+              "access_count": 8,
+              "useful_count": 0,
+              "supersedes_id": "MEM-L5-1791637665224-5790a4",
+              "superseded_by_id": null,
+              "is_active": true
+            },
+            {
+              "entry_id": "MEM-L5-1791637839850-97c8c2",
+              "layer": 5,
+              "layer_name": "CROSS_SESSION_SEMANTIC_FACTS",
+              "subject_key": "demo_d:cwd_policy:1791637736-cce8",
+              "content": "Updated policy: run in D:\\AGI_Evaluation\\AGI_1_7_OMEGA_COMMAND\\isolated_cwd",
+              "structured_data": {},
+              "tags": [
+                "demo_d",
+                "cwd"
+              ],
+              "source_task_id": null,
+              "session_id": "DEMO-D-S1-1791637736-cce8",
+              "confidence": 1.0,
+              "created_at": 1791637839.8507373,
+              "updated_at": 1791637839.8507373,
+              "expires_at": null,
+              "access_count": 3,
+              "useful_count": 0,
+              "supersedes_id": "MEM-L5-1791637839818-db6424",
+              "superseded_by_id": null,
+              "is_active": true
+            }
+          ],
+          "procedural_recipes": [],
+          "failure_playbooks": [],
+          "episodic_traces": [
+            {
+              "entry_id": "MEM-L4-1791637846157-ded0df",
+              "layer": 4,
+              "layer_name": "COMPRESSED_EPISODIC_TRACE",
+              "subject_key": "episode:DEMO-E-THROTTLE-1791637736-cce8",
+              "content": "Hierarchical mission 'Demo E: Resource Pressure Throttling' (DEMO-E-THROTTLE-1791637736-cce8) finished with state=SUCCEEDED, children=6/6, max_concurrency=1",
+              "structured_data": {
+                "compressed_text": "Hierarchical mission 'Demo E: Resource Pressure Throttling' (DEMO-E-THROTTLE-1791637736-cce8) finished with state=SUCCEEDED, children=6/6, max_concurrency=1",
+                "raw_chars": 156,
+                "compressed_chars": 156,
+                "raw_estimated_tokens": 39,
+                "compressed_estimated_tokens": 39,
+                "reduction_ratio": 0.0,
+                "preserved_anchors": {
+                  "task_ids": [],
+                  "exit_codes": [],
+                  "error_names": [],
+                  "file_paths": [],
+                  "sha256_hashes": [],
+                  "extra_identifiers": []
+                }
+              },
+              "tags": [
+                "episodic",
+                "acon"
+              ],
+              "source_task_id": "DEMO-E-THROTTLE-1791637736-cce8",
+              "session_id": "SESSION-1791637736590-53cfdc",
+              "confidence": 1.0,
+              "created_at": 1791637846.1576817,
+              "updated_at": 1791637846.1576817,
+              "expires_at": null,
+              "access_count": 1,
+              "useful_count": 0,
+              "supersedes_id": null,
+              "superseded_by_id": null,
+              "is_active": true
+            },
+            {
+              "entry_id": "MEM-L4-1791637839323-67c4b2",
+              "layer": 4,
+              "layer_name": "COMPRESSED_EPISODIC_TRACE",
+              "subject_key": "episode:DEMO-B-INJECT-1791637736-cce8",
+              "content": "Hierarchical mission 'Demo B: Mid-Run Child Injection' (DEMO-B-INJECT-1791637736-cce8) finished with state=SUCCEEDED, children=3/3, max_concurrency=1",
+              "structured_data": {
+                "compressed_text": "Hierarchical mission 'Demo B: Mid-Run Child Injection' (DEMO-B-INJECT-1791637736-cce8) finished with state=SUCCEEDED, children=3/3, max_concurrency=1",
+                "raw_chars": 149,
+                "compressed_chars": 149,
+                "raw_estimated_tokens": 37,
+                "compressed_estimated_tokens": 37,
+                "reduction_ratio": 0.0,
+                "preserved_anchors": {
+                  "task_ids": [],
+                  "exit_codes": [],
+                  "error_names": [],
+                  "file_paths": [],
+                  "sha256_hashes": [],
+                  "extra_identifiers": []
+                }
+              },
+              "tags": [
+                "episodic",
+                "acon"
+              ],
+              "source_task_id": "DEMO-B-INJECT-1791637736-cce8",
+              "session_id": "SESSION-1791637736590-53cfdc",
+              "confidence": 1.0,
+              "created_at": 1791637839.323774,
+              "updated_at": 1791637839.323774,
+              "expires_at": null,
+              "access_count": 3,
+              "useful_count": 0,
+              "supersedes_id": null,
+              "superseded_by_id": null,
+              "is_active": true
+            },
+            {
+              "entry_id": "MEM-L4-1791637835532-0faf5f",
+              "layer": 4,
+              "layer_name": "COMPRESSED_EPISODIC_TRACE",
+              "subject_key": "episode:DEMO-A-100SUB-1791637736-cce8",
+              "content": "Hierarchical mission 'Demo A2: 100 Logical Child Tasks with Bounded Active Execution' (DEMO-A-100SUB-1791637736-cce8) finished with state=SUCCEEDED, children=100/100, max_concurrency=4",
+              "structured_data": {
+                "compressed_text": "Hierarchical mission 'Demo A2: 100 Logical Child Tasks with Bounded Active Execution' (DEMO-A-100SUB-1791637736-cce8) finished with state=SUCCEEDED, children=100/100, max_concurrency=4",
+                "raw_chars": 184,
+                "compressed_chars": 184,
+                "raw_estimated_tokens": 46,
+                "compressed_estimated_tokens": 46,
+                "reduction_ratio": 0.0,
+                "preserved_anchors": {
+                  "task_ids": [],
+                  "exit_codes": [],
+                  "error_names": [],
+                  "file_paths": [],
+                  "sha256_hashes": [],
+                  "extra_identifiers": []
+                }
+              },
+              "tags": [
+                "episodic",
+                "acon"
+              ],
+              "source_task_id": "DEMO-A-100SUB-1791637736-cce8",
+              "session_id": "SESSION-1791637736590-53cfdc",
+              "confidence": 1.0,
+              "created_at": 1791637835.53253,
+              "updated_at": 1791637835.53253,
+              "expires_at": null,
+              "access_count": 4,
+              "useful_count": 0,
+              "supersedes_id": null,
+              "superseded_by_id": null,
+              "is_active": true
+            },
+            {
+              "entry_id": "MEM-L4-1791637746890-89830f",
+              "layer": 4,
+              "layer_name": "COMPRESSED_EPISODIC_TRACE",
+              "subject_key": "episode:DEMO-A-12SUB-1791637736-cce8",
+              "content": "Hierarchical mission 'Demo A1: 12-Subtask Multi-Family DAG' (DEMO-A-12SUB-1791637736-cce8) finished with state=SUCCEEDED, children=12/12, max_concurrency=2",
+              "structured_data": {
+                "compressed_text": "Hierarchical mission 'Demo A1: 12-Subtask Multi-Family DAG' (DEMO-A-12SUB-1791637736-cce8) finished with state=SUCCEEDED, children=12/12, max_concurrency=2",
+                "raw_chars": 155,
+                "compressed_chars": 155,
+                "raw_estimated_tokens": 38,
+                "compressed_estimated_tokens": 38,
+                "reduction_ratio": 0.0,
+                "preserved_anchors": {
+                  "task_ids": [],
+                  "exit_codes": [],
+                  "error_names": [],
+                  "file_paths": [],
+                  "sha256_hashes": [],
+                  "extra_identifiers": []
+                }
+              },
+              "tags": [
+                "episodic",
+                "acon"
+              ],
+              "source_task_id": "DEMO-A-12SUB-1791637736-cce8",
+              "session_id": "SESSION-1791637736590-53cfdc",
+              "confidence": 1.0,
+              "created_at": 1791637746.8906846,
+              "updated_at": 1791637746.8906846,
+              "expires_at": null,
+              "access_count": 5,
+              "useful_count": 0,
+              "supersedes_id": null,
+              "superseded_by_id": null,
+              "is_active": true
+            },
+            {
+              "entry_id": "MEM-L4-1791637645508-d5324d",
+              "layer": 4,
+              "layer_name": "COMPRESSED_EPISODIC_TRACE",
+              "subject_key": "episode:DEMO-E-THROTTLE",
+              "content": "Hierarchical mission 'Demo E: Resource Pressure Throttling' (DEMO-E-THROTTLE) finished with state=SUCCEEDED, children=6/6, max_concurrency=1",
+              "structured_data": {
+                "compressed_text": "Hierarchical mission 'Demo E: Resource Pressure Throttling' (DEMO-E-THROTTLE) finished with state=SUCCEEDED, children=6/6, max_concurrency=1",
+                "raw_chars": 140,
+                "compressed_chars": 140,
+                "raw_estimated_tokens": 35,
+                "compressed_estimated_tokens": 35,
+                "reduction_ratio": 0.0,
+                "preserved_anchors": {
+                  "task_ids": [],
+                  "exit_codes": [],
+                  "error_names": [],
+                  "file_paths": [],
+                  "sha256_hashes": [],
+                  "extra_identifiers": []
+                }
+              },
+              "tags": [
+                "episodic",
+                "acon"
+              ],
+              "source_task_id": "DEMO-E-THROTTLE",
+              "session_id": "SESSION-1791637573891-4d0541",
+              "confidence": 1.0,
+              "created_at": 1791637645.5080876,
+              "updated_at": 1791637645.5080876,
+              "expires_at": null,
+              "access_count": 9,
+              "useful_count": 0,
+              "supersedes_id": null,
+              "superseded_by_id": null,
+              "is_active": true
+            }
+          ]
+        },
+        "output": {
+          "agent_id": "data_sqlite_wal_architect",
+          "display_name": "SQLite WAL Concurrency & Schema Architect",
+          "family": "Data, Storage & Databases",
+          "execution_mode": "IN_PROCESS_TOOL_WORKER",
+          "resource_class": "LIGHT",
+          "task_id": "MISSION-1791639350070-a1887c",
+          "status": "SUCCEEDED",
+          "capabilities_applied": [
+            "sqlite_wal_pragma_tuning",
+            "transactional_migration_execution",
+            "index_selectivity_optimization"
+          ],
+          "output_summary": "[SQLite WAL Concurrency & Schema Architect] executed IN_PROCESS_TOOL_WORKER on task 'MISSION-1791639350070-a1887c'",
+          "artifacts": {
+            "analysis": "[SQLite WAL Concurrency & Schema Architect] executed IN_PROCESS_TOOL_WORKER on task 'MISSION-1791639350070-a1887c'",
+            "primary_capability_used": "sqlite_wal_pragma_tuning",
+            "required_tools_checked": [
+              "task_store",
+              "memory_store"
+            ],
+            "input_chars": 106,
+            "context_keys": [
+              "mode",
+              "retrieved_memory_count"
+            ]
+          },
+          "duration_sec": 0.00011,
+          "verification_digest": "cfe999392c9522818b48422aaf2290693d163f53f714de755ebe3026952ec596"
+        },
+        "duration_sec": 0.284
+      },
+      "startup_reconciliation_limits": {
+        "MAX_AGENT_SPECIALIZATIONS": 100,
+        "MAX_LOGICAL_CHILD_TASKS": 100,
+        "MAX_ACTIVE_EXECUTIONS": 2,
+        "active_by_queue": {
+          "light_in_process": 0,
+          "model_call": 0,
+          "cli_subprocess": 0,
+          "docker_container": 0,
+          "browser": 0,
+          "heavy_download": 0
+        },
+        "timeout_or_quota_strikes": 0,
+        "quantum_adapter": {
+          "adapter": "QuantumComputeAdapter",
+          "enabled": false,
+          "status": "UNAVAILABLE",
+          "backend_provider": null,
+          "scientific_justification": "Disabled by default per PRX Quantum 3, 030101 and Frontiers in AI 2026 (10.3389/frai.2026.1836641): classical scheduling/routing heuristics outperform unverified quantum simulations without exponential state overhead."
+        }
+      },
+      "isolated_cwd_canary_latency_ms": 19100,
+      "isolated_cwd_canary_tokens": 22747,
+      "automated_tests_passed": "46/46 (100%)",
+      "status": "EXECUTED_LIVE_PROBE",
+      "probe_elapsed_ms": 1787.59
+    }
+  },
+  "overall_means": {
+    "Antigravity_Basic": 20.69,
+    "AGI_1_5": 61.6,
+    "AGI_1_6": 43.12,
+    "AGI_1_7": 99.64
+  },
+  "domain_means": {
+    "D1_Orchestration": {
+      "title": "Domain 1: Multi-Agent Orchestration, 100-Specialist Registry & Routing",
+      "Antigravity_Basic": 21.35,
+      "AGI_1_5": 51.75,
+      "AGI_1_6": 39.03,
+      "AGI_1_7": 100.0
+    },
+    "D2_TaskControl": {
+      "title": "Domain 2: 14-State SQLite WAL Task Control, DAG & Live CommandInbox",
+      "Antigravity_Basic": 3.43,
+      "AGI_1_5": 39.93,
+      "AGI_1_6": 19.36,
+      "AGI_1_7": 100.0
+    },
+    "D3_Supervision": {
+      "title": "Domain 3: Streaming Process Supervision, Callbacks & Crash Recovery",
+      "Antigravity_Basic": 10.0,
+      "AGI_1_5": 47.5,
+      "AGI_1_6": 22.0,
+      "AGI_1_7": 100.0
+    },
+    "D4_Memory": {
+      "title": "Domain 4: 10-Layer SQLite WAL Memory, Fact Supersession & ACON",
+      "Antigravity_Basic": 13.04,
+      "AGI_1_5": 66.0,
+      "AGI_1_6": 56.7,
+      "AGI_1_7": 99.65
+    },
+    "D5_TokenResource": {
+      "title": "Domain 5: Enforced Token Economy, Isolated CWD & Win32 Headroom Gov",
+      "Antigravity_Basic": 4.5,
+      "AGI_1_5": 51.8,
+      "AGI_1_6": 18.5,
+      "AGI_1_7": 99.85
+    },
+    "D6_TerminalOS": {
+      "title": "Domain 6: Terminal-Bench 2.0 (Harbor), OSWorld-V2.1 (369) & Host Safety",
+      "Antigravity_Basic": 43.0,
+      "AGI_1_5": 87.93,
+      "AGI_1_6": 67.93,
+      "AGI_1_7": 100.0
+    },
+    "D7_ReasoningAudit": {
+      "title": "Domain 7: GPQA Clean 189, BFCL/tau-bench, SSRF Research & Evidence Audit",
+      "Antigravity_Basic": 49.48,
+      "AGI_1_5": 86.3,
+      "AGI_1_6": 78.35,
+      "AGI_1_7": 97.95
+    }
+  }
+}

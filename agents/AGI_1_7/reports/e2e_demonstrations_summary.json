@@ -1,0 +1,53 @@
+{
+  "run_tag": "1791740318-a6a1",
+  "Demo_A": {
+    "mission_12_id": "DEMO-A-12SUB-1791740318-a6a1",
+    "mission_100_id": "DEMO-A-100SUB-1791740318-a6a1",
+    "mission_12_children": 12,
+    "mission_100_children": 100,
+    "max_concurrent_workers": 4,
+    "status": "PASSED"
+  },
+  "Demo_B": {
+    "root_task_id": "DEMO-B-INJECT-1791740318-a6a1",
+    "dynamic_child_id": "DEMO-B-DYN-CHILD-1791740318-a6a1",
+    "final_state": "SUCCEEDED",
+    "logical_children_completed": 3,
+    "status": "PASSED"
+  },
+  "Demo_C": {
+    "task_id": "DEMO-C-PROC-1791740318-a6a1",
+    "notification_id": "NOTIF-DEMO-C-PROC-1791740318-a6a1-1791740429047",
+    "progress_events_captured": 6,
+    "artifact_sha256": "fe8d1387be22cfff52be61234b62a097b27df9393ef0edace1420e77c6a85ffb",
+    "final_status": "SUCCEEDED",
+    "status": "PASSED"
+  },
+  "Demo_D": {
+    "superseded_entry_id": "MEM-L5-1791740429122-ae0c31",
+    "active_entry_id": "MEM-L5-1791740429143-89523c",
+    "preplan_audit_id": "PREPLAN-RET-DEMO-D-TASK-1791740318-a6a1-1791740429233",
+    "status": "PASSED"
+  },
+  "Demo_E": {
+    "task_id": "DEMO-E-THROTTLE-1791740318-a6a1",
+    "max_concurrent_workers_under_pressure": 1,
+    "succeeded_children": 6,
+    "status": "PASSED"
+  },
+  "Demo_F": {
+    "task_id": "DEMO-F-BUDGET-1791740318-a6a1",
+    "budget_limit": 800,
+    "consumed_before_gate": 750,
+    "over_budget_call_blocked": true,
+    "isolated_cwd_enforced": true,
+    "status": "PASSED"
+  },
+  "Demo_G": {
+    "task_id": "DEMO-G-CRASH-1791740318-a6a1",
+    "checkpoint_id": "CHK-DEMO-G-CRASH-1791740318-a6a1-S1-1791740440408",
+    "recovery_action": "REQUEUED_FROM_CHECKPOINT",
+    "final_state": "SUCCEEDED",
+    "status": "PASSED"
+  }
+}

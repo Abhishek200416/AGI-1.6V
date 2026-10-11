@@ -1,0 +1,37 @@
+{
+  "benchmark": "OSWorld-V2.1",
+  "release_commit": "3d778a3c9a34a079316f70df023b166700445792",
+  "runtime_version": "1.7.0",
+  "codename": "OMEGA COMMAND",
+  "foundation_model": "gemini-3.8-flash-high",
+  "host_gui_actuation_allowed": false,
+  "host_desktop_injections": 0,
+  "total_manifest_tasks": 108,
+  "recorded_tasks": 71,
+  "evaluated_local_tasks": 27,
+  "blocked_external_web_tasks": 41,
+  "guest_setup_error_tasks": 3,
+  "passed_full_count": 0,
+  "partial_credit_count": 0,
+  "positive_score_count": 0,
+  "total_official_score_sum": 0.0,
+  "mean_score_on_evaluated": 0.0,
+  "agi16_baseline_comparison": {
+    "agi16_positive_score_count": 3,
+    "agi16_total_official_score_sum": 0.1175,
+    "agi16_cli_timeouts": 34,
+    "agi16_false_infeasible": 21,
+    "agi17_positive_score_count": 0,
+    "agi17_total_official_score_sum": 0.0,
+    "agi17_cli_timeouts": 7,
+    "agi17_false_infeasible": 0
+  },
+  "token_economy": {
+    "total_provider_input_tokens": 291046,
+    "total_net_input_tokens": 62046,
+    "total_output_tokens": 64348,
+    "total_thinking_tokens": 46600,
+    "total_net_tokens": 126394
+  },
+  "positive_tasks": []
+}
