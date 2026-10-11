@@ -3,7 +3,7 @@
 - **Generated At**: `2026-10-11T12:24:05+05:30`
 - **Evaluated System**: `AGI 1.7.0` (`OMEGA COMMAND`)
 - **Repository & Commit**: `https://github.com/Abhishek200416/AGI-1.7V` @ `ec3425b0a3a28e06a0a7d9959607932d153b8cc6` (`main`, unmodified core engine)
-- **Sole Foundation Model (Directive 0)**: `gemini-3.8-flash-high` (`effort="high"`) via `C:\Users\abhis\AppData\Local\agy\bin\agy.exe` (`v1.3.3`)
+- **Sole Foundation Model (Directive 0)**: `gemini-3.8-flash-high` (`effort="high"`) via `<USER_HOME>\AppData\Local\agy\bin\agy.exe` (`v1.3.3`)
 - **External Drive (`D:\`) Persistence**: All datasets, Harbor caches, trial trajectories, 10-layer SQLite WAL memory (`omega_memory.db`), and 14-state task stores (`agi17_tasks.db`) stored on `D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\` and `D:\AGI_Storage\AGI_1_7\`.
 
 ---

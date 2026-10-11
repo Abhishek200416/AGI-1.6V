@@ -5,7 +5,7 @@
 > **Candidate Commit SHA:** `f443602a799bb27f92557e1d23cb24f138726083`
 > **Pull Request (Open, Unmerged):** [PR #2 — `sec/p0-production-hardening` → `main`](https://github.com/Abhishek200416/AGI-1.7V/pull/2) (`reviewDecision: "REVIEW_REQUIRED"`, `mergeStateStatus: "BLOCKED"`)
 > **GitHub Actions CI Run:** [Run #38128563430 (`success`)](https://github.com/Abhishek200416/AGI-1.7V/actions/runs/38128563430)
-> **Isolated Worktree:** `D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\p0_security_worktree` (`main` and `c:\Users\abhis\Downloads\pt` untouched)
+> **Isolated Worktree:** `D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\p0_security_worktree` (`main` and `<WORKSPACE_DIR>` untouched)
 
 ---
 

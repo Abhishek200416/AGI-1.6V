@@ -3,12 +3,12 @@
 - **Generated At**: `2026-10-11T12:24:05+05:30`
 - **Evaluated Agent**: `AGI 1.7.0` (`OMEGA COMMAND`)
 - **Repository & Revision**: `https://github.com/Abhishek200416/AGI-1.7V` @ commit `ec3425b0a3a28e06a0a7d9959607932d153b8cc6` (`main`, unmodified core code)
-- **Foundation Model**: `gemini-3.8-flash-high` (`google/gemini-3.8-flash-high`, `effort="high"`) via `C:\Users\abhis\AppData\Local\agy\bin\agy.exe` (`v1.3.3`)
+- **Foundation Model**: `gemini-3.8-flash-high` (`google/gemini-3.8-flash-high`, `effort="high"`) via `<USER_HOME>\AppData\Local\agy\bin\agy.exe` (`v1.3.3`)
 - **Benchmark Dataset**: Official `terminal-bench@2.0` (`89` tasks @ commit `69671fbaac6d67a7ef0dfec016cc38a64ef7a77c`)
 - **Evaluation Harness**: Official Harbor `0.24.0` + Docker Engine `29.2.0` (official task verifiers)
 - **External Drive (`D:\`) Storage Architecture**:
-  - Harbor Dataset & Task Cache Junction: `C:\Users\abhis\.cache\harbor <<===>> D:\AGI_Evaluation\harbor_cache`
-  - Pass 2 Self-Improved Trial Output Junction: `C:\Users\abhis\Downloads\pt\reports\terminal_bench_2_0\agi17\pass2_self_improved <<===>> D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\pass2_self_improved`
+  - Harbor Dataset & Task Cache Junction: `<USER_HOME>\.cache\harbor <<===>> D:\AGI_Evaluation\harbor_cache`
+  - Pass 2 Self-Improved Trial Output Junction: `<WORKSPACE_DIR>\reports\terminal_bench_2_0\agi17\pass2_self_improved <<===>> D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\pass2_self_improved`
   - 10-Layer SQLite WAL Persistent Memory: `D:\AGI_Storage\AGI_1_7\harbor_tb2\memory\omega_memory.db`
   - 14-State SQLite WAL Task Store: `D:\AGI_Storage\AGI_1_7\harbor_tb2\state\agi17_tasks.db`
 
