@@ -894,10 +894,18 @@ class DisposableSandboxRunner:
         container_cleanup_ok = not use_docker
 
         try:
+            if use_docker:
+                os.chmod(staging_dir, 0o755)
             for rel_path, content in files.items():
                 target_file = validate_relative_sandbox_path(staging_dir, rel_path)
                 target_file.parent.mkdir(parents=True, exist_ok=True)
                 target_file.write_text(content, encoding="utf-8")
+                if use_docker:
+                    os.chmod(target_file, 0o644)
+                    cur_dir = target_file.parent
+                    while cur_dir != staging_dir and staging_dir in cur_dir.parents:
+                        os.chmod(cur_dir, 0o755)
+                        cur_dir = cur_dir.parent
 
             if use_docker and docker_img:
                 cmd_executed = [
