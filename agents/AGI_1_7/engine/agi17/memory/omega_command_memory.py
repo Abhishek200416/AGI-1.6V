@@ -594,7 +594,7 @@ class OmegaCommandMemory:
             "layer": entry.layer_name,
             "subject_key": entry.subject_key,
             "content": content,
-            "entry": entry,
+            "entry": asdict(entry),
         }
 
     def build_compact_memory_prompt_block(

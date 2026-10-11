@@ -193,17 +193,47 @@ class ProcessSupervisor:
             merged_env.update(env)
 
         started_at = time.time()
-        proc = subprocess.Popen(
-            command,
-            cwd=cwd,
-            env=merged_env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            bufsize=1,
-        )
+        try:
+            proc = subprocess.Popen(
+                command,
+                cwd=cwd,
+                env=merged_env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+            )
+        except (FileNotFoundError, PermissionError, OSError) as exc:
+            err_msg = f"Command launch failed ({type(exc).__name__}): {exc}"
+            stdout_log.write_text("", encoding="utf-8")
+            stderr_log.write_text(err_msg + "\n", encoding="utf-8")
+            finished_at = time.time()
+            notification = self.notifier.notify_completion(
+                task_id=task_id,
+                parent_task_id=parent_task_id,
+                pid=-1,
+                exit_code=127,
+                timed_out=False,
+                idle_timed_out=False,
+                canceled=False,
+                started_at=started_at,
+                finished_at=finished_at,
+                stdout_log_path=str(stdout_log),
+                stderr_log_path=str(stderr_log),
+                stdout_tail=[],
+                stderr_tail=[err_msg],
+                latest_progress_percent=0.0,
+                expected_artifacts=expected_artifacts,
+                usage_metadata={},
+            )
+            if on_complete:
+                try:
+                    on_complete(notification)
+                except Exception:
+                    pass
+            return notification
 
         with self._lock:
             self._active_processes[task_id] = proc
