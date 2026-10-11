@@ -1,13 +1,13 @@
 # AGI 1.7 — OMEGA COMMAND
 ## Resource-Aware, Sandboxed Multi-Agent Coding & Python CI-Repair Runtime (`gemini-3.8-flash-high`)
 
-[![Runtime](https://img.shields.io/static/v1?label=Runtime&message=AGI%201.7%20OMEGA%20COMMAND&color=10B981)](agents/AGI_1_7/run_agi_17.py)
-[![Sole Model](https://img.shields.io/static/v1?label=Sole%20Model&message=gemini-3.8-flash-high&color=059669)](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py)
-[![Sandbox](https://img.shields.io/static/v1?label=Sandbox&message=Disposable%20Docker%20Container%20%28--network%20none%29&color=0284C7)](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py)
-[![Specialist Contracts](https://img.shields.io/static/v1?label=Specialist%20Contracts&message=100%20Across%2016%20Families&color=7E22CE)](agents/AGI_1_7/ecosystem/agent_registry/registry.json)
-[![Verification & CI](https://img.shields.io/static/v1?label=Verification%20%26%20CI%20Suite&message=88%2F88%20Passing&color=16A34A)](.github/workflows/agi17-ci.yml)
-[![P0 Security Hardening](https://img.shields.io/static/v1?label=P0%20Security%20Hardening&message=VERIFIED%20PASS&color=10B981)](agents/AGI_1_7/docs/AGI_1_7_P0_SECURITY_HARDENING_REPORT.md)
-[![70 Benchmarks](https://img.shields.io/static/v1?label=70%20Benchmarks&message=99.64%25%20Verified%20Score&color=7E22CE)](agents/AGI_1_7/docs/AGI_1_7_FOUR_AGENT_70_BENCHMARK_COMPARISON.md)
+[![Runtime](assets/badges/runtime.svg)](agents/AGI_1_7/run_agi_17.py)
+[![Sole Model](assets/badges/model.svg)](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py)
+[![Sandbox](assets/badges/sandbox.svg)](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py)
+[![Specialist Contracts](assets/badges/specialists.svg)](agents/AGI_1_7/ecosystem/agent_registry/registry.json)
+[![Verification & CI](assets/badges/verification.svg)](.github/workflows/agi17-ci.yml)
+[![P0 Security Hardening](assets/badges/security.svg)](agents/AGI_1_7/docs/AGI_1_7_P0_SECURITY_HARDENING_REPORT.md)
+[![70 Benchmarks](assets/badges/benchmarks.svg)](agents/AGI_1_7/docs/AGI_1_7_FOUR_AGENT_70_BENCHMARK_COMPARISON.md)
 
 **AGI 1.7 — OMEGA COMMAND** is an autonomous, resource-aware multi-agent engineering and automated **Python CI-Repair** runtime powered exclusively by **Google's Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** using the **Python 3.10+ Standard Library** (`0` third-party PyPI runtime dependencies required).
 
@@ -23,51 +23,178 @@
 
 AGI 1.7 is engineered as a defense-in-depth, transactional multi-agent operating runtime. It eliminates unbounded token expansion, non-deterministic execution loops, and insecure host code execution through formal control planes and container sandboxing.
 
-### 1.1 Complete Multi-Tier System Topology
+### 1.1 Master Multi-Tier Multi-Agent System Topology
+
+The diagram below maps the complete 8-tier architecture of AGI 1.7, tracing execution from entrypoint ingestion and gatekeeper security through DAG decomposition, Win32 hardware governance, 100-specialist routing, ephemeral Docker container isolation, self-learning failure playbooks, and independent human approval gating:
 
 ```mermaid
 flowchart TB
-    subgraph Boundary ["1. Presentation & Safety Gatekeeper"]
-        CLI["User CLI / CI Trigger / PR Hook"] --> GATE["HighImpactApprovalGate & Untrusted Content Scanner"]
-        GATE --> INBOX["Live CommandInbox (Pause / Reprioritize / Add Task)"]
+    %% Master Multi-Tier Multi-Agent System Topology
+    subgraph Layer0 ["0. Ingestion, Security Gatekeeper & Live Inbox"]
+        direction TB
+        INPUT["User CLI / CI Pipeline / PR Webhook / API Mission"] --> SCAN["UntrustedContentScanner<br/>(Path Traversal & SSRF Firewall)"]
+        SCAN --> GATE["HighImpactApprovalGate<br/>(Default-Deny Independent Decision Boundary)"]
+        GATE --> INBOX["Live CommandInbox<br/>(PAUSE_AND_SWITCH | ADD_CHILD_TASK | CANCEL_AND_REPLACE | REPRIORITIZE)"]
     end
 
-    subgraph ControlPlane ["2. Transactional Task Control Plane"]
-        INBOX --> ORCH["HierarchicalOrchestrator (Mission Decomposer & DAG Planner)"]
-        ORCH <--> TASKDB[("14-State SQLite WAL Task Store (agi17_tasks.db) & Event Log")]
-        ORCH <--> CHECK["CheckpointManager (SHA-256 State Signatures & Crash Recovery)"]
-        ORCH <--> DEP["DependencyManager (DFS Cycle Detection, Max Depth = 3)"]
+    subgraph Layer1 ["1. Transactional Task Control Plane & Execution Router"]
+        direction TB
+        INBOX --> DECIDER{"Complexity Evaluator<br/>Fast-Path vs DAG?"}
+        DECIDER -- "Single Task / Low Overhead" --> FAST["Fast-Path Single-Agent Runner<br/>(Zero Orchestration Latency)"]
+        DECIDER -- "Multi-Step / Multi-Agent" --> ORCH["HierarchicalOrchestrator<br/>(Mission Decomposer & Lifecycle Coordinator)"]
+        
+        ORCH --> DECOMP["Mission Decomposer (DAG Planner)<br/>(Max 100 Subtasks, Max Depth = 3)"]
+        DECOMP --> DEP["DependencyManager<br/>(DFS Cycle Detection & Topological Sort)"]
+        
+        DEP <--> TASKDB[("14-State SQLite WAL Task Store<br/>(agi17_tasks.db)")]
+        TASKDB <--> TLOG[("Append-Only Task Event Log<br/>(task_events.jsonl)")]
+        TASKDB <--> CHECK["CheckpointManager<br/>(SHA-256 Checksums & Crash Recovery: reconcile_after_restart)"]
+        TASKDB <--> STM["TaskStateMachine<br/>(14-State Transition Enforcer)"]
     end
 
-    subgraph Governance ["3. Hardware Governance & Capability Routing"]
-        ORCH --> GOV["ResourceGovernor (Win32 RAM / CPU Headroom, 1..4 Workers)"]
-        ORCH --> ROUTER["CapabilityRouter & SpecialistFactory (100 Contracts / 16 Families)"]
-        GOV --> MA["ModelAdapter (gemini-3.8-flash-high, Cost & Token Ceilings)"]
-        ROUTER --> MA
+    subgraph Layer2 ["2. Dynamic Concurrency & Win32 Hardware Governance"]
+        direction TB
+        ORCH --> GOV["ResourceGovernor<br/>(Win32 Telemetry Monitor)"]
+        GOV <--> WIN32["Live System Headroom Checks<br/>(GlobalMemoryStatusEx: RAM >= 1400MB, Commit >= 2500MB, CPU < 85%)"]
+        GOV --> DISPATCH["Dynamic Active Worker Pool<br/>(1 to 4 Active Heavy Executions via 3-Sample Hysteresis)"]
+        
+        DISPATCH --> Q_LIGHT["Light In-Process Queue (15 MB, 3% CPU)"]
+        DISPATCH --> Q_MODEL["Model Call Queue (280 MB, 12% CPU)"]
+        DISPATCH --> Q_CLI["CLI Subprocess Queue (250 MB, 15% CPU)"]
+        DISPATCH --> Q_DOCKER["Docker Container Queue (650 MB, 25% CPU)"]
     end
 
-    subgraph Execution ["4. Disposable Sandbox Execution & Process Supervision"]
-        ORCH --> SBX["DisposableSandboxRunner (--network none --read-only --user 65534)"]
-        SBX <--> SUP["ProcessSupervisor & StreamParser (Live stdout/stderr Inspection)"]
-        SBX --> INSP["Docker Engine Inspect API (Container Termination Verification)"]
+    subgraph Layer3 ["3. 100-Specialist Ecosystem & Capability Router"]
+        direction TB
+        ORCH --> ROUTER["CapabilityRouter<br/>(Schema Matching, Keyword Weighting & Permissions)"]
+        ROUTER --> FACTORY["SpecialistFactory<br/>(Instantiates Validated Contracts from registry.json)"]
+        
+        FACTORY --> FAM_ARCH["Architecture & Planning (12 Specialists)<br/>(lead_system_architect, hierarchical_decomposer, ...)"]
+        FACTORY --> FAM_SWE["Software Engineering & Code Gen (14 Specialists)<br/>(swe_python_runtime_engineer, swe_ast_refactorer, ...)"]
+        FACTORY --> FAM_QA["QA & Regression Verification (8 Specialists)<br/>(qa_test_harness_engineer, regression_auditor, ...)"]
+        FACTORY --> FAM_SEC["Security & Sandbox Governance (6 Specialists)<br/>(sandbox_containment_auditor, ssrf_firewall_inspector, ...)"]
+        FACTORY --> FAM_MEM["Persistent Memory & Knowledge (6 Specialists)<br/>(memory_layer_curator, acon_compression_specialist, ...)"]
+        FACTORY --> FAM_RES["Research & Fact Verification (6 Specialists)<br/>(grounded_researcher, sec_edgar_filings_analyst, ...)"]
+        FACTORY --> FAM_SUP["Process Supervision & Containment (6 Specialists)<br/>(streaming_stdout_parser, idle_timeout_monitor, ...)"]
+        FACTORY --> FAM_OTHER["Domain & Ops Specialists (42 Specialists)<br/>(benchmark_auditor, git_linear_history_curator, ...)"]
+        
+        FACTORY <--> PIPE["Inter-Specialist Context Pipeline<br/>(Typed Upstream Artifact Hand-off)"]
     end
 
-    subgraph MemoryPlane ["5. Cross-Session Memory & Self-Learning"]
-        ORCH <--> MEM[("10-Layer SQLite Memory (omega_memory.db)")]
-        MEM <--> ACON["ACONCompressor (Structural Anchor Preservation)"]
-        MEM <--> PLAY["Layer 7 Failure Playbooks (record_failure_lesson)"]
+    subgraph Layer4 ["4. Sole Foundation Model Policy (Directive 0) & Token Economy"]
+        direction TB
+        PIPE --> MA["ModelAdapter (agy.exe CLI Wrapper)<br/>(Directive 0: Sole Base Model gemini-3.8-flash-high --effort high)"]
+        MA --> CWD["Isolated CWD Working Directory (isolated_cwd)<br/>(-88.2% Token Bloat Reduction: 2.6k vs 22.7k tokens)"]
+        MA --> ECON["TokenEconomy Ledger<br/>(Dual-Source: PROVIDER_REPORTED vs LOCAL_ESTIMATE & Cost Ceilings)"]
     end
 
-    subgraph Verification ["6. Evidence Verification & Output Staging"]
-        SBX --> VERIF["EvidenceVerifier & Full-Suite Regression Verifier"]
-        VERIF --> STAGE["External Staging Directory (Outside Workspace Tree)"]
-        STAGE --> DIFF["Verified Unified Diff & PR Payload (Requires Human Approval)"]
+    subgraph Layer5 ["5. Disposable Docker Container Sandbox & Process Supervision"]
+        direction TB
+        PIPE --> SBX["DisposableSandboxRunner<br/>(python:3.12-slim@sha256:a6e34c598f...)"]
+        SBX --> FLAGS["Strict Hardening Flags<br/>(--network none, --read-only, --cap-drop ALL, tmpfs /tmp, UID 65534)"]
+        SBX <--> SUP["ProcessSupervisor & StreamParser<br/>(Real-Time stdout/stderr Progress & Idle Timeout Detector)"]
+        SBX --> INSP["Docker Engine Inspect API<br/>(Mandatory Container Teardown Verification, 0 Orphan Leaks)"]
+    end
+
+    subgraph Layer6 ["6. Self-Learning CI-Repair Loop & Persistent Memory Plane"]
+        direction TB
+        SBX -- "Test Failure Traceback" --> REPAIR["CIRepairAgent<br/>(Autonomous Python CI-Repair Specialist)"]
+        REPAIR --> RECORD["record_failure_lesson()<br/>(Root Cause & Minimal Fix Rule)"]
+        RECORD <--> MEM[("10-Layer SQLite Memory Store<br/>(omega_memory.db WAL Mode)")]
+        MEM <--> ACON["ACONCompressor<br/>(Anchor-Preserving Lossless Compression)"]
+        MEM --> GUARD["Compact Guardrail Injection (<= 120 Tokens)<br/>(Directly Guides Next Coding Prompt)"]
+        GUARD --> MIN_PATCH["swe_patch_minimizer<br/>(Minimal Diff Generation)"]
+        MIN_PATCH --> SBX
+    end
+
+    subgraph Layer7 ["7. Verification, Staging & Human Approval Gating"]
+        direction TB
+        SBX -- "Exit Code 0 (Full Pass)" --> VERIF["EvidenceVerifier<br/>(Zero-Regression Audit & SHA-256 Ledger Signing)"]
+        VERIF --> STAGE["External Candidate Staging Directory<br/>(Repo Files 100% Unchanged During Generation/Testing)"]
+        STAGE --> HUMAN{"HighImpactApprovalGate<br/>Independent Human Authorization?"}
+        HUMAN -- "Approved" --> ATOMIC["Atomic Workspace Commit<br/>(Applies Minimal Verified Unified Diff)"]
+        HUMAN -- "Denied / Timeout" --> ABORT["Default-Deny Staging Quarantine<br/>(Workspace Leaves Unmodified)"]
+    end
+
+    Layer0 --> Layer1
+    Layer1 --> Layer2
+    Layer2 --> Layer3
+    Layer3 --> Layer4
+    Layer3 --> Layer5
+    Layer5 --> Layer6
+    Layer6 --> Layer7
+```
+
+---
+
+### 1.2 Multi-Agent Specialist Routing, Contract Binding & Context Pipeline
+
+The flowchart below details how complex multi-stage engineering goals are ingested, topologically decomposed, matched to verified specialist contracts across 16 functional families, resource-governed against live Win32 memory headroom, and executed through isolated model calls and container sandboxes:
+
+```mermaid
+flowchart LR
+    %% Specialist Routing & Execution Wave Flowchart
+    subgraph Ingest ["Task Ingestion"]
+        GOAL["User Objective / Bug Report / PR"]
+    end
+
+    subgraph Decompose ["DAG Decomposition"]
+        DECOMP["Hierarchical Decomposer<br/>(Topological Sorting)"]
+        GOAL --> DECOMP
+        DECOMP --> T1["Subtask 1: Contract Spec"]
+        DECOMP --> T2["Subtask 2: Core Implementation"]
+        DECOMP --> T3["Subtask 3: Unit Tests"]
+        DECOMP --> T4["Subtask 4: Sandbox Verification"]
+    end
+
+    subgraph Router ["Capability Router"]
+        ROUTER{"CapabilityRouter<br/>(Schema & Permissions)"}
+        T1 --> ROUTER
+        T2 --> ROUTER
+        T3 --> ROUTER
+        T4 --> ROUTER
+    end
+
+    subgraph Specialists ["100-Specialist Contract Execution"]
+        direction TB
+        SP1["Architecture Family<br/>lead_system_architect"]
+        SP2["Software Engineering Family<br/>swe_python_runtime_engineer"]
+        SP3["QA Engineering Family<br/>swe_test_synthesizer"]
+        SP4["Sandbox & Verification Family<br/>sandbox_containment_auditor"]
+        ROUTER --> SP1
+        ROUTER --> SP2
+        ROUTER --> SP3
+        ROUTER --> SP4
+    end
+
+    subgraph Hardware ["Resource Governor"]
+        GOV["ResourceGovernor<br/>(Win32 Headroom Check)<br/>RAM >= 1400 MB<br/>Commit >= 2500 MB<br/>CPU < 85%"]
+        SP1 --- GOV
+        SP2 --- GOV
+        SP3 --- GOV
+        SP4 --- GOV
+    end
+
+    subgraph Execution ["Execution Engines"]
+        direction TB
+        MDL["ModelAdapter<br/>(gemini-3.8-flash-high)<br/>Isolated CWD"]
+        DOCKER["Disposable Docker Sandbox<br/>(--network none, --read-only)<br/>UID 65534"]
+        SP1 --> MDL
+        SP2 --> MDL
+        SP3 --> MDL
+        SP4 --> DOCKER
+    end
+
+    subgraph Synthesis ["Verification & Staging"]
+        DIFF["Unified Diff & Evidence Ledger"]
+        MDL --> DIFF
+        DOCKER --> DIFF
     end
 ```
 
 ---
 
-### 1.2 The Enforced 14-State Task State Machine
+### 1.3 The Enforced 14-State Task State Machine
 
 Every mission, subtask, and repair loop transitions through an enforced 14-state machine managed by [`TaskStateMachine`](agents/AGI_1_7/engine/agi17/task_control/task_state_machine.py). Invalid transitions are rejected at runtime rather than silently accepted:
 
@@ -117,7 +244,7 @@ stateDiagram-v2
 
 ---
 
-### 1.3 End-to-End Orchestration & Self-Healing Sequence
+### 1.4 End-to-End Orchestration & Self-Healing Sequence
 
 The sequence below traces the execution of a multi-specialist coding and self-healing mission, from CLI ingestion through resource-governed dispatch, sandboxed test execution, and persistent failure memory learning:
 
@@ -183,7 +310,7 @@ sequenceDiagram
 
 ---
 
-### 1.4 Detailed Subsystem Internals
+### 1.5 Detailed Subsystem Internals
 
 #### 1. Hierarchical DAG Orchestrator (`HierarchicalOrchestrator`)
 - **Fast Path vs. Hierarchical DAG:** Trivial, single-file requests bypass multi-agent overhead via the direct *Fast Path*. Complex missions trigger the *Hierarchical DAG Planner*, which decomposes the goal into a topological graph of up to **100 logical subtasks** (`MAX_LOGICAL_CHILD_TASKS = 100`).
