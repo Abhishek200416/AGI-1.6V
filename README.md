@@ -257,7 +257,7 @@ sequenceDiagram
     participant Gov as ResourceGovernor (Win32 Telemetry)
     participant Spec as SpecialistFactory (100 Contracts)
     participant Model as ModelAdapter (Gemini 3.8 Flash High)
-    participant Box as DisposableSandboxRunner (Docker)
+    participant Sbx as DisposableSandboxRunner (Docker)
     participant Mem as OmegaCommandMemory (SQLite WAL)
 
     User->>Gate: Execute Mission Request
@@ -279,13 +279,13 @@ sequenceDiagram
     Spec->>Model: Synthesize Python Implementation
     Model-->>Spec: Implementation Source Code
     
-    Note over Orch,Box: Stage 3 — Disposable Container Verification
-    Orch->>Box: Spin Up Ephemeral Container (--network none --read-only)
-    Box->>Box: Run test suite with non-root UID 65534
+    Note over Orch,Sbx: Stage 3 — Disposable Container Verification
+    Orch->>Sbx: Spin Up Ephemeral Container (--network none --read-only)
+    Sbx->>Sbx: Run test suite with non-root UID 65534
     
     alt Test Suite Fails (Boundary Failure / Assertion Error)
-        Box-->>Orch: Return Exit Code 1 + Failure Traceback
-        Orch->>Box: Verify Named Container Removal via Docker Inspect
+        Sbx-->>Orch: Return Exit Code 1 + Failure Traceback
+        Orch->>Sbx: Verify Named Container Removal via Docker Inspect
         
         Note over Orch,Mem: Layer 7 Persistent Failure-Playbook Learning
         Orch->>Mem: record_failure_lesson(subject, error, root_cause, fix_rule)
@@ -296,14 +296,14 @@ sequenceDiagram
         Spec->>Model: Synthesize Minimal Diff Addressing Traceback
         Model-->>Spec: Minimal Targeted Patch
         
-        Orch->>Box: Spin Up Clean Container to Re-verify Patch
-        Box->>Box: Execute Full-Suite Regression Tests
-        Box-->>Orch: Return Exit Code 0 (Full Pass, Zero Regressions)
+        Orch->>Sbx: Spin Up Clean Container to Re-verify Patch
+        Sbx->>Sbx: Execute Full-Suite Regression Tests
+        Sbx-->>Orch: Return Exit Code 0 (Full Pass, Zero Regressions)
     else First Pass Succeeds
-        Box-->>Orch: Return Exit Code 0 (All Tests Pass)
+        Sbx-->>Orch: Return Exit Code 0 (All Tests Pass)
     end
     
-    Box->>Orch: Confirm Container Termination & Teardown
+    Sbx->>Orch: Confirm Container Termination & Teardown
     Orch->>Gate: Stage Candidate Patch in External Staging Dir
     Gate-->>User: Deliver Reviewable Unified Diff & PR Payload
 ```
@@ -332,6 +332,24 @@ sequenceDiagram
   | `browser` | `450.0 MB` | `550.0 MB` | `20.0%` | Yes | No |
   | `heavy_download` | `120.0 MB` | `160.0 MB` | `8.0%` | Yes | No |
 
+```mermaid
+flowchart TD
+    subgraph GovEngine ["Dynamic Hardware Headroom & 4-Worker Governor Architecture"]
+        direction TB
+        POLL["ResourceGovernor Polling Loop (100ms)"] --> WIN32_CALL["Win32 Kernel API: GlobalMemoryStatusEx() & GetSystemTimes()"]
+        WIN32_CALL --> TELEM["Current Telemetry:<br/>Free Physical RAM, Free Commit Charge, CPU Usage %"]
+        TELEM --> HYST["3-Sample Moving Average & Hysteresis Window"]
+        HYST --> GATE_CHECK{"Headroom Invariant Check:<br/>RAM >= 1400 MB & Commit >= 2500 MB & CPU < 85%?"}
+        GATE_CHECK -- "Violated (Headroom Exhausted)" --> THROTTLE["Enter WAITING_FOR_RESOURCE State<br/>(Apply Exponential Backoff: 0.5s .. 8s)"]
+        GATE_CHECK -- "Satisified (Headroom Healthy)" --> ADMIT["Worker Admission Pool<br/>(Scale Concurrency: 1 to 4 Active Heavy Workers)"]
+        ADMIT --> QUEUES["6-Tier Workload Routing Matrix"]
+        QUEUES --> W1["Light In-Process (15 MB, 3% CPU)"]
+        QUEUES --> W2["Model Call (280 MB, 12% CPU)"]
+        QUEUES --> W3["CLI Subprocess (250 MB, 15% CPU)"]
+        QUEUES --> W4["Docker Container (650 MB, 25% CPU)"]
+    end
+```
+
 #### 3. 14-State Transactional Control Plane & Live CommandInbox
 - **WAL Durability & Event Auditing:** Every task event is committed to SQLite in WAL mode (`agi17_tasks.db`) and journaled to `task_events.jsonl` with an `idempotency_key` preventing redundant executions upon resume.
 - **Mid-Flight Instruction Ingestion:** Operators can interact with running missions via [`CommandInbox`](agents/AGI_1_7/engine/agi17/task_control/task_manager.py):
@@ -340,6 +358,21 @@ sequenceDiagram
   - `CANCEL_AND_REPLACE`: Cancels an executing branch and substitutes an alternative execution strategy.
   - `REPRIORITIZE`: Re-orders queue priorities dynamically.
 - **Crash Recovery Protocol (`reconcile_after_restart()`):** Scans the SQLite WAL store upon startup, inspects `task_events.jsonl`, validates disk checkpoint hashes via [`CheckpointManager`](agents/AGI_1_7/engine/agi17/task_control/checkpoint_manager.py), and safely moves un-finalized tasks to `READY` or `FAILED`.
+
+```mermaid
+flowchart TD
+    subgraph WalEngine ["SQLite WAL Transaction & Crash Recovery Protocol"]
+        direction TB
+        RESTART["Engine Start / Process Crash Recovery"] --> RECON["reconcile_after_restart()"]
+        RECON --> SCAN_DB[("Scan agi17_tasks.db (WAL Mode)")]
+        RECON --> SCAN_LOG[("Inspect task_events.jsonl Audit Log")]
+        SCAN_DB & SCAN_LOG --> CHECK_SUM["CheckpointManager (Validate SHA-256 Hashes)"]
+        CHECK_SUM --> STATE_INSPECT{"Task State at Interruption"}
+        STATE_INSPECT -- "RUNNING / VERIFYING" --> RESET_READY["Roll Back to READY (Re-Enqueue)"]
+        STATE_INSPECT -- "SUCCEEDED / FAILED" --> LOCK_TERM["Lock Terminal State (Immutable)"]
+        STATE_INSPECT -- "Unrecoverable Corruption" --> MARK_FAIL["Mark FAILED with Audit Trace"]
+    end
+```
 
 #### 4. Disposable Container Sandbox & Process Supervision
 - **Container Hardening Parameters:** All untrusted code executes inside ephemeral containers managed by [`DisposableSandboxRunner`](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py):
@@ -350,6 +383,32 @@ sequenceDiagram
 - **Fail-Closed Guarantee:** Host subprocess fallback is disabled in production (`allow_host_subprocess_fallback = False`). If Docker Engine is unreachable or image digest validation fails, execution terminates with `SandboxIsolationUnavailableError`.
 - **Teardown Verification:** Container termination is verified directly through the Docker Engine inspect API. Orphaned containers trigger `SandboxCleanupUnverifiedError`.
 - **External Staging Directory:** Generated candidate code is stored and tested in an external staging path outside the repository. Workspace files remain byte-for-byte unmodified until testing succeeds and human approval is received.
+
+```mermaid
+flowchart TD
+    subgraph ContainerSandbox ["Disposable Docker Container Sandbox & Adversarial Containment"]
+        direction TB
+        REQ["Candidate Code & Test Execution Request"] --> PULL["Pin & Verify Image Digest:<br/>python:3.12-slim@sha256:a6e34c598f..."]
+        PULL --> DOCKER_UP["docker run --rm --name agi17-sbx-uuid"]
+        
+        subgraph HardeningFlags ["Hardened Isolation Perimeter"]
+            F1["--network none (Air-Gapped: Zero Outbound/Inbound Sockets)"]
+            F2["--read-only (Immutable Root Filesystem)"]
+            F3["--cap-drop ALL (Drop Linux Capabilities)"]
+            F4["--security-opt no-new-privileges (Prevent SUID Escalation)"]
+            F5["--user 65534:65534 (Unprivileged nobody User)"]
+            F6["--tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m"]
+            F7["--cpus 1.0 --memory 512m --pids-limit 64"]
+        end
+        
+        DOCKER_UP --> HardeningFlags
+        HardeningFlags --> SUP["ProcessSupervisor & StreamParser<br/>(Real-Time stdout/stderr Line Parsing & Idle Watchdog)"]
+        SUP --> DOCKER_INSPECT["Mandatory Docker Inspect API Verification<br/>(Assert Container Destroyed, 0 Zombie Leaks)"]
+        DOCKER_INSPECT --> EXIT_EVAL{"Container Exit Code"}
+        EXIT_EVAL -- "0 (All Tests Passed)" --> CLEAN_PASS["Verified Clean Execution Pass"]
+        EXIT_EVAL -- "!= 0 (Failed Test / Crash)" --> FAIL_PASS["Capture Full Traceback for CI-Repair"]
+    end
+```
 
 #### 5. 10-Layer Cross-Session Memory & Self-Learning Playbooks
 [`OmegaCommandMemory`](agents/AGI_1_7/engine/agi17/memory/omega_command_memory.py) maintains cross-session persistent knowledge across 10 structured layers in SQLite WAL (`omega_memory.db`):
@@ -369,6 +428,26 @@ sequenceDiagram
 
 - **Structural ACON Compression:** [`ACONCompressor`](agents/AGI_1_7/engine/agi17/memory/omega_command_memory.py) compresses execution observations while preserving critical anchor tokens: SHA-256 hashes (`[a-f0-9]{64}`), exit codes (`exit_code: 0`), file paths, error types (`OutOfMemoryError`), and task IDs (`TASK-xxx`).
 - **Continuous Failure-Playbook Learning:** When a test fails, `record_failure_lesson()` records `(subject_key, error_signature, root_cause, minimal_fix_rule)`. During subsequent planning, `build_compact_memory_prompt_block()` injects a `<=120`-token guardrail directly into the coder's prompt, ensuring self-healing without token bloat.
+
+```mermaid
+flowchart TD
+    subgraph RepairEngine ["Autonomous CI-Repair Agent & Self-Learning Memory Feedback Loop"]
+        direction TB
+        TRACE["Traceback Ingestion from Container"] --> DIAG["CIRepairAgent: Root-Cause Diagnosis"]
+        DIAG --> EXTRACT["Extract: Failing Assertion, Faulty Symbol, Minimal Boundary"]
+        EXTRACT --> LEARN["record_failure_lesson()<br/>Commit to Layer 7 (omega_memory.db WAL)"]
+        LEARN --> GUARD_BUILD["Synthesize Compact Guardrail (<= 120 Tokens)"]
+        GUARD_BUILD --> PROMPT["Inject Guardrail into swe_patch_minimizer Prompt"]
+        PROMPT --> MODEL_CALL["ModelAdapter (gemini-3.8-flash-high)<br/>Synthesize Minimal Patch"]
+        MODEL_CALL --> RE_VERIFY["Re-run Test Suite in Clean Disposable Sandbox"]
+        RE_VERIFY --> VERIF_CHECK{"Full Regression Pass?"}
+        VERIF_CHECK -- "Zero Regressions (Pass)" --> STAGE_PATCH["External Candidate Staging Directory"]
+        STAGE_PATCH --> APPROVE{"HighImpactApprovalGate<br/>Independent Human Review Callback"}
+        APPROVE -- "Approved" --> ATOMIC_WRITE["Atomic Workspace Commit"]
+        APPROVE -- "Denied" --> QUARANTINE["Quarantine Staged Candidate"]
+        VERIF_CHECK -- "Regressions Detected" --> RE_LOOP["Retry with Accumulated Playbook (Max 3 Loops)"]
+    end
+```
 
 #### 6. Sole Foundation Model Policy (Directive 0) & Token Economy
 - **Pinned Model:** The sole foundation model is **Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** via `ModelAdapter` (`agy.exe --model gemini-3.8-flash-high --effort high`). Silent fallbacks to low effort or external models are blocked.
@@ -407,7 +486,15 @@ The multi-agent ecosystem organizes its **100 validated specialist contracts** a
 
 All reported evaluation results represent verified executions with reproducible logs, SHA-256 artifact hashes, and network-isolated container enforcement.
 
-### 3.1 Verification Scorecard
+### 3.1 Head-to-Head Comparative Visual Dossier (Antigravity Basic vs. AGI 1.7)
+
+The visual charts below provide a direct, standalone head-to-head evaluation strictly comparing the **Antigravity Basic Agent (Baseline)** against **AGI 1.7 — OMEGA COMMAND** across verified operational capabilities and 70 benchmark categories in 7 domains:
+
+![AGI 1.7 vs Antigravity Basic Overall Comparison](assets/graphs/antigravity_vs_agi17_overall_comparison.svg)
+
+![AGI 1.7 vs Antigravity Basic 7-Domain Breakdown](assets/graphs/antigravity_vs_agi17_domain_comparison.svg)
+
+### 3.2 Standalone Verification Scorecard
 
 | Evaluation Category | Verified Metric | Result | Verification Standard & Sandbox Policy |
 | :--- | :--- | :---: | :--- |
