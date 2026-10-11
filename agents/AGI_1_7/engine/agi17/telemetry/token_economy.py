@@ -141,9 +141,12 @@ class AdaptiveTokenController:
         custom_campaign_budget: Optional[int] = None,
     ) -> Dict[str, int]:
         spec = self.TIER_LIMITS.get(tier, self.TIER_LIMITS["STANDARD"])
-        t_budget = custom_task_budget if custom_task_budget is not None else spec["max_task_tokens"]
         with self._lock:
-            self._task_budgets[task_id] = t_budget
+            if custom_task_budget is not None or task_id not in self._task_budgets:
+                t_budget = custom_task_budget if custom_task_budget is not None else spec["max_task_tokens"]
+                self._task_budgets[task_id] = t_budget
+            else:
+                t_budget = self._task_budgets[task_id]
             self._task_consumed.setdefault(task_id, 0)
             if child_task_id:
                 c_budget = custom_child_budget if custom_child_budget is not None else spec["max_child_tokens"]

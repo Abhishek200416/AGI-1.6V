@@ -25,6 +25,11 @@ from ..orchestration.ci_repair_agent import CIRepairAgent
 from ..orchestration.hierarchical_orchestrator import HierarchicalOrchestrator, SubtaskSpec
 from ..orchestration.resource_governor import ResourceGovernor
 from ..process_supervision.process_supervisor import ProcessSupervisor
+from ..process_supervision.sandbox_runner import (
+    DisposableSandboxRunner,
+    HighImpactApprovalGate,
+    SandboxPolicy,
+)
 from ..research.grounded_research import GroundedResearchEngine
 from ..task_control.task_manager import DurableTaskManager
 from ..telemetry.progress_service import ProgressService
@@ -44,6 +49,10 @@ class AGI17Adapter:
         *,
         storage_root: str | Path = r"D:\AGI_Storage\AGI_1_7",
         eval_root: str | Path = r"D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND",
+        sandbox_policy: Optional[SandboxPolicy] = None,
+        sandbox_runner: Optional[DisposableSandboxRunner] = None,
+        approval_gate: Optional[HighImpactApprovalGate] = None,
+        model_adapter: Optional[ModelAdapter] = None,
     ) -> None:
         import os as _os
         import sys as _sys
@@ -80,10 +89,20 @@ class AGI17Adapter:
             task_manager=self.task_manager,
             logs_dir=self.storage_root / "logs" / "processes",
         )
-        self.model_adapter = ModelAdapter(
+        self.model_adapter = model_adapter or ModelAdapter(
             token_controller=self.token_controller,
             governor=self.governor,
             supervisor=self.supervisor,
+        )
+        self.approval_gate = approval_gate or (
+            sandbox_runner.approval_gate if sandbox_runner is not None else HighImpactApprovalGate()
+        )
+        self.sandbox_policy = sandbox_policy or (
+            sandbox_runner.policy if sandbox_runner is not None else SandboxPolicy.production()
+        )
+        self.sandbox_runner = sandbox_runner or DisposableSandboxRunner(
+            policy=self.sandbox_policy,
+            approval_gate=self.approval_gate,
         )
         self.orchestrator = HierarchicalOrchestrator(
             task_manager=self.task_manager,
@@ -94,12 +113,15 @@ class AGI17Adapter:
             ecosystem_coordinator=self.ecosystem_coordinator,
             model_adapter=self.model_adapter,
             supervisor=self.supervisor,
+            sandbox_runner=self.sandbox_runner,
+            approval_gate=self.approval_gate,
         )
         self.ci_repair_agent = CIRepairAgent(
             model_adapter=self.model_adapter,
-            sandbox_runner=self.orchestrator.sandbox_runner,
+            sandbox_runner=self.sandbox_runner,
             specialist_factory=self.specialist_factory,
             ecosystem_coordinator=self.ecosystem_coordinator,
+            approval_gate=self.approval_gate,
         )
         self.progress_service = ProgressService(
             task_store=self.task_manager.store,
@@ -181,6 +203,8 @@ class AGI17Adapter:
         module_filename: str = "token_bucket.py",
         test_filename: str = "test_token_bucket.py",
         inject_deliberate_test_failure: bool = False,
+        max_wall_clock_sec: Optional[float] = None,
+        max_mission_tokens: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Executes a mission through `HierarchicalOrchestrator.execute_mission()`."""
         res = self.orchestrator.execute_mission(
@@ -194,6 +218,8 @@ class AGI17Adapter:
             module_filename=module_filename,
             test_filename=test_filename,
             inject_deliberate_test_failure=inject_deliberate_test_failure,
+            max_wall_clock_sec=max_wall_clock_sec,
+            max_mission_tokens=max_mission_tokens,
         )
         self.progress_service.render_html_dashboard()
         return res

@@ -21,8 +21,9 @@
 
 To prevent conflating deterministic unit tests with live LLM benchmark runs, all results in this repository are strictly separated into five verifiable categories:
 
-### Category 1: Deterministic Runtime, Sandbox & Security Verification (`69 / 69` Offline Tests)
-Executed automatically on every push and Pull Request across `ubuntu-latest` and `windows-latest` ([`.github/workflows/agi17-ci.yml`](.github/workflows/agi17-ci.yml)):
+### Category 1: Deterministic Runtime, Sandbox Security & Real Docker Engine Verification (`86 / 86` Tests)
+Executed across offline security/runtime suites and live Docker Engine integration tests ([`.github/workflows/agi17-ci.yml`](.github/workflows/agi17-ci.yml)):
+- **[`test_p0_security_and_real_docker.py`](agents/AGI_1_7/tests/test_p0_security_and_real_docker.py) (`17 / 17` passing — `12` Offline Security & Adversarial + `5` Real Docker Engine Integration):** Production wiring (`AGI17Adapter` $\rightarrow$ shared `SandboxPolicy.production()` & `HighImpactApprovalGate`), fail-closed container policy (`SandboxIsolationUnavailableError` / `SandboxPolicyViolationError`, zero host fallback), pre-read/pre-model path containment (`PathTraversalBlockedError`), shell-free `test_pattern` validation (`InvalidTestPatternError`), untrusted content scanner (`UntrustedContentBlockedError`), approval-gated atomic writes & rollback, test file SHA-256 immutability & mandatory `test_*.py` full-suite regression verification, cumulative token/cost/wall-clock ceilings, verified container removal (`docker container inspect` / `SandboxCleanupUnverifiedError`), CLI exit codes (`0..6`), and 5 real Docker Engine tests (`--network none`, `--read-only`, `65534:65534`, timeout kill + removal, and end-to-end `AGI17Adapter.run_ci_repair()`).
 - **[`test_production_hardening_sprint.py`](agents/AGI_1_7/tests/test_production_hardening_sprint.py) (`20 / 20` passing):** Repository secret/path leak scan (`0` leaks), typed `ModelRequest`/`ModelResponse`/`ModelProviderConfig`, `DeterministicMockProvider`, USD cost budget ceiling enforcement (`ModelCostBudgetExceededError`), `DisposableSandboxRunner` execution & `finally:` cleanup, `PathTraversalViolationError` & symlink/device-file rejection, prompt-injection/malicious-code blocking (`UntrustedContentSecurityError`), fail-closed `SandboxPolicy.production()` (`SandboxIsolationUnavailableError`, immutable SHA-256 digest `python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1`, `verified_network_isolated`), `HighImpactApprovalGate.check_structured_action()`, Layer 7 self-learning failure memory (`record_failure_lesson` + `build_compact_memory_prompt_block`), SQLite task `idempotency_key` deduplication, corrupted checkpoint crash recovery (`reconcile_after_restart`), distinct CLI exit codes (`0..6`), nested package full-suite regression verification, 5-tier capability maturity breakdown, 50-task held-out suite integrity, and end-to-end `CIRepairAgent` staged-patch verification.
 - **[`test_agi17_unit_suite.py`](agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py) (`26 / 26` passing):** 100-contract JSON schema validation, 14-state SQLite WAL transitions, DFS dependency cycle detection, SHA-256 checkpoint verification, and SSRF firewall rules.
 - **[`test_agi17_integration_suite.py`](agents/AGI_1_7/tests/integration/test_agi17_integration_suite.py) (`16 / 16` passing):** Crash recovery (`reconcile_after_restart()`), live `CommandInbox` mid-run overrides (`ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `REPRIORITIZE`), and 10-layer SQLite memory fact supersession.
@@ -71,16 +72,18 @@ flowchart TB
     SBX --> PR["Verified Unified Diff & Human-Approval PR Payload"]
 ```
 
-1. **Disposable Container Sandbox ([`sandbox_runner.py`](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py)):**
-   - Executes untrusted generated Python code and `unittest` suites inside a disposable Docker container (`--rm --network none --cap-drop ALL --security-opt no-new-privileges --read-only --tmpfs /tmp:rw,exec,nosuid,size=64m --cpus 1.0 --memory 256m --pids-limit 64`).
-   - Supports strict fail-closed enforcement (`require_container_isolation=True` $\rightarrow$ raises `SandboxIsolationUnavailableError` if Docker is unavailable) and guaranteed `finally:` workspace destruction.
-2. **Path Traversal, Prompt-Injection & High-Impact Action Guards:**
-   - `validate_relative_sandbox_path()` blocks `..`, absolute paths, and symlink escapes (`PathTraversalViolationError`).
-   - `scan_untrusted_content()` scans repository files for prompt injection (`IGNORE PREVIOUS INSTRUCTIONS`) and blocks credential access (`.gemini/config`, `.ssh/id_rsa`) or unauthorized network calls (`UntrustedContentSecurityError`).
-   - `HighImpactApprovalGate` blocks `git push`, `pip install`, destructive deletes, and external network fetches without explicit human approval (`HighImpactActionBlockedError`).
-3. **Hardened Model Integration ([`model_adapter.py`](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py)):**
-   - Typed `ModelRequest`, `ModelResponse`, and `ModelProviderConfig` contracts with `BaseModelProvider` and `DeterministicMockProvider`.
-   - Enforces per-request (`max_request_cost_usd`) and per-mission (`max_mission_cost_usd`) USD cost ceilings, exponential backoff retries, rate limiting, and automatic credential/path redaction (`redact_sensitive_text()`).
+1. **Fail-Closed Disposable Container Sandbox ([`sandbox_runner.py`](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py), [`docs/SECURITY_AND_GOVERNANCE.md`](docs/SECURITY_AND_GOVERNANCE.md)):**
+   - Production execution of untrusted repository or model-generated code requires Docker Engine and the approved digest-pinned image (`python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1`).
+   - Executes inside a hardened container (`--rm --name agi17-sbx-<uuid> --network none --cap-drop ALL --security-opt no-new-privileges --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m --cpus 1.0 --memory 512m --pids-limit 64 --user 65534:65534`) without shell interpolation (`shell=False`).
+   - Host subprocess execution is strictly disabled in production (`allow_host_subprocess_fallback=False`) and fails closed with `SandboxIsolationUnavailableError` or `SandboxPolicyViolationError`. `SandboxPolicy.dev_tempdir()` is restricted strictly to non-production local development and offline mocked unit tests.
+   - Verifies both container removal (`docker container inspect`) and staging directory deletion (`SandboxCleanupUnverifiedError`).
+2. **Pre-Read Path Containment, Content Scanning, Approval Gates & Test Immutability:**
+   - `validate_relative_sandbox_path()` and `validate_test_pattern()` run **before** any file read or model call (`PathTraversalBlockedError`, `InvalidTestPatternError`).
+   - `scan_untrusted_content()` records prompt-injection warnings while blocking credential reads (`.env`, `.ssh`, `.aws`, `.gemini`), SSRF (`169.254.169.254`, `127.0.0.1`, `localhost`), `shell=True`, and `os.system` (`UntrustedContentBlockedError`).
+   - `HighImpactApprovalGate` enforces explicit human approval for workspace mutations and high-impact commands (`HighImpactActionBlockedError`). Test files (`test_*.py`) are SHA-256 immutable during repair, and full-suite regression verification (`test_*.py`) is mandatory before accepting a repair.
+3. **Hardened Model Integration & Deterministic Exit Codes (`0..6`):**
+   - Typed `ModelRequest`, `ModelResponse`, and `ModelProviderConfig` contracts with per-request and cumulative mission token/cost/wall-clock ceilings.
+   - CLI exit codes map deterministically to terminal outcomes: `0` (`SUCCEEDED_AND_VERIFIED` / `PROFILE_ONLY_OK` / `ALREADY_PASSING`), `1` (`FAILED`), `2` (`BLOCKED_BY_POLICY`), `3` (`TIMED_OUT`), `4` (`CANCELLED`), `5` (`BUDGET_EXCEEDED`), and `6` (`SUCCEEDED_UNVERIFIED`).
 
 ---
 
@@ -118,9 +121,10 @@ cd AGI-1.7V
 python -m pip install -e .
 ```
 
-### 2. Run the Complete Offline Verification Suite (`69` Tests, `0` Live Tokens Spent)
+### 2. Run the Complete Verification Suite (`86` Tests: `81` Offline + `5` Real Docker Engine)
 ```bash
 python -m unittest \
+  agents/AGI_1_7/tests/test_p0_security_and_real_docker.py \
   agents/AGI_1_7/tests/test_production_hardening_sprint.py \
   agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py \
   agents/AGI_1_7/tests/integration/test_agi17_integration_suite.py \
@@ -166,6 +170,7 @@ python agents/AGI_1_7/scripts/run_gpqa_clean_189_agi17.py --cold-start-sample-n 
 
 ## 📚 5. Documentation, Security Audits & Provenance
 
+- **Production Security & Governance Specification:** [`docs/SECURITY_AND_GOVERNANCE.md`](docs/SECURITY_AND_GOVERNANCE.md)
 - **Phase 0 Baseline & Security Audit:** [`agents/AGI_1_7/docs/PHASE_0_BASELINE_AND_SECURITY_AUDIT.md`](agents/AGI_1_7/docs/PHASE_0_BASELINE_AND_SECURITY_AUDIT.md)
 - **Production Readiness, Strict Rubric Scorecard & Commercial Dossier:** [`agents/AGI_1_7/docs/PRODUCTION_READINESS_AND_COMMERCIAL_DOSSIER.md`](agents/AGI_1_7/docs/PRODUCTION_READINESS_AND_COMMERCIAL_DOSSIER.md)
 - **Operations, Deployment & Troubleshooting Runbook:** [`agents/AGI_1_7/docs/OPERATIONS_AND_DEPLOYMENT_GUIDE.md`](agents/AGI_1_7/docs/OPERATIONS_AND_DEPLOYMENT_GUIDE.md)
