@@ -462,7 +462,15 @@ class TestAGI17IntegrationSuite(unittest.TestCase):
 
     # Test P — Normal execute_mission code_task_dir workflow & explicit fallback reporting
     def test_P_normal_execute_mission_code_task_dir_and_fallback_reporting(self) -> None:
+        from agents.AGI_1_7.engine.agi17.process_supervision.sandbox_runner import (
+            DisposableSandboxRunner,
+            SandboxPolicy,
+        )
+
         tm, mem, gov, tc, sf, orch = self._build_env()
+        self.assertTrue(orch.sandbox_runner.policy.require_container_isolation)
+        self.assertFalse(orch.sandbox_runner.policy.allow_host_subprocess_fallback)
+        orch.sandbox_runner = DisposableSandboxRunner(policy=SandboxPolicy.development())
         code_dir = self.tmp_path / "code_ws"
         code_dir.mkdir(parents=True, exist_ok=True)
         # Build subtasks via build_code_and_test_subtasks and run with deterministic mocked model responses

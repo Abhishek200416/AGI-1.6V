@@ -41,8 +41,10 @@ from ..process_supervision.sandbox_runner import (
     SandboxCleanupUnverifiedError,
     SandboxPolicy,
     SandboxPolicyViolationError,
+    SandboxSecurityError,
     atomic_write_workspace_file,
     scan_untrusted_content,
+    stage_candidate_outside_workspace,
     validate_relative_sandbox_path,
     validate_test_pattern,
 )
@@ -58,6 +60,7 @@ from .resource_governor import (
 
 import hashlib
 import re
+import shutil
 import sys
 
 
@@ -153,6 +156,16 @@ class HierarchicalOrchestrator:
             )
         self.model_adapter = model_adapter
 
+    def get_security_diagnostics(self) -> Dict[str, Any]:
+        """Returns safe diagnostic metadata for the orchestrator's runner and approval gate."""
+        return {
+            "orchestrator_instance_id": id(self),
+            "sandbox_runner_instance_id": id(self.sandbox_runner),
+            "approval_gate_instance_id": id(self.approval_gate),
+            "effective_policy": self.sandbox_runner.policy.to_dict(),
+            "sandbox_diagnostics": self.sandbox_runner.get_security_diagnostics(),
+        }
+
     def build_code_and_test_subtasks(
         self,
         *,
@@ -180,7 +193,7 @@ class HierarchicalOrchestrator:
         module_stem = module_path.stem
 
         existing_source_block = ""
-        if module_path.exists():
+        if not self.approval_gate.block_workspace_mutations and module_path.exists():
             try:
                 existing_src = module_path.read_text(encoding="utf-8")
                 if existing_src.strip():
@@ -198,13 +211,14 @@ class HierarchicalOrchestrator:
                 raise PathTraversalBlockedError(f"Symlink test file blocked in workspace: {tf}")
             if tf.is_file():
                 validate_relative_sandbox_path(ws, tf.name, require_py_extension=True)
-                try:
-                    t_content = tf.read_text(encoding="utf-8", errors="replace")
-                    if t_content.strip():
-                        existing_test_files.append(tf)
-                        existing_tests_snippets.append(f"# {tf.name}\n{t_content}")
-                except Exception:
-                    pass
+                if not self.approval_gate.block_workspace_mutations:
+                    try:
+                        t_content = tf.read_text(encoding="utf-8", errors="replace")
+                        if t_content.strip():
+                            existing_test_files.append(tf)
+                            existing_tests_snippets.append(f"# {tf.name}\n{t_content}")
+                    except Exception:
+                        pass
 
         existing_tests_block = ""
         if existing_tests_snippets:
@@ -225,6 +239,7 @@ class HierarchicalOrchestrator:
             self.approval_gate.check_workspace_mutation(
                 workspace_root=ws,
                 target_path=module_path,
+                explicit_approval=True,
                 operation="deliberate_fault_injection",
             )
             original = module_path.read_text(encoding="utf-8")
@@ -684,8 +699,17 @@ class HierarchicalOrchestrator:
             if self.model_adapter is None:
                 raise RuntimeError(f"use_live_model=True requested for {child_id}, but ModelAdapter is not configured")
             if sp_spec and sp_spec.target_file_path:
-                # Validate target file containment BEFORE invoking the model
-                self._resolve_validated_workspace_target(sp_spec.target_file_path, sp_spec.verification_cwd)
+                # Validate target file containment and approval gate BEFORE invoking the model
+                pre_ws_root, pre_target = self._resolve_validated_workspace_target(
+                    sp_spec.target_file_path,
+                    sp_spec.verification_cwd,
+                )
+                self.approval_gate.check_workspace_mutation(
+                    workspace_root=pre_ws_root,
+                    target_path=pre_target,
+                    explicit_approval=True,
+                    operation="orchestrator_stage_write_precheck",
+                )
 
             upstream = payload.get("context", {}).get("upstream_outputs", {})
             upstream_summary = ""
@@ -751,6 +775,7 @@ class HierarchicalOrchestrator:
                     sp_spec.target_file_path,
                     sp_spec.verification_cwd,
                 )
+                rel_target = target_path.relative_to(ws_root)
                 extracted_code = _extract_python_code(model_res["response_text"])
                 if not _is_valid_python_syntax(extracted_code) and sp_spec.fallback_code:
                     extracted_code = sp_spec.fallback_code
@@ -761,24 +786,37 @@ class HierarchicalOrchestrator:
                     )
                     result_dict["execution_origin"] = "DETERMINISTIC_FALLBACK_AFTER_MODEL_FAILURE"
                 scan_untrusted_content(extracted_code, source_label=f"generated:{target_path.name}")
-                self.approval_gate.check_workspace_mutation(
-                    workspace_root=ws_root,
-                    target_path=target_path,
-                    operation="orchestrator_stage_write",
+                ext_stage_dir, staged_file, staged_sha256 = stage_candidate_outside_workspace(
+                    ws_root,
+                    rel_target,
+                    extracted_code,
+                    stage_label=child_id,
                 )
-                atomic_write_workspace_file(ws_root, target_path.relative_to(ws_root), extracted_code)
+                try:
+                    self.approval_gate.check_workspace_mutation(
+                        workspace_root=ws_root,
+                        target_path=target_path,
+                        explicit_approval=True,
+                        operation="orchestrator_stage_write",
+                    )
+                    atomic_write_workspace_file(ws_root, rel_target, staged_file.read_bytes())
+                finally:
+                    shutil.rmtree(ext_stage_dir, ignore_errors=True)
                 expected_sha256 = hashlib.sha256(extracted_code.encode("utf-8")).hexdigest()
                 clean_sha256 = hashlib.sha256(target_path.read_bytes()).hexdigest()
                 sha_matches = (
                     target_path.exists()
                     and target_path.stat().st_size > 0
                     and clean_sha256 == expected_sha256
+                    and clean_sha256 == staged_sha256
                 )
                 if not sha_matches:
                     raise RuntimeError(
                         f"Artifact SHA-256 verification failed for {target_path}: "
                         f"expected={expected_sha256}, actual={clean_sha256}"
                     )
+                result_dict["staged_outside_workspace"] = True
+                result_dict["staged_candidate_sha256"] = staged_sha256
                 result_dict["written_file_path"] = str(target_path)
                 result_dict["clean_generated_code"] = extracted_code
                 result_dict["clean_file_sha256"] = clean_sha256
@@ -811,6 +849,12 @@ class HierarchicalOrchestrator:
         ws_root, repair_file = self._resolve_validated_workspace_target(
             raw_repair_target,
             sp_spec.verification_cwd,
+        )
+        self.approval_gate.check_workspace_mutation(
+            workspace_root=ws_root,
+            target_path=repair_file,
+            explicit_approval=True,
+            operation="orchestrator_self_healing_repair_precheck",
         )
         original_bytes = repair_file.read_bytes() if repair_file.is_file() else None
         original_sha256 = hashlib.sha256(original_bytes).hexdigest() if original_bytes is not None else None
@@ -872,17 +916,29 @@ class HierarchicalOrchestrator:
             )
         repaired_sha256: Optional[str] = None
         expected_repaired_sha256: Optional[str] = None
+        staged_repair_sha256: Optional[str] = None
         if repair_file.name and _is_valid_python_syntax(patched_code):
             scan_untrusted_content(patched_code, source_label=f"repair:{repair_file.name}")
-            self.approval_gate.check_workspace_mutation(
-                workspace_root=ws_root,
-                target_path=repair_file,
-                operation="orchestrator_self_healing_repair",
+            rel_repair = repair_file.relative_to(ws_root)
+            ext_stage_dir, staged_file, staged_repair_sha256 = stage_candidate_outside_workspace(
+                ws_root,
+                rel_repair,
+                patched_code,
+                stage_label=f"{child_id}_repair",
             )
-            atomic_write_workspace_file(ws_root, repair_file.relative_to(ws_root), patched_code)
+            try:
+                self.approval_gate.check_workspace_mutation(
+                    workspace_root=ws_root,
+                    target_path=repair_file,
+                    explicit_approval=True,
+                    operation="orchestrator_self_healing_repair",
+                )
+                atomic_write_workspace_file(ws_root, rel_repair, staged_file.read_bytes())
+            finally:
+                shutil.rmtree(ext_stage_dir, ignore_errors=True)
             expected_repaired_sha256 = hashlib.sha256(patched_code.encode("utf-8")).hexdigest()
             repaired_sha256 = hashlib.sha256(repair_file.read_bytes()).hexdigest()
-            if repaired_sha256 != expected_repaired_sha256:
+            if repaired_sha256 != expected_repaired_sha256 or repaired_sha256 != staged_repair_sha256:
                 raise RuntimeError(
                     f"Repair artifact SHA-256 mismatch for {repair_file}: "
                     f"expected={expected_repaired_sha256}, actual={repaired_sha256}"
@@ -905,6 +961,8 @@ class HierarchicalOrchestrator:
             "token_usage": model_res["token_usage"],
             "notification_id": model_res["notification_id"],
             "stdout_log_path": model_res.get("stdout_log_path"),
+            "staged_outside_workspace": True,
+            "staged_candidate_sha256": staged_repair_sha256,
             "repaired_file_path": str(repair_file),
             "repaired_file_sha256": repaired_sha256,
             "expected_repaired_file_sha256": expected_repaired_sha256,
@@ -936,6 +994,42 @@ class HierarchicalOrchestrator:
             raise ValueError(
                 f"Requested {len(specs)} child tasks exceeds MAX_LOGICAL_CHILD_TASKS ({MAX_LOGICAL_CHILD_TASKS})"
             )
+
+        # Pre-flight path containment and approval-gate check across all subtasks BEFORE any model or sandbox call
+        for sp in specs:
+            for candidate_target in (sp.target_file_path, sp.repair_target_file):
+                if candidate_target:
+                    try:
+                        pre_ws_root, pre_target = self._resolve_validated_workspace_target(
+                            candidate_target,
+                            sp.verification_cwd,
+                        )
+                        self.approval_gate.check_workspace_mutation(
+                            workspace_root=pre_ws_root,
+                            target_path=pre_target,
+                            explicit_approval=True,
+                            operation="orchestrator_dag_preflight_mutation_check",
+                        )
+                    except SandboxSecurityError as sec_exc:
+                        self.task_manager.transition(
+                            root_id,
+                            TaskState.FAILED,
+                            reason=f"Blocked by security policy preflight ({type(sec_exc).__name__}): {sec_exc}",
+                        )
+                        return {
+                            "mission_id": root_id,
+                            "execution_path": "HIERARCHICAL_DAG",
+                            "final_state": TaskState.FAILED.value,
+                            "terminal_outcome": "BLOCKED_BY_POLICY",
+                            "policy_error": str(sec_exc),
+                            "verified_children_count": 0,
+                            "logical_children_created": 0,
+                            "succeeded_children": 0,
+                            "max_concurrent_workers_used": 0,
+                            "memory_retrieval": retrieved_memory,
+                            "child_results": {},
+                            "duration_sec": round(time.time() - started_at, 4),
+                        }
 
         spec_by_cid: Dict[str, SubtaskSpec] = {}
         child_ids: List[str] = []
@@ -1111,6 +1205,22 @@ class HierarchicalOrchestrator:
                         if dep_id in completed_results
                     }
 
+                    # Pre-action budget enforcement BEFORE specialist execution
+                    with self.token_controller._lock:
+                        t_used_pre = self.token_controller._task_consumed.get(root_id, 0)
+                        t_lim_pre = self.token_controller._task_budgets.get(root_id)
+                        if t_lim_pre is not None and t_used_pre >= t_lim_pre:
+                            raise TokenBudgetExceededError(
+                                f"Task {root_id} cumulative token budget exhausted before {cid}: used={t_used_pre} >= limit={t_lim_pre}"
+                            )
+                    if sp_spec is None or not sp_spec.use_live_model:
+                        self.token_controller.check_pre_call_admission(
+                            task_id=root_id,
+                            child_task_id=cid,
+                            estimated_tokens=max(1, len(child_record["description"]) // 4),
+                            tier="COMPLEX",
+                        )
+
                     res = inst.run(
                         {
                             "task_id": cid,
@@ -1125,12 +1235,6 @@ class HierarchicalOrchestrator:
                     )
 
                     if sp_spec is None or not sp_spec.use_live_model:
-                        self.token_controller.check_pre_call_admission(
-                            task_id=root_id,
-                            child_task_id=cid,
-                            estimated_tokens=max(1, len(child_record["description"]) // 4),
-                            tier="COMPLEX",
-                        )
                         self.token_controller.record_usage(
                             task_id=root_id,
                             child_task_id=cid,
@@ -1216,6 +1320,17 @@ class HierarchicalOrchestrator:
                         )
                     )
                     if verification_failed and can_repair and sp_spec is not None:
+                        if max_wall_clock_sec is not None and (time.time() - started_at) > max_wall_clock_sec:
+                            raise TimeoutError(
+                                f"Repair aborted for {cid}: mission {root_id} exceeded max_wall_clock_sec ({max_wall_clock_sec}s)"
+                            )
+                        with self.token_controller._lock:
+                            t_used_rep = self.token_controller._task_consumed.get(root_id, 0)
+                            t_lim_rep = self.token_controller._task_budgets.get(root_id)
+                            if t_lim_rep is not None and t_used_rep >= t_lim_rep:
+                                raise TokenBudgetExceededError(
+                                    f"Task {root_id} cumulative token budget exhausted before repair on {cid}: used={t_used_rep} >= limit={t_lim_rep}"
+                                )
                         self.task_manager.transition(
                             cid,
                             TaskState.FAILED,

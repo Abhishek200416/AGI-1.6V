@@ -7,57 +7,60 @@ Production execution of untrusted repository code, test suites, or model-generat
 - **Default Isolation Mode:** `isolation_mode = "docker"`, `require_container_isolation = True`, `require_pinned_image_digest = True`, `allow_host_subprocess_fallback = False`.
 - **Approved Digest-Pinned Image Allowlist (`APPROVED_PRODUCTION_IMAGES`):**
   - `python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1`
-- **Zero Silent Host Fallback:** Host subprocess execution (`python -m unittest` on the host OS) is strictly disabled in production.
-  - If the `docker` CLI, the Docker daemon (`docker info`), or the local digest-pinned image (`docker image inspect`) is unavailable, execution fails closed immediately with `SandboxIsolationUnavailableError`.
+- **Zero Silent Host Fallback & Strict `.RepoDigests` Verification:** Host subprocess execution (`python -m unittest` on the host OS) is strictly disabled in production.
+  - `detect_docker_python_image()` executes `docker image inspect <image> --format "{{json .RepoDigests}}"` (`shell=False`) and requires the expected `@sha256:...` digest to be present in `.RepoDigests`.
+  - If the `docker` CLI, the Docker daemon, or the expected image digest in `.RepoDigests` is unavailable, execution fails closed immediately with `SandboxIsolationUnavailableError`.
   - If a caller supplies an unpinned image, a mutable tag (`:latest`), an unapproved digest, or attempts to enable `allow_host_subprocess_fallback=True` when `require_container_isolation=True`, policy validation fails closed immediately with `SandboxPolicyViolationError`.
-- **Development-Only Tempdir Mode (`SandboxPolicy.dev_tempdir()`):**
-  - `SandboxPolicy.dev_tempdir()` is restricted strictly to non-production local development and offline mocked unit tests. It must never be used to execute untrusted repository or model-generated code in production.
+- **Explicit Development Mode (`SandboxPolicy.development()`):**
+  - `SandboxPolicy.development()` is restricted strictly to non-production local development and offline mocked unit tests (or when `--dev-sandbox` is explicitly passed to `demo_real_multi_agent_code_fix.py`). It is never activated automatically in response to Docker or image failure.
+- **Runtime Security Diagnostics (`get_security_diagnostics()`):**
+  - `AGI17Adapter`, `HierarchicalOrchestrator`, `CIRepairAgent`, and `DisposableSandboxRunner` expose `get_security_diagnostics()`, verifying identical `sandbox_runner` and `approval_gate` object identity (`shared_sandbox_runner_verified = True`, `shared_approval_gate_verified = True`).
 
 ---
 
 ## 2. Hardened Container Runtime Flags & Shell-Free Execution
 
-Every disposable container launched by `DisposableSandboxRunner.run_unittest_suite()` enforces:
+Every disposable container launched by `DisposableSandboxRunner.run_python_unittest_sandbox()` enforces:
 
-- `--rm --name agi17-sbx-<uuid12>` (unique deterministic container name for lifecycle inspection and forced cleanup)
+- `--rm --name agi17_sbx_<id>` (unique deterministic container name for lifecycle inspection and forced cleanup)
 - `--network none` (complete network disablement inside the container)
 - `--read-only` (immutable root filesystem)
-- `--tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m` (bounded non-executable temporary scratch space)
+- `--tmpfs /tmp:rw,noexec,nosuid,size=64m` (bounded non-executable temporary scratch space)
 - `--cap-drop ALL` and `--security-opt no-new-privileges`
-- `--pids-limit 64`, `--memory 512m`, `--cpus 1.0`
+- `--pids-limit 64`, `--memory 256m`, `--cpus 1.0`
 - `--user 65534:65534` (unprivileged `nobody:nogroup` UID/GID)
-- `--workdir /workspace` with `-v <staging_dir>:/workspace:rw`
+- `--workdir /tmp` with `-v <staging_dir>:/input:ro` (read-only input mount copied into writable `/tmp/sbx_work` inside Python)
 - **Shell-Free `test_pattern` Execution (`shell=False`):**
-  - `validate_test_pattern()` validates `test_pattern` against `^test[A-Za-z0-9_.*-]*\.py$` (max 64 characters, zero path separators or shell metacharacters) before staging or container launch (`InvalidTestPatternError`).
-  - Container invocation executes `python3 -B -s -c <_CONTAINER_UNITTEST_BOOTSTRAP> <validated_pattern>` where `<validated_pattern>` is passed as a distinct `argv` element (`sys.argv[1]`) without `sh -c` interpolation.
+  - `validate_test_pattern()` validates `test_pattern` against `^(?:test[A-Za-z0-9_*?.-]*|[A-Za-z0-9_*?.-]*_test)\.py$` (max 128 characters, zero path separators or shell metacharacters) before staging or container launch (`InvalidTestPatternError`).
+  - Container invocation executes `python3 -B -s -c <_CONTAINER_UNITTEST_BOOTSTRAP> <validated_pattern>` where `<validated_pattern>` is passed as a distinct `argv` element (`sys.argv[1]`) with zero `sh -c` or `/bin/sh` invocation.
 
 ---
 
 ## 3. Verified Container Termination & Staging Cleanup
 
-In `DisposableSandboxRunner.run_unittest_suite()`:
+In `DisposableSandboxRunner._run_in_docker_container()`:
 
-1. On timeout (`subprocess.TimeoutExpired`) or abnormal exit, `_terminate_and_remove_container()` executes `docker kill <container_name>` and `docker rm -f <container_name>`.
-2. In the `finally:` block, `_verify_container_removed()` executes `docker container inspect <container_name>` and verifies that the container no longer exists (`container_cleanup_verified = True`).
+1. On timeout (`subprocess.TimeoutExpired`), exception, or nonzero container exit (`exit_code != 0`), `_terminate_and_remove_container()` executes bounded graceful stop (`docker stop -t 2 <container_name>`) followed by `docker kill <container_name>` and `docker rm -f <container_name>`.
+2. In the `finally:` block, `_verify_container_removed()` executes `docker container inspect <container_name>` and verifies that the container no longer exists (`container_cleanup_verified = True`). Container cleanup is never inferred from host temporary-directory cleanup.
 3. The temporary host staging directory is removed via `shutil.rmtree()` and checked via `not staging_dir.exists()` (`filesystem_cleanup_verified = True`).
-4. Both `CIRepairAgent` and `HierarchicalOrchestrator` require `filesystem_cleanup_verified and container_cleanup_verified`; if either check fails, `SandboxCleanupUnverifiedError` is raised (`terminal_outcome = "BLOCKED_BY_POLICY"`).
+4. Both `CIRepairAgent` and `HierarchicalOrchestrator` require `filesystem_cleanup_verified and container_cleanup_verified`; if either check fails, `SandboxCleanupUnverifiedError` is raised (`terminal_outcome = "BLOCKED_BY_POLICY"`, CLI exit code `2`).
 
 ---
 
-## 4. Pre-Read Path Containment, Content Scanning & Approval Gates
+## 4. Pre-Read Path Containment, External Candidate Staging & Approval Gates
 
 1. **Pre-Read & Pre-Model Path Containment (`validate_relative_sandbox_path`):**
    - Validates `module_filename` and `test_filename` before reading any file or invoking any model call.
-   - Rejects empty paths, absolute paths, Windows drive-qualified or UNC paths, `..` traversal, backslashes or traversal segments, NUL/control characters, Windows reserved device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`), and symlinks resolving outside the workspace root (`PathTraversalBlockedError` / `PathTraversalViolationError`).
+   - Rejects empty paths, absolute paths, Windows drive-qualified or UNC paths, `..` traversal, NUL/control characters, Windows reserved device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`), non-`.py` extensions, symlinks, FIFOs, sockets, and block/char devices (`PathTraversalBlockedError` / `PathTraversalViolationError`).
 2. **Untrusted Content & Prompt-Injection Scanner (`scan_untrusted_content`):**
-   - Distinguishes prompt-injection strings in comments/docstrings (`warnings`, recorded in telemetry while keeping `safe=True`) from dangerous executable patterns (`blocked_reasons`, setting `safe=False` and raising `UntrustedContentBlockedError`):
+   - Distinguishes prompt-injection strings in comments/docstrings (`warnings`, recorded in telemetry without blocking benign documentation) from dangerous executable patterns (raising `UntrustedContentBlockedError`):
      - Credential/secret file reads (`.env`, `.ssh`, `.aws`, `.gemini`, `id_rsa`)
-     - Private/loopback/metadata SSRF (`169.254.169.254`, `127.0.0.1`, `localhost`)
+     - Private/loopback/metadata SSRF (`169.254.169.254`, `metadata.google.internal`)
      - Dangerous host process execution (`subprocess.*(..., shell=True)`, `os.system(...)`)
-3. **High-Impact Approval Gate (`HighImpactApprovalGate`):**
-   - A single shared `HighImpactApprovalGate` instance is wired from `AGI17Adapter` into both `HierarchicalOrchestrator` and `CIRepairAgent`.
-   - Writing a repaired patch back to a user repository requires `apply_approved_patch=True` AND `approval_gate.check_workspace_mutation(...)`. By default (`apply_approved_patch=False`), `CIRepairAgent` stages the unified diff and PR payload without mutating the source file (`requires_human_approval=True`).
-   - All approved workspace writes use `atomic_write_workspace_file()` (temp file + `flush()` + `os.fsync()` + `os.replace()`) with automatic rollback if post-write SHA-256 or sandbox regression verification fails.
+3. **Authoritative Approval Gate & External Candidate Staging (`HighImpactApprovalGate` & `stage_candidate_outside_workspace`):**
+   - `HighImpactApprovalGate.check_workspace_mutation()` defaults to `explicit_approval: bool = False`, eliminating any implicit or hardcoded approval bypass.
+   - Approval and path containment are checked at preflight before protected file reads, model disclosure, sandbox test execution, or workspace writes. When approval is denied (`block_workspace_mutations=True` or denied callback), **zero protected reads, zero model calls, zero test runs, and zero workspace writes** occur.
+   - Candidate code and repairs are always staged first in an isolated external directory outside the active workspace via `stage_candidate_outside_workspace()` (`staged_outside_workspace = True`) and verified in the disposable container before `atomic_write_workspace_file()` (temp file + `flush()` + `os.fsync()` + `os.replace()`) touches the target workspace.
 
 ---
 
