@@ -31,6 +31,7 @@ from ..process_supervision.sandbox_runner import (
     HighImpactApprovalGate,
     PathTraversalViolationError,
     SandboxPolicy,
+    atomic_write_workspace_file,
     scan_untrusted_content,
     validate_relative_sandbox_path,
 )
@@ -110,14 +111,19 @@ class CIRepairAgent:
     @staticmethod
     def _collect_workspace_py_files(ws_dir: Path) -> Dict[str, str]:
         files_map: Dict[str, str] = {}
-        for py_file in sorted(ws_dir.glob("*.py")):
+        ignored_dirs = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "node_modules"}
+        for py_file in sorted(ws_dir.rglob("*.py")):
+            rel_parts = py_file.relative_to(ws_dir).parts
+            if any(part in ignored_dirs for part in rel_parts):
+                continue
+            rel_posix = py_file.relative_to(ws_dir).as_posix()
             if py_file.is_symlink():
                 raise PathTraversalViolationError(
-                    f"Symlink file rejected in CI-Repair workspace: '{py_file.name}'"
+                    f"Symlink file rejected in CI-Repair workspace: '{rel_posix}'"
                 )
             if py_file.is_file():
-                validate_relative_sandbox_path(ws_dir, py_file.name)
-                files_map[py_file.name] = py_file.read_text(encoding="utf-8", errors="replace")
+                validate_relative_sandbox_path(ws_dir, rel_posix)
+                files_map[rel_posix] = py_file.read_text(encoding="utf-8", errors="replace")
         return files_map
 
     @staticmethod
@@ -287,6 +293,15 @@ class CIRepairAgent:
                 test_pattern=test_pattern,
                 sandbox_id=f"{rid}-ATT{attempt}",
             )
+            # Step 9: Run independent full-suite regression check if a specific test_pattern was targeted
+            if sbx_res.passed and test_pattern != "test_*.py":
+                reg_sbx = self.sandbox_runner.run_python_unittest_sandbox(
+                    files=candidate_files,
+                    test_pattern="test_*.py",
+                    sandbox_id=f"{rid}-ATT{attempt}-REG",
+                )
+                if not reg_sbx.passed:
+                    sbx_res = reg_sbx
             final_sbx = sbx_res
             attempt_history.append(
                 {
@@ -310,10 +325,16 @@ class CIRepairAgent:
         should_apply = bool(write_patch_to_workspace or apply_approved_patch)
         patch_applied = False
         if repaired_ok and should_apply:
+            self.approval_gate.check_structured_action(
+                action_type="apply_workspace_patch",
+                argv=["atomic_write", str(module_filename)],
+                action_description=f"Apply verified CI-Repair patch to {module_filename}",
+                approved=True,
+            )
             current_disk_sha = hashlib.sha256(module_path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
             best_sha = hashlib.sha256(best_code.encode("utf-8")).hexdigest()
             if current_disk_sha != best_sha:
-                module_path.write_text(best_code, encoding="utf-8")
+                atomic_write_workspace_file(ws, module_filename, best_code)
                 patch_applied = True
 
         final_code = best_code if repaired_ok else original_code

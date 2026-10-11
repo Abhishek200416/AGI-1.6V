@@ -315,7 +315,18 @@ class DurableTaskManager:
                 TaskState.INTERRUPTED,
                 {"reason": "process_not_running_on_reconciliation", "stale_pid": pid},
             )
-            ckpt = self.checkpoints.load_checkpoint(tid)
+            try:
+                ckpt = self.checkpoints.load_checkpoint(tid)
+            except (ValueError, OSError) as exc:
+                actions.append(
+                    {
+                        "task_id": tid,
+                        "action": "MARKED_INTERRUPTED_CORRUPTED_CHECKPOINT",
+                        "error": str(exc),
+                        "stale_pid": pid,
+                    }
+                )
+                continue
             if ckpt and ckpt.get("side_effects_verified_intact", True):
                 self.store.transition_task(
                     tid,

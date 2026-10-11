@@ -442,10 +442,22 @@ class HierarchicalOrchestrator:
             exc_name = type(exc).__name__
             if "BudgetExceeded" in exc_name:
                 term_outcome = "BUDGET_EXCEEDED"
-            elif "DirectiveZeroViolation" in exc_name or "Sandbox" in exc_name or "Policy" in exc_name:
+            elif any(
+                k in exc_name
+                for k in (
+                    "DirectiveZeroViolation",
+                    "Sandbox",
+                    "Policy",
+                    "PathTraversal",
+                    "UntrustedContent",
+                    "HighImpactAction",
+                )
+            ):
                 term_outcome = "BLOCKED_BY_POLICY"
             elif "Timeout" in exc_name:
                 term_outcome = "TIMED_OUT"
+            elif "Cancel" in exc_name:
+                term_outcome = "CANCELLED"
             else:
                 term_outcome = "FAILED"
             try:
@@ -453,7 +465,7 @@ class HierarchicalOrchestrator:
                 if cur_rec and TaskState(cur_rec["state"]) not in TERMINAL_STATES:
                     self.task_manager.transition(
                         root_id,
-                        TaskState.FAILED,
+                        TaskState.CANCELED if term_outcome == "CANCELLED" else TaskState.FAILED,
                         reason=f"Mission terminated with {term_outcome}: {exc}",
                         error={"exception_type": exc_name, "message": str(exc)},
                     )
@@ -1124,6 +1136,19 @@ class HierarchicalOrchestrator:
                         result=res,
                     )
                     return cid, res
+                except Exception as child_exc:
+                    try:
+                        cur_ch = self.task_manager.store.get_task(cid)
+                        if cur_ch and TaskState(cur_ch["state"]) not in TERMINAL_STATES:
+                            self.task_manager.transition(
+                                cid,
+                                TaskState.FAILED,
+                                reason=f"Child task raised {type(child_exc).__name__}: {child_exc}",
+                                error={"exception_type": type(child_exc).__name__, "message": str(child_exc)},
+                            )
+                    except Exception:
+                        pass
+                    raise
                 finally:
                     self.governor.release_slot(queue_type=q_type)
 

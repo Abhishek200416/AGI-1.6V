@@ -5,7 +5,7 @@
 [![Sole Model](https://img.shields.io/badge/Foundation%20Model-gemini--3.8--flash--high-059669.svg)](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py)
 [![Sandbox](https://img.shields.io/badge/Sandbox-Disposable%20Docker%20Container%20(--network%20none)-0284C7.svg)](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py)
 [![Embedded Agents](https://img.shields.io/badge/Specialist%20Contracts-100%20Across%2016%20Families-7E22CE.svg)](agents/AGI_1_7/ecosystem/agent_registry/registry.json)
-[![Tests](https://img.shields.io/badge/Offline%20Verification%20Suite-65%2F65%20Passing-16A34A.svg)](.github/workflows/agi17-ci.yml)
+[![Tests](https://img.shields.io/badge/Offline%20Verification%20Suite-69%2F69%20Passing-16A34A.svg)](.github/workflows/agi17-ci.yml)
 
 **AGI 1.7 — OMEGA COMMAND** is a self-contained, resource-aware, persistent multi-agent engineering and automated **Python CI-Repair** runtime built around **Google's Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** using the **Python 3.10+ Standard Library** (`0` third-party PyPI runtime dependencies required).
 
@@ -21,9 +21,9 @@
 
 To prevent conflating deterministic unit tests with live LLM benchmark runs, all results in this repository are strictly separated into five verifiable categories:
 
-### Category 1: Deterministic Runtime, Sandbox & Security Verification (`65 / 65` Offline Tests)
+### Category 1: Deterministic Runtime, Sandbox & Security Verification (`69 / 69` Offline Tests)
 Executed automatically on every push and Pull Request across `ubuntu-latest` and `windows-latest` ([`.github/workflows/agi17-ci.yml`](.github/workflows/agi17-ci.yml)):
-- **[`test_production_hardening_sprint.py`](agents/AGI_1_7/tests/test_production_hardening_sprint.py) (`16 / 16` passing):** Repository secret/path leak scan (`0` leaks), typed `ModelRequest`/`ModelResponse`/`ModelProviderConfig`, `DeterministicMockProvider`, USD cost budget ceiling enforcement (`ModelCostBudgetExceededError`), `DisposableSandboxRunner` execution & `finally:` cleanup, `PathTraversalViolationError` & symlink rejection, prompt-injection/malicious-code blocking (`UntrustedContentSecurityError`), fail-closed `SandboxPolicy.production()` (`SandboxIsolationUnavailableError`), `HighImpactApprovalGate`, Layer 7 self-learning failure memory (`record_failure_lesson` + `build_compact_memory_prompt_block`), SQLite task `idempotency_key` deduplication, 5-tier capability maturity breakdown, 50-task held-out suite integrity, and end-to-end `CIRepairAgent` staged-patch verification.
+- **[`test_production_hardening_sprint.py`](agents/AGI_1_7/tests/test_production_hardening_sprint.py) (`20 / 20` passing):** Repository secret/path leak scan (`0` leaks), typed `ModelRequest`/`ModelResponse`/`ModelProviderConfig`, `DeterministicMockProvider`, USD cost budget ceiling enforcement (`ModelCostBudgetExceededError`), `DisposableSandboxRunner` execution & `finally:` cleanup, `PathTraversalViolationError` & symlink/device-file rejection, prompt-injection/malicious-code blocking (`UntrustedContentSecurityError`), fail-closed `SandboxPolicy.production()` (`SandboxIsolationUnavailableError`, immutable SHA-256 digest `python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1`, `verified_network_isolated`), `HighImpactApprovalGate.check_structured_action()`, Layer 7 self-learning failure memory (`record_failure_lesson` + `build_compact_memory_prompt_block`), SQLite task `idempotency_key` deduplication, corrupted checkpoint crash recovery (`reconcile_after_restart`), distinct CLI exit codes (`0..6`), nested package full-suite regression verification, 5-tier capability maturity breakdown, 50-task held-out suite integrity, and end-to-end `CIRepairAgent` staged-patch verification.
 - **[`test_agi17_unit_suite.py`](agents/AGI_1_7/tests/unit/test_agi17_unit_suite.py) (`26 / 26` passing):** 100-contract JSON schema validation, 14-state SQLite WAL transitions, DFS dependency cycle detection, SHA-256 checkpoint verification, and SSRF firewall rules.
 - **[`test_agi17_integration_suite.py`](agents/AGI_1_7/tests/integration/test_agi17_integration_suite.py) (`16 / 16` passing):** Crash recovery (`reconcile_after_restart()`), live `CommandInbox` mid-run overrides (`ADD_CHILD_TASK`, `PAUSE_CURRENT_AND_SWITCH`, `CANCEL_AND_REPLACE`, `REPRIORITIZE`), and 10-layer SQLite memory fact supersession.
 - **[`test_agi17_e2e_demos.py`](agents/AGI_1_7/tests/end_to_end/test_agi17_e2e_demos.py) (`7 / 7` passing):** End-to-end DAG orchestration, disagreement self-healing, and detached background execution (`--detach`).
@@ -118,7 +118,7 @@ cd AGI-1.7V
 python -m pip install -e .
 ```
 
-### 2. Run the Complete Offline Verification Suite (`61` Tests, `0` Live Tokens Spent)
+### 2. Run the Complete Offline Verification Suite (`69` Tests, `0` Live Tokens Spent)
 ```bash
 python -m unittest \
   agents/AGI_1_7/tests/test_production_hardening_sprint.py \
@@ -167,8 +167,11 @@ python agents/AGI_1_7/scripts/run_gpqa_clean_189_agi17.py --cold-start-sample-n 
 ## 📚 5. Documentation, Security Audits & Provenance
 
 - **Phase 0 Baseline & Security Audit:** [`agents/AGI_1_7/docs/PHASE_0_BASELINE_AND_SECURITY_AUDIT.md`](agents/AGI_1_7/docs/PHASE_0_BASELINE_AND_SECURITY_AUDIT.md)
+- **Production Readiness, Strict Rubric Scorecard & Commercial Dossier:** [`agents/AGI_1_7/docs/PRODUCTION_READINESS_AND_COMMERCIAL_DOSSIER.md`](agents/AGI_1_7/docs/PRODUCTION_READINESS_AND_COMMERCIAL_DOSSIER.md)
+- **Operations, Deployment & Troubleshooting Runbook:** [`agents/AGI_1_7/docs/OPERATIONS_AND_DEPLOYMENT_GUIDE.md`](agents/AGI_1_7/docs/OPERATIONS_AND_DEPLOYMENT_GUIDE.md)
+- **Licensing, Provenance & Supply-Chain Report:** [`agents/AGI_1_7/docs/LICENSING_AND_PROVENANCE_REPORT.md`](agents/AGI_1_7/docs/LICENSING_AND_PROVENANCE_REPORT.md)
 - **Third-Party Licenses & Provenance Inventory:** [`agents/AGI_1_7/docs/THIRD_PARTY_LICENSES_AND_PROVENANCE.md`](agents/AGI_1_7/docs/THIRD_PARTY_LICENSES_AND_PROVENANCE.md)
 - **Product Spec — Automated Python CI-Repair Agent:** [`agents/AGI_1_7/docs/PRODUCT_SPEC_PYTHON_CI_REPAIR.md`](agents/AGI_1_7/docs/PRODUCT_SPEC_PYTHON_CI_REPAIR.md)
-- **Operations, Deployment & Troubleshooting Runbook:** [`agents/AGI_1_7/docs/OPERATIONS_AND_DEPLOYMENT_GUIDE.md`](agents/AGI_1_7/docs/OPERATIONS_AND_DEPLOYMENT_GUIDE.md)
 - **Technical Architecture & Engineering FAQ:** [`agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md`](agents/AGI_1_7/docs/TECHNICAL_ARCHITECTURE_AND_FAQ.md)
 - **3-Way Held-Out Coding Benchmark Report:** [`agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_REPORT.md`](agents/AGI_1_7/reports/HELDOUT_CODING_BENCHMARK_REPORT.md)
+
