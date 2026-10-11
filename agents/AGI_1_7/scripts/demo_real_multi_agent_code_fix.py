@@ -109,9 +109,8 @@ def main() -> int:
         shutil.rmtree(demo_root, ignore_errors=True)
     demo_code_dir.mkdir(parents=True, exist_ok=True)
 
-    prod_policy = SandboxPolicy.production()
-    docker_ready = bool(DisposableSandboxRunner(policy=prod_policy).detect_docker_python_image())
-    demo_policy = prod_policy if docker_ready else SandboxPolicy.dev_tempdir()
+    explicit_dev_sandbox = "--dev-sandbox" in sys.argv
+    demo_policy = SandboxPolicy.development() if explicit_dev_sandbox else SandboxPolicy.production()
     demo_gate = HighImpactApprovalGate(approval_callback=lambda _desc, _cat: True, block_workspace_mutations=False)
 
     adapter = AGI17Adapter(

@@ -17,6 +17,7 @@ from __future__ import annotations
 import ast
 import difflib
 import hashlib
+import shutil
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -39,6 +40,7 @@ from ..process_supervision.sandbox_runner import (
     SandboxSecurityError,
     atomic_write_workspace_file,
     scan_untrusted_content,
+    stage_candidate_outside_workspace,
     validate_relative_sandbox_path,
     validate_test_pattern,
 )
@@ -91,6 +93,7 @@ class CIRepairResult:
     total_cost_usd: float
     duration_sec: float
     verified_artifact_sha256: Optional[str] = None
+    staged_outside_workspace: bool = True
     independent_regression_run: Dict[str, Any] = field(default_factory=dict)
     security_warnings: List[str] = field(default_factory=list)
     attempt_history: List[Dict[str, Any]] = field(default_factory=list)
@@ -129,6 +132,16 @@ class CIRepairAgent:
         )
         self.specialist_factory = specialist_factory or SpecialistFactory()
         self.ecosystem_coordinator = ecosystem_coordinator or EcosystemCoordinator()
+
+    def get_security_diagnostics(self) -> Dict[str, Any]:
+        """Returns safe diagnostic metadata for the CI-Repair agent's runner and approval gate."""
+        return {
+            "ci_repair_agent_instance_id": id(self),
+            "sandbox_runner_instance_id": id(self.sandbox_runner),
+            "approval_gate_instance_id": id(self.approval_gate),
+            "effective_policy": self.sandbox_runner.policy.to_dict(),
+            "sandbox_diagnostics": self.sandbox_runner.get_security_diagnostics(),
+        }
 
     @staticmethod
     def _collect_workspace_py_files(ws_dir: Path) -> Dict[str, str]:
@@ -221,12 +234,14 @@ class CIRepairAgent:
 
         self._enforce_budgets_precheck(t0, total_tokens=0, total_cost=0.0)
 
-        if self.approval_gate.approval_callback is not None:
-            self.approval_gate.check_structured_action(
-                action_type="authorize_ci_repair",
-                argv=[norm_module_rel, validated_pattern],
-                action_description=f"Authorize CI repair workflow for {norm_module_rel}",
-                approved=True,
+        should_apply = bool(write_patch_to_workspace or apply_approved_patch)
+        if should_apply or self.approval_gate.block_workspace_mutations or self.approval_gate.approval_callback is not None:
+            self.approval_gate.check_workspace_mutation(
+                workspace_root=ws,
+                target_rel_path=norm_module_rel,
+                explicit_approval=should_apply if should_apply else True,
+                action_type="apply_workspace_patch" if should_apply else "protected_read_and_model_disclosure",
+                action_description=f"Pre-authorize CI-Repair read/disclosure/patch for {norm_module_rel}",
             )
 
         if not module_path.is_file():
@@ -385,9 +400,19 @@ class CIRepairAgent:
                 current_failure_output = f"Generated code had invalid Python syntax: {static_check['error']}"
                 continue
 
+            ext_stage_dir, staged_cand_file, candidate_sha = stage_candidate_outside_workspace(
+                ws,
+                norm_module_rel,
+                candidate_code,
+                stage_label=f"{rid}_att{attempt}",
+            )
+            try:
+                staged_text = staged_cand_file.read_text(encoding="utf-8")
+            finally:
+                shutil.rmtree(ext_stage_dir, ignore_errors=True)
+
             candidate_files = dict(py_files)
-            candidate_files[norm_module_rel] = candidate_code
-            candidate_sha = hashlib.sha256(candidate_code.encode("utf-8")).hexdigest()
+            candidate_files[norm_module_rel] = staged_text
 
             # Verify test files remain 100% unmodified
             for tf_name, tf_sha in test_file_hashes_before.items():
@@ -430,6 +455,7 @@ class CIRepairAgent:
                     "attempt": attempt,
                     "model_status": model_res.get("status"),
                     "static_quality_check": static_check,
+                    "staged_outside_workspace": True,
                     "candidate_sha256": candidate_sha,
                     "sandbox_passed": sbx_res.passed,
                     "sandbox_exit_code": sbx_res.exit_code,
@@ -448,25 +474,32 @@ class CIRepairAgent:
                 break
             current_failure_output = (sbx_res.stderr or sbx_res.stdout).strip()
 
-        should_apply = bool(write_patch_to_workspace or apply_approved_patch)
         patch_applied = False
         if should_apply:
             if not repaired_ok:
                 # Never apply an unverified or failed patch to the workspace
                 patch_applied = False
             else:
-                self.approval_gate.check_workspace_mutation(
-                    workspace_root=ws,
-                    target_rel_path=norm_module_rel,
-                    explicit_approval=True,
-                    action_type="apply_workspace_patch",
-                    action_description=f"Apply verified CI-Repair patch to {norm_module_rel}",
+                ext_apply_dir, staged_apply_file, staged_apply_sha = stage_candidate_outside_workspace(
+                    ws,
+                    norm_module_rel,
+                    best_code,
+                    stage_label=f"{rid}_apply",
                 )
-                current_disk_sha = hashlib.sha256(module_path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
-                best_sha = hashlib.sha256(best_code.encode("utf-8")).hexdigest()
-                if current_disk_sha != best_sha:
-                    atomic_write_workspace_file(ws, norm_module_rel, best_code)
-                    patch_applied = True
+                try:
+                    self.approval_gate.check_workspace_mutation(
+                        workspace_root=ws,
+                        target_rel_path=norm_module_rel,
+                        explicit_approval=should_apply,
+                        action_type="apply_workspace_patch",
+                        action_description=f"Apply verified CI-Repair patch to {norm_module_rel}",
+                    )
+                    current_disk_sha = hashlib.sha256(module_path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+                    if current_disk_sha != staged_apply_sha:
+                        atomic_write_workspace_file(ws, norm_module_rel, staged_apply_file.read_bytes())
+                        patch_applied = True
+                finally:
+                    shutil.rmtree(ext_apply_dir, ignore_errors=True)
                 on_disk_after_sha = hashlib.sha256(module_path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
                 if on_disk_after_sha != verified_candidate_sha256:
                     atomic_write_workspace_file(ws, norm_module_rel, original_code)

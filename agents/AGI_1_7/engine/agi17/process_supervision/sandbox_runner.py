@@ -19,6 +19,7 @@ Provides fail-closed defense-in-depth for executing model-generated code and unt
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import shutil
@@ -370,7 +371,7 @@ class HighImpactApprovalGate:
         workspace_root: Path,
         target_rel_path: Optional[str | Path] = None,
         target_path: Optional[str | Path] = None,
-        explicit_approval: bool = True,
+        explicit_approval: bool = False,
         action_type: str = "apply_workspace_patch",
         operation: Optional[str] = None,
         action_description: str = "",
@@ -516,6 +517,38 @@ def validate_relative_sandbox_path(
     return target
 
 
+def stage_candidate_outside_workspace(
+    workspace_root: Path,
+    relative_path: str | Path,
+    content: str | bytes,
+    *,
+    stage_label: str = "candidate",
+) -> tuple[Path, Path, str]:
+    """Produces generated or repaired code in an external staging directory strictly outside `workspace_root` before approval."""
+    ws_resolved = workspace_root.resolve()
+    validate_relative_sandbox_path(ws_resolved, relative_path, require_py_extension=True)
+    safe_label = re.sub(r"[^a-zA-Z0-9_.-]", "_", stage_label)[:32]
+    ext_stage_dir = Path(tempfile.mkdtemp(prefix=f"agi17_ext_stage_{safe_label}_")).resolve()
+    try:
+        ext_stage_dir.relative_to(ws_resolved)
+        shutil.rmtree(ext_stage_dir, ignore_errors=True)
+        raise PathTraversalViolationError(
+            f"External staging directory '{ext_stage_dir}' must not reside inside active workspace '{ws_resolved}'"
+        )
+    except ValueError:
+        pass
+
+    staged_file = validate_relative_sandbox_path(ext_stage_dir, relative_path, require_py_extension=True)
+    staged_file.parent.mkdir(parents=True, exist_ok=True)
+    raw_bytes = content if isinstance(content, bytes) else content.encode("utf-8")
+    with open(staged_file, "wb") as fh:
+        fh.write(raw_bytes)
+        fh.flush()
+        os.fsync(fh.fileno())
+    staged_sha = hashlib.sha256(staged_file.read_bytes()).hexdigest()
+    return ext_stage_dir, staged_file, staged_sha
+
+
 def atomic_write_workspace_file(workspace_root: Path, relative_path: str | Path, content: str | bytes) -> Path:
     """Safely stages content to a temp file in the target directory and atomically replaces the target file."""
     target = validate_relative_sandbox_path(workspace_root, relative_path)
@@ -584,6 +617,15 @@ class DisposableSandboxRunner:
         self._cached_docker_image: Optional[str] = None
         self._docker_checked: bool = False
 
+    def get_security_diagnostics(self) -> Dict[str, Any]:
+        """Returns a safe, credential-free diagnostic snapshot of the runner identity and effective sandbox policy."""
+        return {
+            "runner_instance_id": id(self),
+            "approval_gate_instance_id": id(self.approval_gate),
+            "policy": self.policy.to_dict(),
+            "approved_production_images": sorted(APPROVED_PRODUCTION_IMAGES),
+        }
+
     def detect_docker_python_image(self) -> Optional[str]:
         """Verifies Docker daemon reachability and confirms the approved digest-pinned Python image is present locally."""
         if self._docker_checked and self._cached_docker_image is not None:
@@ -607,7 +649,7 @@ class DisposableSandboxRunner:
                 stdout_txt = (proc.stdout or "").strip()
                 if self.policy.require_pinned_image_digest and "@sha256:" in validated_img:
                     expected_digest = "sha256:" + validated_img.split("@sha256:", 1)[1]
-                    if "sha256:" in stdout_txt and expected_digest not in stdout_txt:
+                    if expected_digest not in stdout_txt:
                         raise SandboxIsolationUnavailableError(
                             f"Docker image inspect digest mismatch for '{validated_img}': expected '{expected_digest}', got '{stdout_txt}'"
                         )
@@ -656,8 +698,12 @@ class DisposableSandboxRunner:
 
     @staticmethod
     def _terminate_and_remove_container(container_name: str) -> None:
-        """Stops and force-removes a named container using list argv (`shell=False`)."""
-        for subcmd in (["docker", "kill", container_name], ["docker", "rm", "-f", container_name]):
+        """Stops with bounded wait, escalates to kill, and force-removes a named container using list argv (`shell=False`)."""
+        for subcmd in (
+            ["docker", "stop", "-t", "2", container_name],
+            ["docker", "kill", container_name],
+            ["docker", "rm", "-f", container_name],
+        ):
             try:
                 subprocess.run(
                     subcmd,
@@ -902,6 +948,8 @@ class DisposableSandboxRunner:
                 exit_code = proc.returncode
                 stdout_str = proc.stdout or ""
                 stderr_str = proc.stderr or ""
+                if exit_code != 0:
+                    self._terminate_and_remove_container(container_name)
             else:
                 cmd_executed, proc = self._run_in_restricted_tempdir(
                     staging_dir=staging_dir,

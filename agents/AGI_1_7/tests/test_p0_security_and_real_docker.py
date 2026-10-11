@@ -83,22 +83,23 @@ def _is_real_docker_pinned_image_ready() -> tuple[bool, str]:
         return False, "docker CLI not found on PATH"
     try:
         proc = subprocess.run(
-            [docker_bin, "image", "inspect", APPROVED_PINNED_PYTHON_IMAGE],
+            [docker_bin, "image", "inspect", APPROVED_PINNED_PYTHON_IMAGE, "--format", "{{json .RepoDigests}}"],
             capture_output=True,
             text=True,
-             timeout=10.0,
+            timeout=10.0,
             check=False,
             shell=False,
         )
-        if proc.returncode != 0:
-            return False, f"docker image inspect failed: {proc.stderr.strip()}"
+        expected_digest = APPROVED_PINNED_PYTHON_IMAGE.split("@", 1)[1]
+        if proc.returncode != 0 or expected_digest not in (proc.stdout or ""):
+            return False, f"docker image inspect failed or digest missing: {proc.stderr.strip()}"
         return True, "ok"
     except Exception as exc:
         return False, str(exc)
 
 
 class TestP0SecurityHardeningOffline(unittest.TestCase):
-    """Phase 9 (A–L): Mandatory Offline Security & Adversarial Tests."""
+    """Phase 9 (A–M): Mandatory Offline Security & Adversarial Tests."""
 
     def setUp(self) -> None:
         self.temp_dir = Path(tempfile.mkdtemp(prefix="agi17_p0_sec_"))
@@ -107,9 +108,9 @@ class TestP0SecurityHardeningOffline(unittest.TestCase):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     # ------------------------------------------------------------------
-    # A. Production wiring tests
+    # A. Production wiring tests (Adapter, Orchestrator, CIRepairAgent, CLI)
     # ------------------------------------------------------------------
-    def test_9A_adapter_wires_production_sandbox_and_shared_approval_gate(self) -> None:
+    def test_9A_adapter_and_cli_wire_production_sandbox_and_shared_approval_gate(self) -> None:
         adapter = AGI17Adapter(
             storage_root=self.temp_dir / "storage",
             eval_root=self.temp_dir / "eval",
@@ -128,8 +129,29 @@ class TestP0SecurityHardeningOffline(unittest.TestCase):
         self.assertIs(adapter.approval_gate, adapter.ci_repair_agent.approval_gate)
         self.assertIs(adapter.approval_gate, adapter.sandbox_runner.approval_gate)
 
+        # Verify runtime security diagnostics contract
+        diag = adapter.get_security_diagnostics()
+        self.assertTrue(diag["shared_sandbox_runner_verified"])
+        self.assertTrue(diag["shared_approval_gate_verified"])
+        self.assertEqual(
+            diag["adapter_runner_id"],
+            diag["orchestrator_diagnostics"]["sandbox_diagnostics"]["runner_instance_id"],
+        )
+        self.assertEqual(
+            diag["adapter_runner_id"],
+            diag["ci_repair_diagnostics"]["sandbox_diagnostics"]["runner_instance_id"],
+        )
+        self.assertEqual(
+            diag["adapter_approval_gate_id"],
+            diag["orchestrator_diagnostics"]["approval_gate_instance_id"],
+        )
+        self.assertEqual(
+            diag["adapter_approval_gate_id"],
+            diag["ci_repair_diagnostics"]["approval_gate_instance_id"],
+        )
+
     # ------------------------------------------------------------------
-    # B. Fail-closed container tests
+    # B. Fail-closed container tests & zero sh -c interpolation
     # ------------------------------------------------------------------
     def test_9B_production_policy_fails_closed_without_host_fallback(self) -> None:
         files = {
@@ -154,14 +176,49 @@ class TestP0SecurityHardeningOffline(unittest.TestCase):
                 runner.run_python_unittest_sandbox(files=files)
             mock_host_run.assert_not_called()
 
-        # 3. Unpinned image reference -> SandboxPolicyViolationError
+        # 3. docker image inspect returns output WITHOUT expected sha256 digest -> fails closed!
+        missing_digest_inspect = subprocess.CompletedProcess(args=["docker"], returncode=0, stdout="[]\n", stderr="")
+        with mock.patch("shutil.which", return_value="/usr/bin/docker"), mock.patch(
+            "subprocess.run", return_value=missing_digest_inspect
+        ), mock.patch.object(DisposableSandboxRunner, "_run_in_restricted_tempdir") as mock_host_run:
+            with self.assertRaises(SandboxIsolationUnavailableError):
+                runner.run_python_unittest_sandbox(files=files)
+            mock_host_run.assert_not_called()
+
+        # 4. Unpinned image reference -> SandboxPolicyViolationError
         with self.assertRaises(SandboxPolicyViolationError):
             SandboxPolicy.production(docker_image="python:3.12-slim")
 
-        # 4. Unapproved digest -> SandboxPolicyViolationError
+        # 5. Unapproved digest -> SandboxPolicyViolationError
         unapproved_digest = "python:3.12-slim@sha256:" + ("0" * 64)
         with self.assertRaises(SandboxPolicyViolationError):
             SandboxPolicy.production(docker_image=unapproved_digest)
+
+        # 6. Verify docker run argv never invokes sh -c or /bin/sh and passes test_pattern as literal argv
+        captured_cmds: list[list[str]] = []
+
+        def _fake_docker_subproc(cmd, **_kwargs):
+            captured_cmds.append(list(cmd))
+            if "image" in cmd and "inspect" in cmd:
+                return subprocess.CompletedProcess(
+                    args=cmd, returncode=0, stdout=f'["{APPROVED_PINNED_PYTHON_IMAGE}"]\n', stderr=""
+                )
+            if "container" in cmd and "inspect" in cmd:
+                return subprocess.CompletedProcess(args=cmd, returncode=1, stdout="", stderr="No such container")
+            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="OK\n", stderr="")
+
+        with mock.patch("shutil.which", return_value="/usr/bin/docker"), mock.patch(
+            "subprocess.run", side_effect=_fake_docker_subproc
+        ):
+            res_cmd = runner.run_python_unittest_sandbox(files=files, test_pattern="test_ok.py")
+        self.assertTrue(res_cmd.passed)
+        docker_run_cmds = [c for c in captured_cmds if len(c) > 1 and c[1] == "run"]
+        self.assertEqual(len(docker_run_cmds), 1)
+        run_argv = docker_run_cmds[0]
+        self.assertNotIn("sh", run_argv)
+        self.assertNotIn("/bin/sh", run_argv)
+        self.assertNotIn("-c", run_argv[: run_argv.index("python3")])
+        self.assertEqual(run_argv[-1], "test_ok.py")
 
     # ------------------------------------------------------------------
     # C. Path containment tests
@@ -176,6 +233,7 @@ class TestP0SecurityHardeningOffline(unittest.TestCase):
             "pkg/../../escape.py",
             "/etc/passwd",
             r"C:\Windows\System32\cmd.exe",
+            r"\\server\share\evil.py",
             "CON.py",
             "NUL.py",
             "COM1.py",
@@ -312,9 +370,9 @@ class TestP0SecurityHardeningOffline(unittest.TestCase):
             scan_untrusted_content("import os\nos.system('whoami')\n", source_label="sys.py")
 
     # ------------------------------------------------------------------
-    # F. Approval gate tests
+    # F. Approval gate & external staging tests (zero model/test/write on denial)
     # ------------------------------------------------------------------
-    def test_9F_approval_gate_enforced_for_mutations_and_commands(self) -> None:
+    def test_9F_approval_gate_enforced_before_model_test_and_write(self) -> None:
         ws = self.temp_dir / "ws_gate"
         ws.mkdir(parents=True, exist_ok=True)
         orig_src = "def val() -> int:\n    return 0\n"
@@ -331,21 +389,66 @@ class TestP0SecurityHardeningOffline(unittest.TestCase):
         sbx = DisposableSandboxRunner(policy=SandboxPolicy.development())
         agent = CIRepairAgent(model_adapter=ma, sandbox_runner=sbx)
 
-        # 1. apply_approved_patch=False does not modify workspace file
+        # 1. apply_approved_patch=False stages candidate outside workspace and does not modify workspace file
         res_staged = agent.repair_workspace(workspace_dir=ws, module_filename="mod.py", apply_approved_patch=False)
         self.assertEqual(res_staged.status, "REPAIRED_AND_VERIFIED")
+        self.assertTrue(res_staged.staged_outside_workspace)
         self.assertFalse(res_staged.patch_applied_to_workspace)
         self.assertEqual((ws / "mod.py").read_text(encoding="utf-8"), orig_src)
 
-        # 2. Denied workspace mutation blocks file modification even if apply_approved_patch=True
+        # 2. Denied workspace mutation blocks BEFORE any model call, test run, or workspace write!
+        denied_prov = DeterministicMockProvider(
+            responder=lambda _r: "```python\ndef val() -> int:\n    return 1\n```"
+        )
+        ma_denied = ModelAdapter(token_controller=tc, mock_provider=denied_prov)
         denying_gate = HighImpactApprovalGate(block_workspace_mutations=True)
-        agent_denied = CIRepairAgent(model_adapter=ma, sandbox_runner=sbx, approval_gate=denying_gate)
-        with self.assertRaises(HighImpactActionBlockedError):
-            agent_denied.repair_workspace(workspace_dir=ws, module_filename="mod.py", apply_approved_patch=True)
+        sbx_denied = DisposableSandboxRunner(policy=SandboxPolicy.development(), approval_gate=denying_gate)
+        agent_denied = CIRepairAgent(model_adapter=ma_denied, sandbox_runner=sbx_denied, approval_gate=denying_gate)
+        with mock.patch.object(sbx_denied, "run_python_unittest_sandbox") as mock_sbx_run:
+            with self.assertRaises(HighImpactActionBlockedError):
+                agent_denied.repair_workspace(workspace_dir=ws, module_filename="mod.py", apply_approved_patch=True)
+            mock_sbx_run.assert_not_called()
+        self.assertEqual(len(denied_prov.call_history), 0, "Denied approval must execute ZERO model calls")
         self.assertEqual((ws / "mod.py").read_text(encoding="utf-8"), orig_src)
 
-        # 3. Dangerous commands blocked unless approved
+        # 2b. Orchestrator denied workspace mutation also blocks BEFORE any model call, test run, or workspace write!
+        tm_denied = DurableTaskManager(
+            db_path=self.temp_dir / "f_den.db",
+            events_jsonl_path=self.temp_dir / "f_den.jsonl",
+            checkpoints_dir=self.temp_dir / "f_den_chk",
+        )
+        orch_denied = HierarchicalOrchestrator(
+            task_manager=tm_denied,
+            model_adapter=ma_denied,
+            sandbox_runner=sbx_denied,
+            approval_gate=denying_gate,
+        )
+        subtasks_denied = orch_denied.build_code_and_test_subtasks(
+            title="Denied Orchestrator Write",
+            prompt="Attempt to write mod.py under denied gate",
+            code_task_dir=ws,
+            module_filename="mod.py",
+            test_filename="test_mod.py",
+        )
+        with mock.patch.object(sbx_denied, "run_python_unittest_sandbox") as mock_orch_sbx:
+            res_orch_denied = orch_denied.execute_mission(
+                title="Denied Mission",
+                prompt="Run with block_workspace_mutations=True",
+                subtasks=subtasks_denied,
+                force_hierarchical=True,
+                use_live_model=True,
+            )
+            mock_orch_sbx.assert_not_called()
+        self.assertEqual(res_orch_denied["terminal_outcome"], "BLOCKED_BY_POLICY")
+        self.assertEqual(len(denied_prov.call_history), 0, "Denied orchestrator mission must execute ZERO model calls")
+        self.assertEqual((ws / "mod.py").read_text(encoding="utf-8"), orig_src)
+
+        # 3. Default check_workspace_mutation without explicit_approval=True fails closed (no default approval bypass)
         gate = HighImpactApprovalGate()
+        with self.assertRaises(HighImpactActionBlockedError):
+            gate.check_workspace_mutation(workspace_root=ws, target_rel_path="mod.py")
+
+        # 4. Dangerous commands blocked unless approved
         for dangerous_cmd in (
             "git push origin main",
             "pip install requests",
@@ -681,7 +784,13 @@ class TestP0RealDockerEngineIntegration(unittest.TestCase):
         cls.docker_ready, cls.docker_reason = _is_real_docker_pinned_image_ready()
 
     def setUp(self) -> None:
+        import os as _os
+
         if not self.docker_ready:
+            if _os.environ.get("AGI17_REQUIRE_REAL_DOCKER") == "1":
+                self.fail(
+                    f"AGI17_REQUIRE_REAL_DOCKER=1 is set, but real Docker Engine / pinned image is unavailable: {self.docker_reason}"
+                )
             self.skipTest(f"Real Docker Engine / pinned image unavailable on this host: {self.docker_reason}")
         self.temp_dir = Path(tempfile.mkdtemp(prefix="agi17_real_docker_"))
 
@@ -836,7 +945,10 @@ class TestP0RealDockerEngineIntegration(unittest.TestCase):
         self.assertEqual(res_staged["status"], "REPAIRED_AND_VERIFIED")
         self.assertEqual(res_staged["terminal_outcome"], "SUCCEEDED_AND_VERIFIED")
         self.assertEqual(res_staged["isolation_backend"], "docker_disposable_container")
+        self.assertTrue(res_staged["staged_outside_workspace"])
         self.assertFalse(res_staged["patch_applied_to_workspace"])
+        self.assertTrue(res_staged["security_diagnostics"]["shared_sandbox_runner_verified"])
+        self.assertTrue(res_staged["security_diagnostics"]["shared_approval_gate_verified"])
         self.assertEqual((ws / "clamp_mod.py").read_text(encoding="utf-8"), orig_buggy)
 
         # 2. Explicit approval applies verified patch atomically and verifies SHA-256
@@ -850,6 +962,7 @@ class TestP0RealDockerEngineIntegration(unittest.TestCase):
         self.assertEqual(res_applied["status"], "REPAIRED_AND_VERIFIED")
         self.assertEqual(res_applied["terminal_outcome"], "SUCCEEDED_AND_VERIFIED")
         self.assertEqual(res_applied["isolation_backend"], "docker_disposable_container")
+        self.assertTrue(res_applied["staged_outside_workspace"])
         self.assertTrue(res_applied["patch_applied_to_workspace"])
         self.assertEqual((ws / "clamp_mod.py").read_text(encoding="utf-8"), fixed_code)
 

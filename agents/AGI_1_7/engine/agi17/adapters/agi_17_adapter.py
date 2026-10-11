@@ -131,6 +131,34 @@ class AGI17Adapter:
         self.research_engine = GroundedResearchEngine(memory=self.memory)
         self.verifier = EvidenceVerifier()
 
+    def get_security_diagnostics(self) -> Dict[str, Any]:
+        """Returns a safe, credential-free diagnostic representation of the effective sandbox policy and runner identity across all subsystems."""
+        shared_runner = bool(
+            self.sandbox_runner is self.orchestrator.sandbox_runner is self.ci_repair_agent.sandbox_runner
+        )
+        shared_gate = bool(
+            self.approval_gate
+            is self.orchestrator.approval_gate
+            is self.ci_repair_agent.approval_gate
+            is self.sandbox_runner.approval_gate
+        )
+        return {
+            "adapter_instance_id": id(self),
+            "adapter_runner_id": id(self.sandbox_runner),
+            "sandbox_runner_instance_id": id(self.sandbox_runner),
+            "orchestrator_runner_instance_id": id(self.orchestrator.sandbox_runner),
+            "ci_repair_runner_instance_id": id(self.ci_repair_agent.sandbox_runner),
+            "shared_runner_identity_verified": shared_runner,
+            "shared_sandbox_runner_verified": shared_runner,
+            "adapter_approval_gate_id": id(self.approval_gate),
+            "approval_gate_instance_id": id(self.approval_gate),
+            "shared_approval_gate_identity_verified": shared_gate,
+            "shared_approval_gate_verified": shared_gate,
+            "effective_policy": self.sandbox_runner.policy.to_dict(),
+            "orchestrator_diagnostics": self.orchestrator.get_security_diagnostics(),
+            "ci_repair_diagnostics": self.ci_repair_agent.get_security_diagnostics(),
+        }
+
     def run_startup_reconciliation(self) -> Dict[str, Any]:
         """Reconciles orphan tasks after restart and refreshes hardware capability profile."""
         reconciled = self.task_manager.reconcile_after_restart()
@@ -143,6 +171,7 @@ class AGI17Adapter:
             "limits": limits,
             "resource_snapshot": snap,
             "ecosystem": self.ecosystem_coordinator.get_inventory_summary(),
+            "security_diagnostics": self.get_security_diagnostics(),
         }
 
     def build_code_and_test_subtasks(
@@ -188,7 +217,9 @@ class AGI17Adapter:
             write_patch_to_workspace=write_patch_to_workspace,
             apply_approved_patch=apply_approved_patch,
         )
-        return res.to_dict()
+        out = res.to_dict()
+        out["security_diagnostics"] = self.get_security_diagnostics()
+        return out
 
     def execute(
         self,
@@ -221,7 +252,10 @@ class AGI17Adapter:
             max_wall_clock_sec=max_wall_clock_sec,
             max_mission_tokens=max_mission_tokens,
         )
+        if isinstance(res, dict):
+            res.setdefault("security_diagnostics", self.get_security_diagnostics())
         self.progress_service.render_html_dashboard()
         return res
 
     execute_mission = execute
+
