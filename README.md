@@ -1,13 +1,13 @@
 # AGI 1.7 — OMEGA COMMAND
 ## Resource-Aware, Sandboxed Multi-Agent Coding & Python CI-Repair Runtime (`gemini-3.8-flash-high`)
 
-[![Runtime](https://img.shields.io/badge/Runtime-AGI%201.7%20OMEGA%20COMMAND-10B981.svg)](agents/AGI_1_7/run_agi_17.py)
-[![Sole Model](https://img.shields.io/badge/Foundation%20Model-gemini--3.8--flash--high-059669.svg)](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py)
-[![Sandbox](https://img.shields.io/badge/Sandbox-Disposable%20Docker%20Container%20(--network%20none)-0284C7.svg)](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py)
-[![Embedded Agents](https://img.shields.io/badge/Specialist%20Contracts-100%20Across%2016%20Families-7E22CE.svg)](agents/AGI_1_7/ecosystem/agent_registry/registry.json)
-[![Tests](https://img.shields.io/badge/Verification%20%26%20CI%20Suite-88%2F88%20Passing-16A34A.svg)](.github/workflows/agi17-ci.yml)
-[![P0 Hardening](https://img.shields.io/badge/P0%20Security%20Hardening-VERIFIED%20PASS-10B981.svg)](agents/AGI_1_7/docs/AGI_1_7_P0_SECURITY_HARDENING_REPORT.md)
-[![70 Benchmarks](https://img.shields.io/badge/70%20Benchmarks-1st%20Place%20(99.64%25)-7E22CE.svg)](agents/AGI_1_7/docs/AGI_1_7_FOUR_AGENT_70_BENCHMARK_COMPARISON.md)
+[![Runtime](https://img.shields.io/static/v1?label=Runtime&message=AGI%201.7%20OMEGA%20COMMAND&color=10B981)](agents/AGI_1_7/run_agi_17.py)
+[![Sole Model](https://img.shields.io/static/v1?label=Sole%20Model&message=gemini-3.8-flash-high&color=059669)](agents/AGI_1_7/engine/agi17/adapters/model_adapter.py)
+[![Sandbox](https://img.shields.io/static/v1?label=Sandbox&message=Disposable%20Docker%20Container%20%28--network%20none%29&color=0284C7)](agents/AGI_1_7/engine/agi17/process_supervision/sandbox_runner.py)
+[![Embedded Agents](https://img.shields.io/static/v1?label=Specialist%20Contracts&message=100%20Across%2016%20Families&color=7E22CE)](agents/AGI_1_7/ecosystem/agent_registry/registry.json)
+[![Tests](https://img.shields.io/static/v1?label=Verification%20%26%20CI%20Suite&message=88%2F88%20Passing&color=16A34A)](.github/workflows/agi17-ci.yml)
+[![P0 Hardening](https://img.shields.io/static/v1?label=P0%20Security%20Hardening&message=VERIFIED%20PASS&color=10B981)](agents/AGI_1_7/docs/AGI_1_7_P0_SECURITY_HARDENING_REPORT.md)
+[![70 Benchmarks](https://img.shields.io/static/v1?label=70%20Benchmarks&message=1st%20Place%20%2899.64%25%29&color=7E22CE)](agents/AGI_1_7/docs/AGI_1_7_FOUR_AGENT_70_BENCHMARK_COMPARISON.md)
 
 **AGI 1.7 — OMEGA COMMAND** is a self-contained, resource-aware, persistent multi-agent engineering and automated **Python CI-Repair** runtime built around **Google's Gemini 3.8 Flash High (`gemini-3.8-flash-high`)** using the **Python 3.10+ Standard Library** (`0` third-party PyPI runtime dependencies required).
 
