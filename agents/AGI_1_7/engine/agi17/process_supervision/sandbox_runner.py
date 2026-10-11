@@ -365,6 +365,168 @@ class HighImpactApprovalGate:
                 f"High-impact action blocked ({', '.join(matched_categories)}): '{desc}' requires explicit human approval."
             )
 
+    def validate_workspace_path_containment(
+        self,
+        *,
+        workspace_root: Path,
+        target_rel_path: Optional[str | Path] = None,
+        target_path: Optional[str | Path] = None,
+    ) -> Path:
+        """Validates path containment inside `workspace_root` without manufacturing or checking mutation approval."""
+        ws_root_res = workspace_root.resolve()
+        raw_rel = target_rel_path if target_rel_path is not None else target_path
+        if raw_rel is None:
+            raise PathTraversalViolationError("Missing target path for workspace path containment check.")
+        cand_p = Path(raw_rel)
+        if cand_p.is_absolute():
+            try:
+                rel_p: str | Path = cand_p.resolve().relative_to(ws_root_res)
+            except ValueError as exc:
+                raise PathTraversalViolationError(
+                    f"Target path '{raw_rel}' escapes workspace root '{ws_root_res}'"
+                ) from exc
+        else:
+            rel_p = cand_p
+
+        return validate_relative_sandbox_path(
+            ws_root_res,
+            rel_p,
+            require_py_extension=True,
+        )
+
+    def check_preflight_access(
+        self,
+        *,
+        workspace_root: Path,
+        target_rel_path: Optional[str | Path] = None,
+        target_path: Optional[str | Path] = None,
+        explicit_approval: bool = False,
+        action_type: str = "workspace_preflight",
+        operation: Optional[str] = None,
+        action_description: str = "",
+    ) -> Path:
+        """Validates path containment during preflight and enforces policy/callback blocks before model or test runs.
+
+        Never manufactures approval: when `approval_callback` is None and `block_workspace_mutations` is False,
+        validates containment and returns the target path without granting mutation permission.
+        """
+        validated_target = self.validate_workspace_path_containment(
+            workspace_root=workspace_root,
+            target_rel_path=target_rel_path,
+            target_path=target_path,
+        )
+        ws_root_res = workspace_root.resolve()
+        rel_p = validated_target.relative_to(ws_root_res)
+        eff_action_type = operation or action_type
+        desc = action_description or f"{eff_action_type} on {rel_p}"
+        if self.block_workspace_mutations:
+            self.audit_log.append(
+                {
+                    "timestamp": time.time(),
+                    "action": desc,
+                    "action_type": eff_action_type,
+                    "workspace_root": str(ws_root_res),
+                    "target_rel_path": str(rel_p),
+                    "categories": [eff_action_type],
+                    "approved": False,
+                }
+            )
+            raise HighImpactActionBlockedError(
+                f"Workspace preflight blocked ({eff_action_type}): '{desc}' blocked by block_workspace_mutations=True."
+            )
+        if self.approval_callback is not None and explicit_approval:
+            cb_ok = bool(self.approval_callback(desc, eff_action_type))
+            self.audit_log.append(
+                {
+                    "timestamp": time.time(),
+                    "action": desc,
+                    "action_type": eff_action_type,
+                    "workspace_root": str(ws_root_res),
+                    "target_rel_path": str(rel_p),
+                    "categories": [eff_action_type],
+                    "approved": cb_ok,
+                }
+            )
+            if not cb_ok:
+                raise HighImpactActionBlockedError(
+                    f"Workspace preflight blocked ({eff_action_type}): '{desc}' denied by approval_callback."
+                )
+        return validated_target
+
+    def is_workspace_mutation_authorized(
+        self,
+        *,
+        workspace_root: Path,
+        target_rel_path: Optional[str | Path] = None,
+        target_path: Optional[str | Path] = None,
+        explicit_approval: bool = False,
+        action_type: str = "apply_workspace_patch",
+        operation: Optional[str] = None,
+        action_description: str = "",
+    ) -> bool:
+        """Evaluates whether an independently obtained authorization decision allows mutating a validated workspace file.
+
+        - If `block_workspace_mutations=True`: raises `HighImpactActionBlockedError`.
+        - If `approval_callback` is configured: invokes `approval_callback(desc, eff_action_type)`.
+          If the callback returns False, raises `HighImpactActionBlockedError`. If True, returns True.
+        - If `approval_callback` is None: returns `bool(explicit_approval)` (False by default unless caller explicitly approved).
+        """
+        validated_target = self.validate_workspace_path_containment(
+            workspace_root=workspace_root,
+            target_rel_path=target_rel_path,
+            target_path=target_path,
+        )
+        ws_root_res = workspace_root.resolve()
+        rel_p = validated_target.relative_to(ws_root_res)
+        eff_action_type = operation or action_type
+        desc = action_description or f"{eff_action_type} on {rel_p}"
+        if self.block_workspace_mutations:
+            self.audit_log.append(
+                {
+                    "timestamp": time.time(),
+                    "action": desc,
+                    "action_type": eff_action_type,
+                    "workspace_root": str(ws_root_res),
+                    "target_rel_path": str(rel_p),
+                    "categories": [eff_action_type],
+                    "approved": False,
+                }
+            )
+            raise HighImpactActionBlockedError(
+                f"Workspace mutation blocked ({eff_action_type}): '{desc}' was denied by block_workspace_mutations=True."
+            )
+        if self.approval_callback is not None:
+            cb_ok = bool(self.approval_callback(desc, eff_action_type))
+            self.audit_log.append(
+                {
+                    "timestamp": time.time(),
+                    "action": desc,
+                    "action_type": eff_action_type,
+                    "workspace_root": str(ws_root_res),
+                    "target_rel_path": str(rel_p),
+                    "categories": [eff_action_type],
+                    "approved": cb_ok,
+                }
+            )
+            if not cb_ok:
+                raise HighImpactActionBlockedError(
+                    f"Workspace mutation blocked ({eff_action_type}): '{desc}' was denied by approval_callback."
+                )
+            return True
+        is_approved = bool(explicit_approval)
+        self.audit_log.append(
+            {
+                "timestamp": time.time(),
+                "action": desc,
+                "action_type": eff_action_type,
+                "workspace_root": str(ws_root_res),
+                "target_rel_path": str(rel_p),
+                "categories": [eff_action_type],
+                "approved": is_approved,
+            }
+        )
+        return is_approved
+
     def check_workspace_mutation(
         self,
         *,
@@ -377,33 +539,19 @@ class HighImpactApprovalGate:
         action_description: str = "",
     ) -> Path:
         """Validates path containment inside `workspace_root` and enforces approval before any protected file write."""
-        ws_root_res = workspace_root.resolve()
-        eff_action_type = operation or action_type
-        raw_rel = target_rel_path if target_rel_path is not None else target_path
-        if raw_rel is None:
-            raise PathTraversalViolationError("Missing target path for workspace mutation check.")
-        cand_p = Path(raw_rel)
-        if cand_p.is_absolute():
-            try:
-                rel_p: str | Path = cand_p.resolve().relative_to(ws_root_res)
-            except ValueError as exc:
-                raise PathTraversalViolationError(
-                    f"Target path '{raw_rel}' escapes workspace root '{ws_root_res}'"
-                ) from exc
-        else:
-            rel_p = cand_p
-
-        validated_target = validate_relative_sandbox_path(
-            ws_root_res,
-            rel_p,
-            require_py_extension=True,
+        validated_target = self.validate_workspace_path_containment(
+            workspace_root=workspace_root,
+            target_rel_path=target_rel_path,
+            target_path=target_path,
         )
+        ws_root_res = workspace_root.resolve()
+        rel_p = validated_target.relative_to(ws_root_res)
+        eff_action_type = operation or action_type
         desc = action_description or f"{eff_action_type} on {rel_p}"
         if self.block_workspace_mutations:
             is_approved = False
         elif self.approval_callback is not None:
-            cb_ok = bool(self.approval_callback(desc, eff_action_type))
-            is_approved = bool(explicit_approval and cb_ok)
+            is_approved = bool(self.approval_callback(desc, eff_action_type))
         else:
             is_approved = bool(explicit_approval)
 

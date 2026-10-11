@@ -774,6 +774,295 @@ class TestP0SecurityHardeningOffline(unittest.TestCase):
         self.assertEqual(notif.exit_code, 127)
         self.assertTrue(any("Command launch failed" in line for line in notif.stderr_tail))
 
+    # ------------------------------------------------------------------
+    # N. Default AGI17Adapter() approval-gate tests for code generation,
+    #    self-healing repair, default-deny, callback-deny, callback-approve,
+    #    and failed-repair / timeout non-mutation
+    # ------------------------------------------------------------------
+    def test_9N_default_adapter_code_gen_and_self_healing_repair_approval_gates(self) -> None:
+        ws = self.temp_dir / "ws_default_adapter_gate"
+        ws.mkdir(parents=True, exist_ok=True)
+        orig_mod_code = "def add(a: int, b: int) -> int:\n    return 0\n"
+        test_mod_code = (
+            "import unittest\n"
+            "from calc_mod import add\n"
+            "class TCalc(unittest.TestCase):\n"
+            "    def test_add(self) -> None:\n"
+            "        self.assertEqual(add(4, 5), 9)\n"
+            "        self.assertEqual(add(-2, 2), 0)\n"
+        )
+        valid_mod_code = "def add(a: int, b: int) -> int:\n    return a + b\n"
+        buggy_mod_code = "def add(a: int, b: int) -> int:\n    return a - b\n"
+
+        mod_file = ws / "calc_mod.py"
+        test_file = ws / "test_calc_mod.py"
+        mod_file.write_text(orig_mod_code, encoding="utf-8")
+        test_file.write_text(test_mod_code, encoding="utf-8")
+        orig_mod_sha = hashlib.sha256(mod_file.read_bytes()).hexdigest()
+        orig_test_sha = hashlib.sha256(test_file.read_bytes()).hexdigest()
+        valid_mod_sha = hashlib.sha256(valid_mod_code.encode("utf-8")).hexdigest()
+
+        dev_exec_runner = DisposableSandboxRunner(policy=SandboxPolicy.development())
+
+        def _sim_sandbox_exec(files, test_pattern="test_*.py", sandbox_id=None, timeout_sec=None):
+            return dev_exec_runner.run_python_unittest_sandbox(
+                files=files,
+                test_pattern=test_pattern,
+                sandbox_id=sandbox_id,
+                timeout_sec=timeout_sec,
+            )
+
+        # 1. Construct default AGI17Adapter() with NO approval_callback and NO custom sandbox_runner
+        prov_codegen = DeterministicMockProvider(
+            responder=lambda req: (
+                f"```python\n{valid_mod_code}```"
+                if "SUB-001" not in (req.child_task_id or "")
+                else "Bullet 1: add(a: int, b: int) -> int returns a + b."
+            )
+        )
+        tc1 = AdaptiveTokenController(
+            ledger_dir=self.temp_dir / "led_n1",
+            isolated_benchmark_cwd=self.temp_dir / "iso_n1",
+        )
+        ma1 = ModelAdapter(token_controller=tc1, mock_provider=prov_codegen)
+        default_adapter = AGI17Adapter(
+            storage_root=self.temp_dir / "store_n1",
+            eval_root=self.temp_dir / "eval_n1",
+            model_adapter=ma1,
+        )
+        self.assertIsNone(default_adapter.approval_gate.approval_callback)
+        self.assertEqual(default_adapter.sandbox_policy.isolation_mode, "docker")
+
+        # 1a. Ordinary code generation WITHOUT approval (default-deny):
+        #     Generates and verifies in external staging, returns PENDING_APPROVAL, leaves workspace unchanged!
+        with mock.patch.object(
+            default_adapter.sandbox_runner,
+            "run_python_unittest_sandbox",
+            side_effect=_sim_sandbox_exec,
+        ):
+            res_unapproved = default_adapter.execute(
+                title="Ordinary Code Gen Without Approval",
+                prompt="Implement add(a, b) in calc_mod.py",
+                code_task_dir=ws,
+                module_filename="calc_mod.py",
+                test_filename="test_calc_mod.py",
+            )
+        self.assertEqual(res_unapproved["status"], "PENDING_APPROVAL")
+        self.assertEqual(res_unapproved["terminal_outcome"], "PENDING_APPROVAL")
+        self.assertEqual(res_unapproved["approval_status"], "PENDING_APPROVAL")
+        self.assertTrue(res_unapproved["pending_approval"])
+        self.assertTrue(res_unapproved["requires_human_approval"])
+        self.assertTrue(res_unapproved["staged_outside_workspace"])
+        self.assertFalse(res_unapproved["patch_applied_to_workspace"])
+        self.assertEqual(compute_cli_exit_code(res_unapproved), 6)
+        self.assertEqual(mod_file.read_text(encoding="utf-8"), orig_mod_code)
+        self.assertEqual(hashlib.sha256(mod_file.read_bytes()).hexdigest(), orig_mod_sha)
+        self.assertEqual(hashlib.sha256(test_file.read_bytes()).hexdigest(), orig_test_sha)
+
+        # 1b. Ordinary code generation WITH explicit approval (apply_approved_patch=True):
+        #     Applies only the verified candidate after sandbox verification passes!
+        with mock.patch.object(
+            default_adapter.sandbox_runner,
+            "run_python_unittest_sandbox",
+            side_effect=_sim_sandbox_exec,
+        ):
+            res_approved = default_adapter.execute(
+                title="Ordinary Code Gen With Approval",
+                prompt="Implement add(a, b) in calc_mod.py",
+                code_task_dir=ws,
+                module_filename="calc_mod.py",
+                test_filename="test_calc_mod.py",
+                apply_approved_patch=True,
+            )
+        self.assertEqual(res_approved["status"], "SUCCEEDED")
+        self.assertEqual(res_approved["terminal_outcome"], "SUCCEEDED_AND_VERIFIED")
+        self.assertEqual(res_approved["approval_status"], "APPROVED_AND_APPLIED")
+        self.assertFalse(res_approved["pending_approval"])
+        self.assertTrue(res_approved["patch_applied_to_workspace"])
+        self.assertEqual(compute_cli_exit_code(res_approved), 0)
+        self.assertEqual(mod_file.read_text(encoding="utf-8"), valid_mod_code)
+        self.assertEqual(hashlib.sha256(mod_file.read_bytes()).hexdigest(), valid_mod_sha)
+        self.assertEqual(hashlib.sha256(test_file.read_bytes()).hexdigest(), orig_test_sha)
+
+        # Reset workspace file to original state for self-healing repair tests
+        mod_file.write_text(orig_mod_code, encoding="utf-8")
+        self.assertEqual(hashlib.sha256(mod_file.read_bytes()).hexdigest(), orig_mod_sha)
+
+        # 2. Self-healing repair on default AGI17Adapter() with NO approval callback:
+        #    Stage 2 generates buggy_mod_code (fails VERIFY-ATT1), Stage 3 repair generates valid_mod_code (passes VERIFY-ATT2).
+        def _self_heal_responder(req):
+            cid = req.child_task_id or ""
+            if "REPAIR" in cid:
+                return f"```python\n{valid_mod_code}```"
+            if "SUB-002" in cid:
+                return f"```python\n{buggy_mod_code}```"
+            return "Spec: implement add(a, b) -> int"
+
+        prov_heal = DeterministicMockProvider(responder=_self_heal_responder)
+        ma_heal = ModelAdapter(token_controller=tc1, mock_provider=prov_heal)
+        heal_adapter = AGI17Adapter(
+            storage_root=self.temp_dir / "store_n2",
+            eval_root=self.temp_dir / "eval_n2",
+            model_adapter=ma_heal,
+        )
+        self.assertIsNone(heal_adapter.approval_gate.approval_callback)
+
+        # 2a. Self-healing repair WITHOUT approval (default-deny):
+        #     Neither the broken Stage 2 candidate nor the repaired candidate may touch the workspace!
+        with mock.patch.object(
+            heal_adapter.sandbox_runner,
+            "run_python_unittest_sandbox",
+            side_effect=_sim_sandbox_exec,
+        ):
+            res_heal_unapproved = heal_adapter.execute(
+                title="Self-Healing Repair Without Approval",
+                prompt="Implement and self-heal add(a, b) in calc_mod.py",
+                code_task_dir=ws,
+                module_filename="calc_mod.py",
+                test_filename="test_calc_mod.py",
+            )
+        self.assertEqual(res_heal_unapproved["status"], "PENDING_APPROVAL")
+        self.assertEqual(res_heal_unapproved["terminal_outcome"], "PENDING_APPROVAL")
+        self.assertEqual(res_heal_unapproved["approval_status"], "PENDING_APPROVAL")
+        self.assertTrue(res_heal_unapproved["pending_approval"])
+        self.assertFalse(res_heal_unapproved["patch_applied_to_workspace"])
+        self.assertEqual(mod_file.read_text(encoding="utf-8"), orig_mod_code)
+        self.assertEqual(hashlib.sha256(mod_file.read_bytes()).hexdigest(), orig_mod_sha)
+
+        # 2b. Self-healing repair WITH approval (apply_approved_patch=True):
+        #     Applies ONLY the final verified repair candidate!
+        with mock.patch.object(
+            heal_adapter.sandbox_runner,
+            "run_python_unittest_sandbox",
+            side_effect=_sim_sandbox_exec,
+        ):
+            res_heal_approved = heal_adapter.execute(
+                title="Self-Healing Repair With Approval",
+                prompt="Implement and self-heal add(a, b) in calc_mod.py",
+                code_task_dir=ws,
+                module_filename="calc_mod.py",
+                test_filename="test_calc_mod.py",
+                apply_approved_patch=True,
+            )
+        self.assertEqual(res_heal_approved["status"], "SUCCEEDED")
+        self.assertEqual(res_heal_approved["terminal_outcome"], "SUCCEEDED_AND_VERIFIED")
+        self.assertEqual(res_heal_approved["approval_status"], "APPROVED_AND_APPLIED")
+        self.assertFalse(res_heal_approved["pending_approval"])
+        self.assertTrue(res_heal_approved["patch_applied_to_workspace"])
+        self.assertEqual(mod_file.read_text(encoding="utf-8"), valid_mod_code)
+        self.assertEqual(hashlib.sha256(mod_file.read_bytes()).hexdigest(), valid_mod_sha)
+
+        # Reset workspace file to original state for callback-deny, callback-approve, and failure tests
+        mod_file.write_text(orig_mod_code, encoding="utf-8")
+
+        # 3. Callback-deny behavior (approval_callback returns False):
+        #    Blocks workspace write and leaves existing workspace files unchanged
+        cb_deny_calls: list[tuple[str, str]] = []
+
+        def _deny_cb(op: str, target: str) -> bool:
+            cb_deny_calls.append((op, target))
+            return False
+
+        deny_gate = HighImpactApprovalGate(approval_callback=_deny_cb)
+        adapter_cb_deny = AGI17Adapter(
+            storage_root=self.temp_dir / "store_n3",
+            eval_root=self.temp_dir / "eval_n3",
+            model_adapter=ma1,
+            approval_gate=deny_gate,
+        )
+        with mock.patch.object(
+            adapter_cb_deny.sandbox_runner,
+            "run_python_unittest_sandbox",
+            side_effect=_sim_sandbox_exec,
+        ):
+            res_cb_deny = adapter_cb_deny.execute(
+                title="Callback Deny Mission",
+                prompt="Implement add(a, b)",
+                code_task_dir=ws,
+                module_filename="calc_mod.py",
+                test_filename="test_calc_mod.py",
+            )
+        self.assertEqual(res_cb_deny["terminal_outcome"], "BLOCKED_BY_POLICY")
+        self.assertGreaterEqual(len(cb_deny_calls), 1)
+        self.assertEqual(mod_file.read_text(encoding="utf-8"), orig_mod_code)
+        self.assertEqual(hashlib.sha256(mod_file.read_bytes()).hexdigest(), orig_mod_sha)
+
+        # Also verify CIRepairAgent with callback-deny raises HighImpactActionBlockedError and leaves workspace unchanged
+        with mock.patch.object(
+            adapter_cb_deny.sandbox_runner,
+            "run_python_unittest_sandbox",
+            side_effect=_sim_sandbox_exec,
+        ):
+            with self.assertRaises(HighImpactActionBlockedError):
+                adapter_cb_deny.run_ci_repair(
+                    workspace_dir=ws,
+                    module_filename="calc_mod.py",
+                    test_pattern="test_calc_mod.py",
+                )
+        self.assertEqual(mod_file.read_text(encoding="utf-8"), orig_mod_code)
+
+        # 4. Callback-approve behavior (approval_callback returns True):
+        #    Applies the verified patch after sandbox verification passes
+        cb_approve_calls: list[tuple[str, str]] = []
+
+        def _approve_cb(op: str, target: str) -> bool:
+            cb_approve_calls.append((op, target))
+            return True
+
+        approve_gate = HighImpactApprovalGate(approval_callback=_approve_cb)
+        adapter_cb_approve = AGI17Adapter(
+            storage_root=self.temp_dir / "store_n4",
+            eval_root=self.temp_dir / "eval_n4",
+            model_adapter=ma_heal,
+            approval_gate=approve_gate,
+        )
+        with mock.patch.object(
+            adapter_cb_approve.sandbox_runner,
+            "run_python_unittest_sandbox",
+            side_effect=_sim_sandbox_exec,
+        ):
+            res_cb_approve = adapter_cb_approve.execute(
+                title="Callback Approve Mission",
+                prompt="Implement and repair add(a, b)",
+                code_task_dir=ws,
+                module_filename="calc_mod.py",
+                test_filename="test_calc_mod.py",
+            )
+        self.assertEqual(res_cb_approve["terminal_outcome"], "SUCCEEDED_AND_VERIFIED")
+        self.assertTrue(res_cb_approve["patch_applied_to_workspace"])
+        self.assertFalse(res_cb_approve["pending_approval"])
+        self.assertGreaterEqual(len(cb_approve_calls), 1)
+        self.assertEqual(mod_file.read_text(encoding="utf-8"), valid_mod_code)
+        self.assertEqual(hashlib.sha256(mod_file.read_bytes()).hexdigest(), valid_mod_sha)
+
+        # 5. Failed verification / repair never writes to workspace even when approved!
+        mod_file.write_text(orig_mod_code, encoding="utf-8")
+        prov_always_buggy = DeterministicMockProvider(
+            responder=lambda _req: f"```python\n{buggy_mod_code}```"
+        )
+        ma_buggy = ModelAdapter(token_controller=tc1, mock_provider=prov_always_buggy)
+        adapter_fail = AGI17Adapter(
+            storage_root=self.temp_dir / "store_n5",
+            eval_root=self.temp_dir / "eval_n5",
+            model_adapter=ma_buggy,
+        )
+        with mock.patch.object(
+            adapter_fail.sandbox_runner,
+            "run_python_unittest_sandbox",
+            side_effect=_sim_sandbox_exec,
+        ):
+            res_fail = adapter_fail.execute(
+                title="Failing Code Gen Even With Approval",
+                prompt="Attempt buggy implementation with approval=True",
+                code_task_dir=ws,
+                module_filename="calc_mod.py",
+                test_filename="test_calc_mod.py",
+                apply_approved_patch=True,
+            )
+        self.assertEqual(res_fail["terminal_outcome"], "FAILED")
+        self.assertFalse(res_fail["patch_applied_to_workspace"])
+        self.assertEqual(mod_file.read_text(encoding="utf-8"), orig_mod_code)
+        self.assertEqual(hashlib.sha256(mod_file.read_bytes()).hexdigest(), orig_mod_sha)
 
 
 class TestP0RealDockerEngineIntegration(unittest.TestCase):
@@ -934,7 +1223,8 @@ class TestP0RealDockerEngineIntegration(unittest.TestCase):
             eval_root=self.temp_dir / "eval_e2e",
             model_adapter=ma,
         )
-        # 1. Default run without approval stages patch in Docker without mutating workspace
+        self.assertIsNone(adapter.approval_gate.approval_callback)
+        # 1. Default CI repair without approval stages patch in Docker without mutating workspace
         res_staged = adapter.run_ci_repair(
             workspace_dir=ws,
             module_filename="clamp_mod.py",
@@ -947,11 +1237,28 @@ class TestP0RealDockerEngineIntegration(unittest.TestCase):
         self.assertEqual(res_staged["isolation_backend"], "docker_disposable_container")
         self.assertTrue(res_staged["staged_outside_workspace"])
         self.assertFalse(res_staged["patch_applied_to_workspace"])
+        self.assertTrue(res_staged["pending_approval"])
+        self.assertEqual(res_staged["approval_status"], "PENDING_APPROVAL")
         self.assertTrue(res_staged["security_diagnostics"]["shared_sandbox_runner_verified"])
         self.assertTrue(res_staged["security_diagnostics"]["shared_approval_gate_verified"])
         self.assertEqual((ws / "clamp_mod.py").read_text(encoding="utf-8"), orig_buggy)
 
-        # 2. Explicit approval applies verified patch atomically and verifies SHA-256
+        # 2. Orchestrator code generation without approval in real Docker returns PENDING_APPROVAL and leaves workspace untouched
+        res_orch_pending = adapter.execute(
+            title="Real Docker Code Gen Pending Approval",
+            prompt="Implement clamp(val, lo, hi) in clamp_mod.py",
+            code_task_dir=ws,
+            module_filename="clamp_mod.py",
+            test_filename="test_clamp_mod.py",
+            apply_approved_patch=False,
+        )
+        self.assertEqual(res_orch_pending["status"], "PENDING_APPROVAL")
+        self.assertEqual(res_orch_pending["terminal_outcome"], "PENDING_APPROVAL")
+        self.assertTrue(res_orch_pending["pending_approval"])
+        self.assertFalse(res_orch_pending["patch_applied_to_workspace"])
+        self.assertEqual((ws / "clamp_mod.py").read_text(encoding="utf-8"), orig_buggy)
+
+        # 3. Explicit approval applies verified patch atomically and verifies SHA-256
         res_applied = adapter.run_ci_repair(
             workspace_dir=ws,
             module_filename="clamp_mod.py",
@@ -964,6 +1271,8 @@ class TestP0RealDockerEngineIntegration(unittest.TestCase):
         self.assertEqual(res_applied["isolation_backend"], "docker_disposable_container")
         self.assertTrue(res_applied["staged_outside_workspace"])
         self.assertTrue(res_applied["patch_applied_to_workspace"])
+        self.assertFalse(res_applied["pending_approval"])
+        self.assertEqual(res_applied["approval_status"], "APPROVED_AND_APPLIED")
         self.assertEqual((ws / "clamp_mod.py").read_text(encoding="utf-8"), fixed_code)
 
 

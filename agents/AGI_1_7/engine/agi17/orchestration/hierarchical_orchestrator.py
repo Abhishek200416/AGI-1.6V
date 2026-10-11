@@ -99,13 +99,14 @@ class SubtaskSpec:
     repair_target_file: Optional[str] = None
     fallback_code: Optional[str] = None
     repair_fallback_code: Optional[str] = None
-    post_write_fault_injector: Optional[Callable[[Path], Dict[str, Any]]] = None
+    post_write_fault_injector: Optional[Callable[..., Dict[str, Any]]] = None
     executor_fn: Optional[Callable[[AgentContract, Dict[str, Any]], Dict[str, Any]]] = None
     verification_command: Optional[List[str]] = None
     verification_cwd: Optional[str] = None
     use_disposable_sandbox: bool = False
     repair_specialist_id: str = "swe_patch_minimizer"
     repair_fn: Optional[Callable[[Dict[str, Any], Dict[str, Any]], Dict[str, Any]]] = None
+    apply_approved_patch: bool = False
 
 
 class HierarchicalOrchestrator:
@@ -178,6 +179,7 @@ class HierarchicalOrchestrator:
         fallback_module_code: Optional[str] = None,
         fallback_test_code: Optional[str] = None,
         adaptive_reuse_existing_tests: bool = True,
+        apply_approved_patch: bool = False,
     ) -> List[SubtaskSpec]:
         """Builds a 3-specialist live-model coding + unit-testing + self-healing DAG."""
         ws_raw = Path(code_task_dir)
@@ -233,16 +235,24 @@ class HierarchicalOrchestrator:
             and not inject_deliberate_test_failure
         )
 
-        def _inject_deliberate_fault(_target: Path) -> Dict[str, Any]:
-            if not inject_deliberate_test_failure or not module_path.exists():
+        def _inject_deliberate_fault(
+            _target: Path,
+            staged_candidates: Optional[Dict[str, Dict[str, Any]]] = None,
+        ) -> Dict[str, Any]:
+            staged_mod = staged_candidates.get(str(module_path)) if isinstance(staged_candidates, dict) else None
+            if not inject_deliberate_test_failure or (staged_mod is None and not module_path.exists()):
                 return {"injected": False}
-            self.approval_gate.check_workspace_mutation(
+            self.approval_gate.check_preflight_access(
                 workspace_root=ws,
                 target_path=module_path,
-                explicit_approval=True,
+                explicit_approval=apply_approved_patch,
                 operation="deliberate_fault_injection",
             )
-            original = module_path.read_text(encoding="utf-8")
+            original = (
+                str(staged_mod["content"])
+                if staged_mod is not None
+                else module_path.read_text(encoding="utf-8")
+            )
             lines = original.splitlines()
             mutated_lines: List[str] = []
             mutation_desc = ""
@@ -267,10 +277,29 @@ class HierarchicalOrchestrator:
                 mutated_lines.append("raise RuntimeError('Deliberate injected fault')")
                 mutation_desc = "Appended runtime fault trigger"
             mutated = "\n".join(mutated_lines) + "\n"
-            atomic_write_workspace_file(ws, module_path.relative_to(ws), mutated)
+            rel_mod = module_path.relative_to(ws)
+            ext_fault_dir, _staged_fault_file, staged_fault_sha = stage_candidate_outside_workspace(
+                ws,
+                rel_mod,
+                mutated,
+                stage_label="deliberate_fault_injection",
+            )
+            shutil.rmtree(ext_fault_dir, ignore_errors=True)
+            if isinstance(staged_candidates, dict):
+                staged_candidates[str(module_path)] = {
+                    "ws_root": ws,
+                    "target_path": module_path,
+                    "rel_path": rel_mod,
+                    "content": mutated,
+                    "sha256": staged_fault_sha,
+                    "stage": "deliberate_fault_injection",
+                    "apply_approved_patch": apply_approved_patch,
+                }
             return {
                 "injected": True,
                 "target_file": str(module_path),
+                "staged_outside_workspace": True,
+                "faulty_file_sha256": staged_fault_sha,
                 "mutation_description": mutation_desc,
             }
 
@@ -290,6 +319,7 @@ class HierarchicalOrchestrator:
                 token_budget=16000,
                 use_live_model=True,
                 verification_cwd=str(ws),
+                apply_approved_patch=apply_approved_patch,
             ),
             SubtaskSpec(
                 title=f"{title} — Stage 2: Live Model Python Implementation (`{module_filename}`)",
@@ -308,6 +338,7 @@ class HierarchicalOrchestrator:
                 target_file_path=str(module_path),
                 fallback_code=fallback_module_code,
                 verification_cwd=str(ws),
+                apply_approved_patch=apply_approved_patch,
             ),
             SubtaskSpec(
                 title=f"{title} — Stage 3: Live Model Unit Test Generation, Execution & Self-Healing (`{test_filename}`)",
@@ -334,10 +365,16 @@ class HierarchicalOrchestrator:
                 verification_cwd=str(ws),
                 use_disposable_sandbox=True,
                 repair_specialist_id="swe_patch_minimizer",
+                apply_approved_patch=apply_approved_patch,
             ),
         ]
 
-    def _run_sandboxed_workspace_tests(self, verification_cwd: str | Path, sandbox_id: str) -> Dict[str, Any]:
+    def _run_sandboxed_workspace_tests(
+        self,
+        verification_cwd: str | Path,
+        sandbox_id: str,
+        staged_candidates: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
         """Executes workspace Python unit tests inside the disposable container / ephemeral sandbox."""
         ws_raw = Path(verification_cwd)
         if ws_raw.exists() and ws_raw.is_symlink():
@@ -351,6 +388,13 @@ class HierarchicalOrchestrator:
                 if py_file.is_file():
                     validate_relative_sandbox_path(ws_dir, py_file.name, require_py_extension=True)
                     files_map[py_file.name] = py_file.read_text(encoding="utf-8", errors="replace")
+        if staged_candidates:
+            for cand_info in staged_candidates.values():
+                cand_ws = cand_info.get("ws_root")
+                if cand_ws is not None and Path(cand_ws).resolve() == ws_dir:
+                    rel_str = str(cand_info["rel_path"]).replace("\\", "/")
+                    validate_relative_sandbox_path(ws_dir, rel_str, require_py_extension=True)
+                    files_map[rel_str] = str(cand_info["content"])
         sbx_res = self.sandbox_runner.run_python_unittest_sandbox(
             files=files_map,
             test_pattern="test_*.py",
@@ -409,6 +453,7 @@ class HierarchicalOrchestrator:
         module_filename: str = "token_bucket.py",
         test_filename: str = "test_token_bucket.py",
         inject_deliberate_test_failure: bool = False,
+        apply_approved_patch: bool = False,
         custom_subtask_hook: Optional[Callable[[str, Dict[str, Any]], None]] = None,
         simulated_resource_snapshot: Optional[LiveResourceMetrics] = None,
         max_wall_clock_sec: Optional[float] = None,
@@ -433,6 +478,7 @@ class HierarchicalOrchestrator:
                     module_filename=module_filename,
                     test_filename=test_filename,
                     inject_deliberate_test_failure=inject_deliberate_test_failure,
+                    apply_approved_patch=apply_approved_patch,
                 )
                 force_hierarchical = True
 
@@ -503,6 +549,7 @@ class HierarchicalOrchestrator:
                 retrieved_memory=retrieved_memory,
                 explicit_subtasks=subtasks,
                 use_live_model=effective_live_model,
+                apply_approved_patch=apply_approved_patch,
                 custom_subtask_hook=custom_subtask_hook,
                 simulated_resource_snapshot=simulated_resource_snapshot,
                 started_at=started_at,
@@ -692,22 +739,25 @@ class HierarchicalOrchestrator:
         root_id: str,
         child_id: str,
         sp_spec: Optional[SubtaskSpec] = None,
+        staged_candidates: Optional[Dict[str, Dict[str, Any]]] = None,
+        apply_approved_patch: bool = False,
     ) -> Callable[[AgentContract, Dict[str, Any]], Dict[str, Any]]:
         """Creates a custom executor that invokes `gemini-3.8-flash-high` via `ModelAdapter`."""
 
         def _exec(contract: AgentContract, payload: Dict[str, Any]) -> Dict[str, Any]:
             if self.model_adapter is None:
                 raise RuntimeError(f"use_live_model=True requested for {child_id}, but ModelAdapter is not configured")
+            eff_approval = bool(apply_approved_patch or getattr(sp_spec, "apply_approved_patch", False))
             if sp_spec and sp_spec.target_file_path:
-                # Validate target file containment and approval gate BEFORE invoking the model
+                # Validate target file path containment and preflight policy BEFORE invoking the model
                 pre_ws_root, pre_target = self._resolve_validated_workspace_target(
                     sp_spec.target_file_path,
                     sp_spec.verification_cwd,
                 )
-                self.approval_gate.check_workspace_mutation(
+                self.approval_gate.check_preflight_access(
                     workspace_root=pre_ws_root,
                     target_path=pre_target,
-                    explicit_approval=True,
+                    explicit_approval=eff_approval,
                     operation="orchestrator_stage_write_precheck",
                 )
 
@@ -793,40 +843,54 @@ class HierarchicalOrchestrator:
                     stage_label=child_id,
                 )
                 try:
-                    self.approval_gate.check_workspace_mutation(
+                    self.approval_gate.validate_workspace_path_containment(
                         workspace_root=ws_root,
                         target_path=target_path,
-                        explicit_approval=True,
-                        operation="orchestrator_stage_write",
                     )
-                    atomic_write_workspace_file(ws_root, rel_target, staged_file.read_bytes())
+                    staged_bytes = staged_file.read_bytes()
+                    actual_staged_sha = hashlib.sha256(staged_bytes).hexdigest()
                 finally:
                     shutil.rmtree(ext_stage_dir, ignore_errors=True)
                 expected_sha256 = hashlib.sha256(extracted_code.encode("utf-8")).hexdigest()
-                clean_sha256 = hashlib.sha256(target_path.read_bytes()).hexdigest()
                 sha_matches = (
-                    target_path.exists()
-                    and target_path.stat().st_size > 0
-                    and clean_sha256 == expected_sha256
-                    and clean_sha256 == staged_sha256
+                    len(staged_bytes) > 0
+                    and actual_staged_sha == expected_sha256
+                    and actual_staged_sha == staged_sha256
                 )
                 if not sha_matches:
                     raise RuntimeError(
-                        f"Artifact SHA-256 verification failed for {target_path}: "
-                        f"expected={expected_sha256}, actual={clean_sha256}"
+                        f"Staged artifact SHA-256 verification failed for {target_path}: "
+                        f"expected={expected_sha256}, actual={actual_staged_sha}"
                     )
+                if staged_candidates is not None:
+                    staged_candidates[str(target_path)] = {
+                        "ws_root": ws_root,
+                        "target_path": target_path,
+                        "rel_path": rel_target,
+                        "content": extracted_code,
+                        "sha256": staged_sha256,
+                        "stage": child_id,
+                        "apply_approved_patch": eff_approval,
+                    }
                 result_dict["staged_outside_workspace"] = True
                 result_dict["staged_candidate_sha256"] = staged_sha256
                 result_dict["written_file_path"] = str(target_path)
+                result_dict["staged_target_file_path"] = str(target_path)
+                result_dict["patch_applied_to_workspace"] = False
                 result_dict["clean_generated_code"] = extracted_code
-                result_dict["clean_file_sha256"] = clean_sha256
+                result_dict["clean_file_sha256"] = staged_sha256
                 result_dict["expected_file_sha256"] = expected_sha256
                 result_dict["artifact_verification_passed"] = sha_matches
                 if sp_spec.post_write_fault_injector is not None:
-                    fault_meta = sp_spec.post_write_fault_injector(target_path)
-                    mutated_path = Path(fault_meta.get("target_file") or target_path) if isinstance(fault_meta, dict) else target_path
+                    try:
+                        fault_meta = sp_spec.post_write_fault_injector(target_path, staged_candidates)
+                    except TypeError:
+                        fault_meta = sp_spec.post_write_fault_injector(target_path)
                     result_dict["deliberate_fault_injected"] = fault_meta
-                    result_dict["faulty_file_sha256"] = hashlib.sha256(mutated_path.read_bytes()).hexdigest()
+                    if isinstance(fault_meta, dict) and fault_meta.get("faulty_file_sha256"):
+                        result_dict["faulty_file_sha256"] = fault_meta["faulty_file_sha256"]
+                    elif staged_candidates is not None and str(target_path) in staged_candidates:
+                        result_dict["faulty_file_sha256"] = staged_candidates[str(target_path)]["sha256"]
             return result_dict
 
         return _exec
@@ -839,6 +903,8 @@ class HierarchicalOrchestrator:
         sp_spec: SubtaskSpec,
         failed_result: Dict[str, Any],
         failure_details: Dict[str, Any],
+        staged_candidates: Optional[Dict[str, Dict[str, Any]]] = None,
+        apply_approved_patch: bool = False,
     ) -> Dict[str, Any]:
         """Invokes `ModelAdapter.invoke()` with `sp_spec.repair_specialist_id` to patch failing code."""
         raw_repair_target = (
@@ -850,15 +916,22 @@ class HierarchicalOrchestrator:
             raw_repair_target,
             sp_spec.verification_cwd,
         )
-        self.approval_gate.check_workspace_mutation(
+        eff_approval = bool(apply_approved_patch or getattr(sp_spec, "apply_approved_patch", False))
+        self.approval_gate.check_preflight_access(
             workspace_root=ws_root,
             target_path=repair_file,
-            explicit_approval=True,
+            explicit_approval=eff_approval,
             operation="orchestrator_self_healing_repair_precheck",
         )
-        original_bytes = repair_file.read_bytes() if repair_file.is_file() else None
-        original_sha256 = hashlib.sha256(original_bytes).hexdigest() if original_bytes is not None else None
-        broken_code = original_bytes.decode("utf-8", errors="replace") if original_bytes is not None else ""
+        disk_bytes = repair_file.read_bytes() if repair_file.is_file() else None
+        disk_sha256 = hashlib.sha256(disk_bytes).hexdigest() if disk_bytes is not None else None
+        staged_existing = staged_candidates.get(str(repair_file)) if isinstance(staged_candidates, dict) else None
+        if staged_existing is not None:
+            broken_code = str(staged_existing["content"])
+            original_sha256 = str(staged_existing["sha256"])
+        else:
+            broken_code = disk_bytes.decode("utf-8", errors="replace") if disk_bytes is not None else ""
+            original_sha256 = disk_sha256
         stderr_trace = failure_details.get("stderr") or failure_details.get("stdout") or str(failure_details)
         try:
             repair_contract = self.specialist_factory.get_contract(sp_spec.repair_specialist_id)
@@ -870,19 +943,27 @@ class HierarchicalOrchestrator:
         )
         guardrail_section = f"\n{mem_guardrails}\n" if mem_guardrails else "\n"
         test_files_block = ""
+        test_map: Dict[str, str] = {}
         if ws_root.is_dir():
-            test_snippets = []
             for tf in sorted(ws_root.glob("test_*.py")):
                 if tf.is_symlink():
                     raise PathTraversalBlockedError(f"Symlink test file blocked during repair: {tf}")
                 if tf.is_file():
                     validate_relative_sandbox_path(ws_root, tf.name, require_py_extension=True)
                     try:
-                        test_snippets.append(f"# {tf.name}\n{tf.read_text(encoding='utf-8')}")
+                        test_map[tf.name] = tf.read_text(encoding="utf-8")
                     except Exception:
                         pass
-            if test_snippets:
-                test_files_block = "\n\nWORKSPACE TEST FILES:\n```python\n" + "\n\n".join(test_snippets) + "\n```"
+        if staged_candidates:
+            for cand_info in staged_candidates.values():
+                cand_ws = cand_info.get("ws_root")
+                if cand_ws is not None and Path(cand_ws).resolve() == ws_root:
+                    c_name = Path(str(cand_info.get("rel_path", ""))).name
+                    if c_name.startswith("test_") and c_name.endswith(".py"):
+                        test_map[c_name] = str(cand_info["content"])
+        if test_map:
+            test_snippets = [f"# {k}\n{v}" for k, v in sorted(test_map.items())]
+            test_files_block = "\n\nWORKSPACE TEST FILES:\n```python\n" + "\n\n".join(test_snippets) + "\n```"
 
         repair_prompt = (
             f"You are AGI 1.7 Embedded Specialist `{sp_spec.repair_specialist_id}` (Minimal Diff & Root-Cause Patch Engineer).\n"
@@ -927,22 +1008,30 @@ class HierarchicalOrchestrator:
                 stage_label=f"{child_id}_repair",
             )
             try:
-                self.approval_gate.check_workspace_mutation(
+                self.approval_gate.validate_workspace_path_containment(
                     workspace_root=ws_root,
                     target_path=repair_file,
-                    explicit_approval=True,
-                    operation="orchestrator_self_healing_repair",
                 )
-                atomic_write_workspace_file(ws_root, rel_repair, staged_file.read_bytes())
+                staged_rep_bytes = staged_file.read_bytes()
+                repaired_sha256 = hashlib.sha256(staged_rep_bytes).hexdigest()
             finally:
                 shutil.rmtree(ext_stage_dir, ignore_errors=True)
             expected_repaired_sha256 = hashlib.sha256(patched_code.encode("utf-8")).hexdigest()
-            repaired_sha256 = hashlib.sha256(repair_file.read_bytes()).hexdigest()
             if repaired_sha256 != expected_repaired_sha256 or repaired_sha256 != staged_repair_sha256:
                 raise RuntimeError(
-                    f"Repair artifact SHA-256 mismatch for {repair_file}: "
+                    f"Repair staged artifact SHA-256 mismatch for {repair_file}: "
                     f"expected={expected_repaired_sha256}, actual={repaired_sha256}"
                 )
+            if staged_candidates is not None:
+                staged_candidates[str(repair_file)] = {
+                    "ws_root": ws_root,
+                    "target_path": repair_file,
+                    "rel_path": rel_repair,
+                    "content": patched_code,
+                    "sha256": staged_repair_sha256,
+                    "stage": f"{child_id}_repair",
+                    "apply_approved_patch": eff_approval,
+                }
         return {
             "execution_origin": "DETERMINISTIC_FALLBACK_AFTER_MODEL_FAILURE" if fallback_used else "LIVE_MODEL_ADAPTER",
             "ecosystem_coordination": {
@@ -963,11 +1052,13 @@ class HierarchicalOrchestrator:
             "stdout_log_path": model_res.get("stdout_log_path"),
             "staged_outside_workspace": True,
             "staged_candidate_sha256": staged_repair_sha256,
+            "patch_applied_to_workspace": False,
             "repaired_file_path": str(repair_file),
             "repaired_file_sha256": repaired_sha256,
             "expected_repaired_file_sha256": expected_repaired_sha256,
             "pre_repair_file_sha256": original_sha256,
-            "_rollback_bytes": original_bytes,
+            "_rollback_bytes": disk_bytes,
+            "_prev_staged_entry": staged_existing,
             "patched_code": patched_code,
         }
 
@@ -980,6 +1071,7 @@ class HierarchicalOrchestrator:
         retrieved_memory: Dict[str, Any],
         explicit_subtasks: Optional[Sequence[SubtaskSpec]],
         use_live_model: bool = False,
+        apply_approved_patch: bool = False,
         custom_subtask_hook: Optional[Callable[[str, Dict[str, Any]], None]],
         simulated_resource_snapshot: Optional[LiveResourceMetrics],
         started_at: float,
@@ -995,8 +1087,9 @@ class HierarchicalOrchestrator:
                 f"Requested {len(specs)} child tasks exceeds MAX_LOGICAL_CHILD_TASKS ({MAX_LOGICAL_CHILD_TASKS})"
             )
 
-        # Pre-flight path containment and approval-gate check across all subtasks BEFORE any model or sandbox call
+        # Pre-flight path containment and policy check across all subtasks BEFORE any model or sandbox call
         for sp in specs:
+            eff_sp_approval = bool(apply_approved_patch or getattr(sp, "apply_approved_patch", False))
             for candidate_target in (sp.target_file_path, sp.repair_target_file):
                 if candidate_target:
                     try:
@@ -1004,11 +1097,11 @@ class HierarchicalOrchestrator:
                             candidate_target,
                             sp.verification_cwd,
                         )
-                        self.approval_gate.check_workspace_mutation(
+                        self.approval_gate.check_preflight_access(
                             workspace_root=pre_ws_root,
                             target_path=pre_target,
-                            explicit_approval=True,
-                            operation="orchestrator_dag_preflight_mutation_check",
+                            explicit_approval=eff_sp_approval,
+                            operation="orchestrator_dag_preflight_check",
                         )
                     except SandboxSecurityError as sec_exc:
                         self.task_manager.transition(
@@ -1073,6 +1166,7 @@ class HierarchicalOrchestrator:
         self.task_manager.dep_mgr.resolve_ready_tasks(parent_task_id=root_id)
 
         completed_results: Dict[str, Any] = {}
+        staged_candidates: Dict[str, Dict[str, Any]] = {}
         max_Observed_concurrency = 0
         wave_index = 0
         step_counter = 0
@@ -1190,6 +1284,8 @@ class HierarchicalOrchestrator:
                                 root_id=root_id,
                                 child_id=cid,
                                 sp_spec=sp_spec,
+                                staged_candidates=staged_candidates,
+                                apply_approved_patch=apply_approved_patch,
                             )
 
                     try:
@@ -1274,6 +1370,7 @@ class HierarchicalOrchestrator:
                             artifacts["initial_verification_run"] = self._run_sandboxed_workspace_tests(
                                 sp_spec.verification_cwd,
                                 sandbox_id=f"{cid}-VERIFY-ATT1",
+                                staged_candidates=staged_candidates,
                             )
                             init_passed = bool(
                                 artifacts["initial_verification_run"].get(
@@ -1354,8 +1451,11 @@ class HierarchicalOrchestrator:
                                 sp_spec=sp_spec,
                                 failed_result=res,
                                 failure_details=failure_details,
+                                staged_candidates=staged_candidates,
+                                apply_approved_patch=apply_approved_patch,
                             )
                         rollback_bytes = repair_out.pop("_rollback_bytes", None) if isinstance(repair_out, dict) else None
+                        prev_staged_entry = repair_out.pop("_prev_staged_entry", None) if isinstance(repair_out, dict) else None
                         artifacts["repair_specialist_id"] = sp_spec.repair_specialist_id
                         artifacts["repair_execution"] = repair_out
 
@@ -1364,6 +1464,7 @@ class HierarchicalOrchestrator:
                             artifacts["post_repair_verification_run"] = self._run_sandboxed_workspace_tests(
                                 sp_spec.verification_cwd,
                                 sandbox_id=f"{cid}-VERIFY-ATT2",
+                                staged_candidates=staged_candidates,
                             )
                             re_passed = bool(
                                 artifacts["post_repair_verification_run"].get(
@@ -1400,24 +1501,24 @@ class HierarchicalOrchestrator:
                             verification_failed = not bool(repair_out.get("verification_passed", True))
                             res["task_correctness_verified"] = not verification_failed
 
-                        if verification_failed and rollback_bytes is not None and isinstance(repair_out, dict):
+                        if verification_failed and isinstance(repair_out, dict):
                             rep_path_str = repair_out.get("repaired_file_path")
                             if rep_path_str:
+                                if prev_staged_entry is not None:
+                                    staged_candidates[rep_path_str] = prev_staged_entry
+                                else:
+                                    staged_candidates.pop(rep_path_str, None)
                                 ws_root_rb, rep_target_rb = self._resolve_validated_workspace_target(
                                     rep_path_str,
                                     sp_spec.verification_cwd,
                                 )
-                                atomic_write_workspace_file(
-                                    ws_root_rb,
-                                    rep_target_rb.relative_to(ws_root_rb),
-                                    rollback_bytes,
-                                )
-                                rb_sha = hashlib.sha256(rep_target_rb.read_bytes()).hexdigest()
-                                repair_out["rolled_back_on_failed_verification"] = True
-                                repair_out["rollback_restored_sha256"] = rb_sha
-                                repair_out["rollback_verified"] = (
-                                    rb_sha == repair_out.get("pre_repair_file_sha256")
-                                )
+                                if rollback_bytes is not None and rep_target_rb.is_file():
+                                    rb_sha = hashlib.sha256(rep_target_rb.read_bytes()).hexdigest()
+                                    repair_out["rolled_back_on_failed_verification"] = True
+                                    repair_out["rollback_restored_sha256"] = rb_sha
+                                    repair_out["rollback_verified"] = (
+                                        rb_sha == repair_out.get("pre_repair_file_sha256")
+                                    )
 
                         if not verification_failed:
                             target_mod = Path(
@@ -1503,37 +1604,6 @@ class HierarchicalOrchestrator:
         succeeded_cnt = sum(1 for c in final_children if c["state"] == TaskState.SUCCEEDED.value)
         all_ok = succeeded_cnt == len(final_children)
 
-        if all_ok:
-            self.task_manager.transition(root_id, TaskState.VERIFYING, reason="All DAG subtasks succeeded; verifying root")
-            self.task_manager.transition(
-                root_id,
-                TaskState.SUCCEEDED,
-                reason=f"All {succeeded_cnt}/{len(final_children)} child tasks verified",
-                result={
-                    "total_logical_children": len(final_children),
-                    "succeeded_children": succeeded_cnt,
-                    "max_concurrent_workers_used": max_Observed_concurrency,
-                    "waves_executed": wave_index,
-                },
-            )
-            final_state = TaskState.SUCCEEDED.value
-        else:
-            self.task_manager.transition(
-                root_id,
-                TaskState.FAILED,
-                reason=f"Only {succeeded_cnt}/{len(final_children)} child tasks succeeded",
-            )
-            final_state = TaskState.FAILED.value
-
-        self.memory.store_compressed_episode(
-            subject_key=f"episode:{root_id}",
-            raw_observation=(
-                f"Hierarchical mission '{title}' ({root_id}) finished with state={final_state}, "
-                f"children={succeeded_cnt}/{len(final_children)}, max_concurrency={max_Observed_concurrency}"
-            ),
-            source_task_id=root_id,
-        )
-
         fallback_events: List[Dict[str, Any]] = []
         verified_children_count = 0
         any_timed_out = False
@@ -1567,19 +1637,142 @@ class HierarchicalOrchestrator:
                         }
                     )
 
+        has_staged_candidates = len(staged_candidates) > 0
+        patch_applied_to_workspace = False
+        pending_approval = False
+        approval_status = "NOT_APPLICABLE"
+        applied_workspace_files: List[str] = []
+
+        if all_ok and has_staged_candidates:
+            eff_mission_approval = bool(
+                apply_approved_patch
+                or any(bool(c.get("apply_approved_patch")) for c in staged_candidates.values())
+            )
+            # Check authorization across all staged candidates before writing any file to workspace
+            all_authorized = True
+            for cand_info in staged_candidates.values():
+                if not self.approval_gate.is_workspace_mutation_authorized(
+                    workspace_root=cand_info["ws_root"],
+                    target_path=cand_info["target_path"],
+                    explicit_approval=eff_mission_approval,
+                    operation="orchestrator_apply_verified_candidate",
+                ):
+                    all_authorized = False
+                    break
+
+            if all_authorized and verified_children_count > 0:
+                for cand_info in staged_candidates.values():
+                    ext_app_dir, staged_app_file, staged_app_sha = stage_candidate_outside_workspace(
+                        cand_info["ws_root"],
+                        cand_info["rel_path"],
+                        cand_info["content"],
+                        stage_label=f"{root_id}_apply",
+                    )
+                    try:
+                        self.approval_gate.validate_workspace_path_containment(
+                            workspace_root=cand_info["ws_root"],
+                            target_path=cand_info["target_path"],
+                        )
+                        atomic_write_workspace_file(
+                            cand_info["ws_root"],
+                            cand_info["rel_path"],
+                            staged_app_file.read_bytes(),
+                        )
+                    finally:
+                        shutil.rmtree(ext_app_dir, ignore_errors=True)
+                    disk_sha = hashlib.sha256(cand_info["target_path"].read_bytes()).hexdigest()
+                    if disk_sha != cand_info["sha256"] or disk_sha != staged_app_sha:
+                        raise RuntimeError(
+                            f"Verified candidate SHA-256 mismatch on apply for {cand_info['target_path']}: "
+                            f"expected={cand_info['sha256']}, actual={disk_sha}"
+                        )
+                    applied_workspace_files.append(str(cand_info["target_path"]))
+                patch_applied_to_workspace = True
+                pending_approval = False
+                approval_status = "APPROVED_AND_APPLIED"
+                for ch_res in completed_results.values():
+                    art = ch_res.get("artifacts") if isinstance(ch_res, dict) else None
+                    if isinstance(art, dict):
+                        if "patch_applied_to_workspace" in art:
+                            art["patch_applied_to_workspace"] = True
+                        rep_ex = art.get("repair_execution")
+                        if isinstance(rep_ex, dict) and "patch_applied_to_workspace" in rep_ex:
+                            rep_ex["patch_applied_to_workspace"] = True
+            else:
+                patch_applied_to_workspace = False
+                pending_approval = True
+                approval_status = "PENDING_APPROVAL"
+
         if all_ok:
-            if len(fallback_events) == 0 and verified_children_count > 0:
+            self.task_manager.transition(root_id, TaskState.VERIFYING, reason="All DAG subtasks succeeded; verifying root")
+            self.task_manager.transition(
+                root_id,
+                TaskState.SUCCEEDED,
+                reason=(
+                    f"All {succeeded_cnt}/{len(final_children)} child tasks verified in external staging (pending approval)"
+                    if pending_approval
+                    else f"All {succeeded_cnt}/{len(final_children)} child tasks verified"
+                ),
+                result={
+                    "total_logical_children": len(final_children),
+                    "succeeded_children": succeeded_cnt,
+                    "max_concurrent_workers_used": max_Observed_concurrency,
+                    "waves_executed": wave_index,
+                    "pending_approval": pending_approval,
+                    "patch_applied_to_workspace": patch_applied_to_workspace,
+                },
+            )
+            final_state = TaskState.SUCCEEDED.value
+        else:
+            self.task_manager.transition(
+                root_id,
+                TaskState.FAILED,
+                reason=f"Only {succeeded_cnt}/{len(final_children)} child tasks succeeded",
+            )
+            final_state = TaskState.FAILED.value
+
+        self.memory.store_compressed_episode(
+            subject_key=f"episode:{root_id}",
+            raw_observation=(
+                f"Hierarchical mission '{title}' ({root_id}) finished with state={final_state}, "
+                f"children={succeeded_cnt}/{len(final_children)}, max_concurrency={max_Observed_concurrency}"
+            ),
+            source_task_id=root_id,
+        )
+
+        if all_ok:
+            if pending_approval:
+                terminal_outcome = "PENDING_APPROVAL"
+            elif len(fallback_events) == 0 and verified_children_count > 0:
                 terminal_outcome = "SUCCEEDED_AND_VERIFIED"
             else:
                 terminal_outcome = "SUCCEEDED_UNVERIFIED"
         else:
             terminal_outcome = "TIMED_OUT" if any_timed_out else "FAILED"
 
+        staged_summary = {
+            str(k): {
+                "target_path": str(v["target_path"]),
+                "rel_path": str(v["rel_path"]),
+                "sha256": str(v["sha256"]),
+                "stage": str(v["stage"]),
+            }
+            for k, v in staged_candidates.items()
+        }
+
         return {
             "mission_id": root_id,
             "execution_path": "HIERARCHICAL_DAG",
+            "status": "PENDING_APPROVAL" if pending_approval else final_state,
             "final_state": final_state,
             "terminal_outcome": terminal_outcome,
+            "approval_status": approval_status,
+            "pending_approval": pending_approval,
+            "requires_human_approval": pending_approval,
+            "staged_outside_workspace": has_staged_candidates,
+            "patch_applied_to_workspace": patch_applied_to_workspace,
+            "applied_workspace_files": applied_workspace_files,
+            "staged_candidates": staged_summary,
             "verified_children_count": verified_children_count,
             "logical_children_created": len(final_children),
             "succeeded_children": succeeded_cnt,

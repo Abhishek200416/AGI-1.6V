@@ -94,6 +94,8 @@ class CIRepairResult:
     duration_sec: float
     verified_artifact_sha256: Optional[str] = None
     staged_outside_workspace: bool = True
+    pending_approval: bool = False
+    approval_status: str = "PENDING_APPROVAL"
     independent_regression_run: Dict[str, Any] = field(default_factory=dict)
     security_warnings: List[str] = field(default_factory=list)
     attempt_history: List[Dict[str, Any]] = field(default_factory=list)
@@ -212,13 +214,14 @@ class CIRepairAgent:
         test_pattern: str = "test_*.py",
         issue_description: str = "Fix failing Python unit tests with minimal diff.",
         write_patch_to_workspace: bool = False,
-        apply_approved_patch: bool = False,
+        apply_approved_patch: Optional[bool] = None,
         repair_id: Optional[str] = None,
     ) -> CIRepairResult:
         """Reproduces failing tests in the sandbox, synthesizes a minimal patch, verifies in sandbox, and builds a PR payload.
 
-        By default (`write_patch_to_workspace=False` and `apply_approved_patch=False`), candidate patches
-        are staged and verified strictly inside the disposable sandbox without mutating the workspace.
+        By default (`write_patch_to_workspace=False` and `apply_approved_patch=None`), candidate patches
+        are staged and verified strictly inside the disposable sandbox without mutating the workspace
+        unless an approval callback or explicit caller approval authorizes patch application.
         """
         t0 = time.perf_counter()
         rid = repair_id or f"CI-REPAIR-{int(time.time() * 1000)}"
@@ -234,15 +237,15 @@ class CIRepairAgent:
 
         self._enforce_budgets_precheck(t0, total_tokens=0, total_cost=0.0)
 
-        should_apply = bool(write_patch_to_workspace or apply_approved_patch)
-        if should_apply or self.approval_gate.block_workspace_mutations or self.approval_gate.approval_callback is not None:
-            self.approval_gate.check_workspace_mutation(
-                workspace_root=ws,
-                target_rel_path=norm_module_rel,
-                explicit_approval=should_apply if should_apply else True,
-                action_type="apply_workspace_patch" if should_apply else "protected_read_and_model_disclosure",
-                action_description=f"Pre-authorize CI-Repair read/disclosure/patch for {norm_module_rel}",
-            )
+        caller_explicitly_declined = (apply_approved_patch is False and not write_patch_to_workspace)
+        should_apply = bool(write_patch_to_workspace or (apply_approved_patch is True))
+        self.approval_gate.check_preflight_access(
+            workspace_root=ws,
+            target_rel_path=norm_module_rel,
+            explicit_approval=should_apply,
+            action_type="apply_workspace_patch" if should_apply else "ci_repair_preflight",
+            action_description=f"Preflight CI-Repair containment and policy check for {norm_module_rel}",
+        )
 
         if not module_path.is_file():
             raise FileNotFoundError(f"Target Python module not found: {module_path}")
@@ -475,11 +478,15 @@ class CIRepairAgent:
             current_failure_output = (sbx_res.stderr or sbx_res.stdout).strip()
 
         patch_applied = False
-        if should_apply:
-            if not repaired_ok:
-                # Never apply an unverified or failed patch to the workspace
-                patch_applied = False
-            else:
+        if repaired_ok and (should_apply or self.approval_gate.approval_callback is not None):
+            authorized = self.approval_gate.is_workspace_mutation_authorized(
+                workspace_root=ws,
+                target_rel_path=norm_module_rel,
+                explicit_approval=should_apply,
+                action_type="apply_workspace_patch",
+                action_description=f"Apply verified CI-Repair patch to {norm_module_rel}",
+            )
+            if authorized and not caller_explicitly_declined:
                 ext_apply_dir, staged_apply_file, staged_apply_sha = stage_candidate_outside_workspace(
                     ws,
                     norm_module_rel,
@@ -487,12 +494,9 @@ class CIRepairAgent:
                     stage_label=f"{rid}_apply",
                 )
                 try:
-                    self.approval_gate.check_workspace_mutation(
+                    self.approval_gate.validate_workspace_path_containment(
                         workspace_root=ws,
                         target_rel_path=norm_module_rel,
-                        explicit_approval=should_apply,
-                        action_type="apply_workspace_patch",
-                        action_description=f"Apply verified CI-Repair patch to {norm_module_rel}",
                     )
                     current_disk_sha = hashlib.sha256(module_path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
                     if current_disk_sha != staged_apply_sha:
@@ -530,6 +534,13 @@ class CIRepairAgent:
             or (ln.startswith("-") and not ln.startswith("---"))
         )
 
+        pending_approval_flag = bool(repaired_ok and not patch_applied)
+        approval_status_str = (
+            "APPROVED_AND_APPLIED"
+            if patch_applied
+            else ("PENDING_APPROVAL" if repaired_ok else "NOT_APPLICABLE")
+        )
+
         pr_payload = {
             "title": f"fix({norm_module_rel}): automated CI test-failure repair ({rid})",
             "target_module": norm_module_rel,
@@ -538,6 +549,8 @@ class CIRepairAgent:
             "test_files_unmodified_verified": test_files_unmodified,
             "patch_staged_only": not patch_applied,
             "patch_applied_to_workspace": patch_applied,
+            "pending_approval": pending_approval_flag,
+            "approval_status": approval_status_str,
             "isolation_backend": final_sbx.isolation_backend,
             "diff_lines_changed": changed_line_count,
             "requires_human_approval": True,
@@ -577,6 +590,9 @@ class CIRepairAgent:
             total_cost_usd=total_cost,
             duration_sec=round(time.perf_counter() - t0, 4),
             verified_artifact_sha256=verified_candidate_sha256,
+            staged_outside_workspace=True,
+            pending_approval=pending_approval_flag,
+            approval_status=approval_status_str,
             independent_regression_run=regression_sbx_dict,
             security_warnings=all_warnings,
             attempt_history=attempt_history,

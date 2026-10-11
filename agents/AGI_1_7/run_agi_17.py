@@ -163,6 +163,8 @@ def compute_cli_exit_code(result: dict) -> int:
     if outcome in TERMINAL_OUTCOME_EXIT_CODES:
         return TERMINAL_OUTCOME_EXIT_CODES[outcome]
     status = str(result.get("status") or "")
+    if outcome == "PENDING_APPROVAL" or status == "PENDING_APPROVAL":
+        return 6
     if status == "ALREADY_PASSING":
         return 0
     return 1
@@ -198,7 +200,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--apply-approved-patch",
         action="store_true",
-        help="Explicitly approve writing the verified CI-Repair patch to the target workspace (default stages candidate patch in sandbox only)",
+        help="Explicitly approve writing the verified CI-Repair or coding patch to the target workspace (default stages candidate patch externally only)",
     )
     parser.add_argument("--save-execution-log", default=None, help="Optional path to save full JSON execution trace")
     parser.add_argument(
@@ -311,6 +313,7 @@ def main(argv: list[str] | None = None) -> int:
         module_filename=args.module_filename,
         test_filename=args.test_filename,
         inject_deliberate_test_failure=args.inject_deliberate_test_failure,
+        apply_approved_patch=bool(args.apply_approved_patch),
     )
     if args.save_execution_log:
         out_p = Path(args.save_execution_log)
