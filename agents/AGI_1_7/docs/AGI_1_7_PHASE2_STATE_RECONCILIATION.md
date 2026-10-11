@@ -2,7 +2,7 @@
 
 **Run ID:** `RECON-AGI17-20261010-1815`  
 **Timestamp:** `2026-10-10T18:15:00+05:30`  
-**Repository:** `https://github.com/Abhishek200416/AGI-1.6V` (`C:\Users\abhis\Downloads\pt`)  
+**Repository:** `https://github.com/Abhishek200416/AGI-1.6V` (`<REPO_ROOT>`)  
 **Git Branch / Commit:** `main` @ `06390fa`  
 **Active External Processes:**
 - PID `20556` & PID `22884` (`download_and_verify_vm.py` in `D:\AGI_Evaluation\AGI_1_6_OMEGA_NEXUS\OSWorld-V2`) — preserved undisturbed, treated as active background consumers.

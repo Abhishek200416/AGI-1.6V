@@ -8,7 +8,7 @@ This document provides direct, evidence-backed engineering answers to how **AGI 
 
 - **What we built:** **AGI 1.7 is a resource-aware orchestration, transactional SQLite WAL task-control, process-supervision, and persistent-memory runtime built around Google's Gemini 3.8 Flash High (`gemini-3.8-flash-high`)**. We did **not** pre-train or fine-tune a custom foundation LLM from scratch.
 - **Verified CLI Binary & Model Identifier:**
-  - **CLI Binary:** `C:\Users\abhis\AppData\Local\agy\bin\agy.exe`
+  - **CLI Binary:** `<USER_HOME>\AppData\Local\agy\bin\agy.exe`
   - **CLI Version (`agy.exe --version`):** **`1.3.3`**
   - **Model Identifier (`agy.exe models`):** **`gemini-3.8-flash-high`** (`Gemini 3.8 Flash (High)`, `--effort high`)
 - **Exact Code Path (Normal CLI Entrypoint -> Model Invocation -> Verified Code & Tests):**

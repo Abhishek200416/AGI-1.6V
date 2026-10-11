@@ -143,12 +143,14 @@ class OmegaCommandMemory:
         fallback_dir: Optional[str | Path] = None,
         session_id: Optional[str] = None,
         force_fallback: bool = False,
+        mirror_dir: Optional[str | Path] = None,
     ) -> None:
         import os as _os
         import sys as _sys
         self.primary_dir = Path(primary_dir)
         default_fb = Path(__file__).resolve().parents[3] / "state_fallback" / "memory"
-        self.fallback_dir = Path(fallback_dir) if fallback_dir is not None else default_fb
+        resolved_fb = fallback_dir if fallback_dir is not None else mirror_dir
+        self.fallback_dir = Path(resolved_fb) if resolved_fb is not None else default_fb
         self.session_id = session_id or f"SESSION-{int(time.time() * 1000)}-{uuid.uuid4().hex[:6]}"
         self.using_fallback = False
         self._lock = threading.RLock()
@@ -436,12 +438,14 @@ class OmegaCommandMemory:
 
     def retrieve_before_planning(
         self,
-        *,
         task_id: str,
-        task_description: str,
+        task_description: str = "",
+        *,
+        query: Optional[str] = None,
         tags: Optional[Sequence[str]] = None,
     ) -> Dict[str, Any]:
         """Mandatory pre-planning memory lookup across semantic, procedural, failure, and episodic layers."""
+        task_description = task_description or (query or "")
         semantic_facts = self.retrieve(
             query=task_description,
             layers=[5],
@@ -482,6 +486,14 @@ class OmegaCommandMemory:
                 layers=[5],
                 active_only=True,
                 limit=5,
+                task_id=task_id,
+            )
+        if not failure_playbooks:
+            failure_playbooks = self.retrieve(
+                query="",
+                layers=[7],
+                active_only=True,
+                limit=3,
                 task_id=task_id,
             )
 
@@ -528,7 +540,7 @@ class OmegaCommandMemory:
             }
         )
 
-        return {
+        payload = {
             "audit_id": audit_id,
             "task_id": task_id,
             "session_id": self.session_id,
@@ -539,6 +551,81 @@ class OmegaCommandMemory:
             "failure_playbooks": [asdict(e) for e in failure_playbooks],
             "episodic_traces": [asdict(e) for e in episodic_traces],
         }
+        payload["compact_guardrails_prompt_block"] = self.build_compact_memory_prompt_block(payload)
+        return payload
+
+    def record_failure_lesson(
+        self,
+        *,
+        subject_key: Optional[str] = None,
+        module_name: Optional[str] = None,
+        error_signature: Optional[str] = None,
+        failing_assertion: Optional[str] = None,
+        root_cause: str = "",
+        minimal_fix_rule: Optional[str] = None,
+        minimal_patch_rule: Optional[str] = None,
+        source_task_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Records a structured failure-to-repair lesson in Layer 7 (`FAILURE_PATTERNS_AND_PLAYBOOKS`)."""
+        subj = (subject_key or module_name or "general").strip()
+        err = (error_signature or failing_assertion or "VerificationFailure").strip()
+        rule = (minimal_fix_rule or minimal_patch_rule or "").strip()
+        src_task = source_task_id or task_id
+        sig_short = err.splitlines()[-1][:140] if err else "VerificationFailure"
+        content = f"[GUARDRAIL {subj}] Error: {sig_short} | RootCause: {root_cause[:140]} | FixRule: {rule[:160]}"
+        entry = self.store(
+            layer=7,
+            subject_key=f"lesson:{subj}",
+            content=content,
+            structured_data={
+                "subject_key": subj,
+                "error_signature": sig_short,
+                "root_cause": root_cause[:240],
+                "minimal_fix_rule": rule[:240],
+            },
+            tags=["failure_lesson", "self_improvement", subj],
+            source_task_id=src_task,
+            supersede_existing_subject=True,
+        )
+        return {
+            "stored": True,
+            "entry_id": entry.entry_id,
+            "layer": entry.layer_name,
+            "subject_key": entry.subject_key,
+            "content": content,
+            "entry": entry,
+        }
+
+    def build_compact_memory_prompt_block(
+        self,
+        retrieval_result: Dict[str, Any] | str,
+        max_chars: int = 480,
+    ) -> str:
+        """Builds a <=120-token guardrail block from retrieved Layer 7 failure lessons and Layer 5 facts."""
+        if isinstance(retrieval_result, str):
+            playbooks = [asdict(e) for e in self.retrieve(query=retrieval_result, layers=[7], limit=3)]
+            facts = [asdict(e) for e in self.retrieve(query=retrieval_result, layers=[5], limit=2)]
+        else:
+            playbooks = retrieval_result.get("failure_playbooks", [])[:3]
+            facts = retrieval_result.get("semantic_facts", [])[:2]
+        bullets: List[str] = []
+        for fb in playbooks:
+            c = str(fb.get("content", "")).strip()
+            if c:
+                bullets.append(f"- LESSON: {c[:165]}")
+        for sf in facts:
+            c = str(sf.get("content", "")).strip()
+            if c:
+                bullets.append(f"- FACT: {c[:120]}")
+        if not bullets:
+            return ""
+        joined = "\n".join(bullets)
+        header = "LEARNED MEMORY GUARDRAILS (Avoid Repeating Past Failures):\n"
+        full = header + joined
+        if len(full) > max_chars:
+            full = full[: max_chars - 3] + "..."
+        return full
 
     def get_fact_history(self, subject_key: str, layer: int = 5) -> List[MemoryEntry]:
         """Returns the complete chronological supersession chain for a subject_key."""

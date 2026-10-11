@@ -2,22 +2,30 @@
 
 Enforces:
 1. Sole Foundation Model (`gemini-3.8-flash-high`) with zero silent fallbacks.
-2. Safe permissions policy: does NOT blindly pass `--dangerously-skip-permissions`
-   unless explicitly authorized by `permissions_policy.json` for a scoped sandbox container.
-3. Isolated working directory (`isolated_cwd`) and isolated minimal CLI home (`minimal_cli_home`)
-   for benchmark items and single-shot reasoning calls, eliminating the 22.7k token
-   workspace prompt injection leak and preventing external MCP server startup hangs.
-4. Supervised execution via `ProcessSupervisor` with `AdaptiveTokenController`
-   budget admission and `ResourceGovernor` concurrency gating.
+2. Typed `ModelRequest`, `ModelResponse`, and `ModelProviderConfig` contracts
+   with `BaseModelProvider` and `DeterministicMockProvider` for offline tests.
+3. Bounded retries with exponential backoff, rate limiting, and per-request /
+   per-mission USD cost ceilings (`ModelCostBudgetExceededError`).
+4. Safe permissions policy: does NOT pass `--dangerously-skip-permissions`
+   unless explicitly authorized for a scoped sandbox container.
+5. Isolated working directory (`isolated_cwd`) and isolated minimal CLI home
+   (`minimal_cli_home`) for single-shot calls, plus automatic redaction of
+   credentials and local user home paths (`redact_sensitive_text`).
 """
 
 from __future__ import annotations
 
 import json
 import os
+import random
+import re
 import shutil
+import threading
+import time
+from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from ..orchestration.resource_governor import ResourceGovernor
 from ..process_supervision.process_supervisor import ProcessSupervisor
@@ -28,8 +36,185 @@ class DirectiveZeroViolationError(RuntimeError):
     """Raised when any caller attempts to invoke a model other than gemini-3.8-flash-high."""
 
 
+class ModelCostBudgetExceededError(RuntimeError):
+    """Raised when a model request or cumulative mission exceeds its configured USD cost ceiling."""
+
+
+class ModelResponseValidationError(RuntimeError):
+    """Raised when strict response validation is enabled and the model output is empty or invalid."""
+
+
+_SECRET_PATTERNS = [
+    (re.compile(r"AIza[0-9A-Za-z\-_]{35}"), "<REDACTED_GOOGLE_API_KEY>"),
+    (re.compile(r"sk-[A-Za-z0-9]{20,}"), "<REDACTED_SK_KEY>"),
+    (re.compile(r"ghp_[A-Za-z0-9]{30,}"), "<REDACTED_GITHUB_TOKEN>"),
+    (re.compile(r"github_pat_[A-Za-z0-9_]{22,}"), "<REDACTED_GITHUB_PAT>"),
+    (re.compile(r"AKIA[0-9A-Z]{16}"), "<REDACTED_AWS_KEY>"),
+    (re.compile(r"(?i)Bearer\s+[A-Za-z0-9\-._~+/]+=*"), "Bearer <REDACTED_TOKEN>"),
+    (re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----"), "<REDACTED_PRIVATE_KEY>"),
+]
+
+
+def redact_sensitive_text(text: str) -> str:
+    """Redacts API keys, tokens, private keys, and local user home paths from text logs."""
+    if not text:
+        return text
+    redacted = text
+    for pattern, replacement in _SECRET_PATTERNS:
+        redacted = pattern.sub(replacement, redacted)
+    try:
+        user_home = str(Path.home())
+        if user_home and len(user_home) > 3:
+            escaped_home = re.escape(user_home)
+            redacted = re.sub(escaped_home, "<USER_HOME>", redacted, flags=re.IGNORECASE)
+            forward_home = re.escape(user_home.replace("\\", "/"))
+            redacted = re.sub(forward_home, "<USER_HOME>", redacted, flags=re.IGNORECASE)
+    except Exception:
+        pass
+    return redacted
+
+
+@dataclass
+class ModelProviderConfig:
+    """Configuration for model retries, rate limiting, pricing, and USD cost budgets."""
+
+    model_name: str = "gemini-3.8-flash-high"
+    effort: str = "high"
+    max_retries: int = 1
+    base_backoff_sec: float = 0.5
+    min_request_interval_sec: float = 0.0
+    max_request_cost_usd: float = 0.50
+    max_mission_cost_usd: float = 5.00
+    input_cost_per_million_usd: float = 0.30
+    output_cost_per_million_usd: float = 2.50
+    cached_cost_per_million_usd: float = 0.03
+    strict_response_validation: bool = False
+
+    def calculate_cost_usd(self, input_tokens: int, output_tokens: int, cached_tokens: int = 0) -> float:
+        non_cached = max(0, input_tokens - cached_tokens)
+        return round(
+            (non_cached * self.input_cost_per_million_usd / 1_000_000.0)
+            + ( max(0, cached_tokens) * self.cached_cost_per_million_usd / 1_000_000.0)
+            + (max(0, output_tokens) * self.output_cost_per_million_usd / 1_000_000.0),
+            6,
+        )
+
+
+@dataclass
+class ModelRequest:
+    """Typed request payload for model invocation."""
+
+    task_id: str
+    prompt: str
+    agent_id: str = "model_specialist"
+    effort: str = "high"
+    is_benchmark_or_single_shot: bool = True
+    requested_cwd: Optional[str | Path] = None
+    wall_timeout_sec: float = 180.0
+    idle_timeout_sec: float = 90.0
+    campaign_id: Optional[str] = None
+    child_task_id: Optional[str] = None
+    tier: str = "BENCHMARK_ITEM"
+
+
+@dataclass
+class ModelResponse:
+    """Typed response payload from model invocation."""
+
+    task_id: str
+    agent_id: str
+    model: str
+    status: str
+    exit_code: Optional[int]
+    timed_out: bool
+    duration_sec: float
+    latency_ms: float
+    cwd_used: str
+    isolated_cwd_enforced: bool
+    response_text: str
+    parsed_json: Dict[str, Any]
+    token_usage: Dict[str, Any]
+    cost_usd: float
+    cumulative_mission_cost_usd: float
+    attempts: int = 1
+    attempt_ledger: List[Dict[str, Any]] = field(default_factory=list)
+    is_mock: bool = False
+    notification_id: Optional[str] = None
+    stdout_log_path: Optional[str] = None
+    stderr_log_path: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+class BaseModelProvider(ABC):
+    """Abstract provider interface for live CLI or deterministic offline mock execution."""
+
+    @abstractmethod
+    def generate(self, request: ModelRequest) -> Dict[str, Any]:
+        """Executes a model request and returns raw output metadata."""
+
+
+class DeterministicMockProvider(BaseModelProvider):
+    """Offline mock provider for fast, deterministic unit and CI testing without spending live tokens."""
+
+    def __init__(
+        self,
+        responder: Optional[Callable[[ModelRequest], str | Dict[str, Any]]] = None,
+        simulated_input_tokens: int = 120,
+        simulated_output_tokens: int = 80,
+    ) -> None:
+        self.responder = responder
+        self.simulated_input_tokens = simulated_input_tokens
+        self.simulated_output_tokens = simulated_output_tokens
+        self.call_history: List[ModelRequest] = []
+
+    def generate(self, request: ModelRequest) -> Dict[str, Any]:
+        self.call_history.append(request)
+        t0 = time.perf_counter()
+        if self.responder is not None:
+            raw = self.responder(request)
+        else:
+            raw = {
+                "summary": f"Mock offline response for {request.task_id}",
+                "findings": [f"Processed by {request.agent_id}"],
+                "verified_metrics": {"is_mock": True},
+            }
+        if isinstance(raw, dict):
+            response_text = json.dumps(raw)
+            parsed_json = raw
+        else:
+            response_text = str(raw)
+            parsed_json = {}
+            if response_text.strip().startswith("{"):
+                try:
+                    parsed_json = json.loads(response_text)
+                except Exception:
+                    parsed_json = {}
+        dt = max(0.001, time.perf_counter() - t0)
+        return {
+            "status": "SUCCEEDED",
+            "exit_code": 0,
+            "timed_out": False,
+            "duration_sec": round(dt, 4),
+            "response_text": response_text,
+            "parsed_json": parsed_json,
+            "provider_usage": {
+                "input_tokens": self.simulated_input_tokens,
+                "output_tokens": self.simulated_output_tokens,
+                "thinking_tokens": 0,
+                "cached_tokens": 0,
+                "total_tokens": self.simulated_input_tokens + self.simulated_output_tokens,
+            },
+            "is_mock": True,
+            "notification_id": f"MOCK-{request.task_id}",
+            "stdout_log_path": None,
+            "stderr_log_path": None,
+        }
+
+
 class ModelAdapter:
-    """Verified Antigravity CLI (`agy.exe`) adapter enforcing Directive 0 and isolated CWD."""
+    """Verified Antigravity CLI (`agy.exe`) adapter enforcing Directive 0, cost budgets, and isolated CWD."""
 
     SOLE_MODEL = "gemini-3.8-flash-high"
 
@@ -40,15 +225,37 @@ class ModelAdapter:
         governor: Optional[ResourceGovernor] = None,
         supervisor: Optional[ProcessSupervisor] = None,
         agy_path: Optional[str | Path] = None,
+        config: Optional[ModelProviderConfig] = None,
+        mock_provider: Optional[BaseModelProvider] = None,
     ) -> None:
+        self.config = config or ModelProviderConfig()
+        if self.config.model_name != self.SOLE_MODEL:
+            raise DirectiveZeroViolationError(
+                f"Directive 0 violation: config model '{self.config.model_name}' != '{self.SOLE_MODEL}'"
+            )
         self.token_controller = token_controller or AdaptiveTokenController()
         self.governor = governor or ResourceGovernor()
         self.supervisor = supervisor or ProcessSupervisor()
+        self.mock_provider = mock_provider
 
-        default_agy = Path(os.environ.get("LOCALAPPDATA", r"C:\Users\abhis\AppData\Local")) / "agy" / "bin" / "agy.exe"
+        local_app_data = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local"))
+        default_agy = local_app_data / "agy" / "bin" / "agy.exe"
         if not default_agy.exists():
             default_agy = default_agy.with_suffix(".cmd")
         self.agy_path = Path(agy_path) if agy_path else default_agy
+
+        self._lock = threading.Lock()
+        self._last_request_ts: float = 0.0
+        self._cumulative_mission_cost_usd: float = 0.0
+
+    @property
+    def cumulative_mission_cost_usd(self) -> float:
+        with self._lock:
+            return round(self._cumulative_mission_cost_usd, 6)
+
+    def reset_mission_cost(self) -> None:
+        with self._lock:
+            self._cumulative_mission_cost_usd = 0.0
 
     def _ensure_minimal_cli_home(self, base_dir: Path) -> Path:
         """Creates an isolated CLI home with empty mcpServers/skills so single-shot calls do not hang on MCP boot."""
@@ -62,7 +269,7 @@ class ModelAdapter:
         if not skills_cfg.exists():
             skills_cfg.write_text("{}", encoding="utf-8")
 
-        real_home = Path(os.path.expanduser("~"))
+        real_home = Path.home()
         real_cfg = real_home / ".gemini" / "config" / "config.json"
         dst_cfg = cfg_dir / "config.json"
         if real_cfg.exists() and not dst_cfg.exists():
@@ -110,6 +317,64 @@ class ModelAdapter:
         cmd.extend(["-p", prompt])
         return cmd
 
+    def _enforce_rate_limit_and_cost_precheck(self, estimated_input_tokens: int) -> None:
+        estimated_output_tokens = 1000
+        est_cost = self.config.calculate_cost_usd(estimated_input_tokens, estimated_output_tokens)
+        with self._lock:
+            if est_cost > self.config.max_request_cost_usd:
+                raise ModelCostBudgetExceededError(
+                    f"Estimated request cost ${est_cost:.6f} exceeds max_request_cost_usd ${self.config.max_request_cost_usd:.6f}"
+                )
+            if self._cumulative_mission_cost_usd + est_cost > self.config.max_mission_cost_usd:
+                raise ModelCostBudgetExceededError(
+                    f"Projected mission cost ${self._cumulative_mission_cost_usd + est_cost:.6f} exceeds max_mission_cost_usd ${self.config.max_mission_cost_usd:.6f}"
+                )
+            if self.config.min_request_interval_sec > 0:
+                now = time.monotonic()
+                elapsed = now - self._last_request_ts
+                if elapsed < self.config.min_request_interval_sec:
+                    time.sleep(self.config.min_request_interval_sec - elapsed)
+                self._last_request_ts = time.monotonic()
+
+    def invoke_typed(self, request: ModelRequest) -> ModelResponse:
+        """Executes a typed `ModelRequest` and returns a validated `ModelResponse`."""
+        res_dict = self.invoke(
+            task_id=request.task_id,
+            prompt=request.prompt,
+            agent_id=request.agent_id,
+            effort=request.effort,
+            is_benchmark_or_single_shot=request.is_benchmark_or_single_shot,
+            requested_cwd=request.requested_cwd,
+            wall_timeout_sec=request.wall_timeout_sec,
+            idle_timeout_sec=request.idle_timeout_sec,
+            campaign_id=request.campaign_id,
+            child_task_id=request.child_task_id,
+            tier=request.tier,
+        )
+        return ModelResponse(
+            task_id=res_dict["task_id"],
+            agent_id=res_dict["agent_id"],
+            model=res_dict["model"],
+            status=res_dict["status"],
+            exit_code=res_dict["exit_code"],
+            timed_out=res_dict["timed_out"],
+            duration_sec=res_dict["duration_sec"],
+            latency_ms=res_dict["latency_ms"],
+            cwd_used=res_dict["cwd_used"],
+            isolated_cwd_enforced=res_dict["isolated_cwd_enforced"],
+            response_text=res_dict["response_text"],
+            parsed_json=res_dict["parsed_json"],
+            token_usage=res_dict["token_usage"],
+            cost_usd=res_dict["cost_usd"],
+            cumulative_mission_cost_usd=res_dict["cumulative_mission_cost_usd"],
+            attempts=res_dict["attempts"],
+            attempt_ledger=res_dict.get("attempt_ledger", []),
+            is_mock=res_dict.get("is_mock", False),
+            notification_id=res_dict.get("notification_id"),
+            stdout_log_path=res_dict.get("stdout_log_path"),
+            stderr_log_path=res_dict.get("stderr_log_path"),
+        )
+
     def invoke(
         self,
         *,
@@ -125,7 +390,12 @@ class ModelAdapter:
         child_task_id: Optional[str] = None,
         tier: str = "BENCHMARK_ITEM",
     ) -> Dict[str, Any]:
-        """Invokes `agy.exe` under resource, token, and process supervision."""
+        """Invokes `agy.exe` (or `mock_provider` in offline tests) under resource, token, cost, and process supervision."""
+        if effort != "high":
+            raise DirectiveZeroViolationError(
+                f"Directive 0 violation: requested effort '{effort}', but '{self.SOLE_MODEL}' requires effort='high'"
+            )
+
         est_tokens = max(250, len(prompt) // 4 + 500)
         self.token_controller.check_pre_call_admission(
             task_id=task_id,
@@ -134,11 +404,95 @@ class ModelAdapter:
             campaign_id=campaign_id,
             tier=tier,
         )
+        self._enforce_rate_limit_and_cost_precheck(est_tokens)
 
         exec_cwd = self.token_controller.get_execution_cwd(
             is_benchmark_or_single_shot=is_benchmark_or_single_shot,
             requested_cwd=requested_cwd,
         )
+
+        request_obj = ModelRequest(
+            task_id=task_id,
+            prompt=prompt,
+            agent_id=agent_id,
+            effort=effort,
+            is_benchmark_or_single_shot=is_benchmark_or_single_shot,
+            requested_cwd=exec_cwd,
+            wall_timeout_sec=wall_timeout_sec,
+            idle_timeout_sec=idle_timeout_sec,
+            campaign_id=campaign_id,
+            child_task_id=child_task_id,
+            tier=tier,
+        )
+
+        # Offline mock execution path for unit/integration testing
+        if self.mock_provider is not None:
+            mock_out = self.mock_provider.generate(request_obj)
+            provider_usage = mock_out.get("provider_usage")
+            response_text = redact_sensitive_text(str(mock_out.get("response_text", "")))
+            parsed_response = mock_out.get("parsed_json") or {}
+            if self.config.strict_response_validation and not response_text.strip():
+                raise ModelResponseValidationError(f"Empty response from mock provider for task '{task_id}'")
+            usage_rec = self.token_controller.record_usage(
+                task_id=task_id,
+                child_task_id=child_task_id,
+                campaign_id=campaign_id,
+                agent_id=agent_id,
+                model=self.SOLE_MODEL,
+                effort_level=effort,
+                provider_usage=provider_usage,
+                prompt_text=prompt,
+                response_text=response_text,
+                cwd_used=exec_cwd,
+            )
+            call_cost = self.config.calculate_cost_usd(
+                usage_rec.input_tokens, usage_rec.output_tokens, usage_rec.cached_tokens
+            )
+            with self._lock:
+                self._cumulative_mission_cost_usd = round(self._cumulative_mission_cost_usd + call_cost, 6)
+                cum_cost = self._cumulative_mission_cost_usd
+            duration_sec = float(mock_out.get("duration_sec", 0.001))
+            mock_status = mock_out.get("status", "SUCCEEDED")
+            mock_exit = mock_out.get("exit_code", 0)
+            return {
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "model": self.SOLE_MODEL,
+                "status": mock_status,
+                "exit_code": mock_exit,
+                "timed_out": bool(mock_out.get("timed_out", False)),
+                "duration_sec": duration_sec,
+                "latency_ms": round(duration_sec * 1000.0, 2),
+                "cwd_used": exec_cwd,
+                "isolated_cwd_enforced": usage_rec.isolated_cwd_enforced,
+                "response_text": response_text,
+                "parsed_json": parsed_response,
+                "token_usage": {
+                    "accounting_mode": "MOCK_OFFLINE_TEST",
+                    "input_tokens": usage_rec.input_tokens,
+                    "output_tokens": usage_rec.output_tokens,
+                    "thinking_tokens": usage_rec.thinking_tokens,
+                    "cached_tokens": usage_rec.cached_tokens,
+                    "total_tokens": usage_rec.total_tokens,
+                },
+                "cost_usd": call_cost,
+                "cumulative_mission_cost_usd": cum_cost,
+                "attempts": 1,
+                "attempt_ledger": [
+                    {
+                        "attempt": 1,
+                        "status": mock_status,
+                        "exit_code": mock_exit,
+                        "timed_out": bool(mock_out.get("timed_out", False)),
+                        "duration_sec": duration_sec,
+                        "notification_id": mock_out.get("notification_id"),
+                    }
+                ],
+                "is_mock": True,
+                "notification_id": mock_out.get("notification_id"),
+                "stdout_log_path": mock_out.get("stdout_log_path"),
+                "stderr_log_path": mock_out.get("stderr_log_path"),
+            }
 
         cmd = self.build_command(
             prompt=prompt,
@@ -161,25 +515,51 @@ class ModelAdapter:
             except Exception:
                 env_overrides = None
 
-        proc_task_id = f"{child_task_id or task_id}-MODEL"
-        slot = self.governor.acquire_slot(queue_type="model_call")
-        try:
-            notif = self.supervisor.run_supervised(
-                task_id=proc_task_id,
-                parent_task_id=task_id,
-                command=cmd,
-                cwd=exec_cwd,
-                env=env_overrides,
-                wall_timeout_sec=wall_timeout_sec,
-                idle_timeout_sec=idle_timeout_sec,
-                max_retries=0,
+        max_attempts = max(1, 1 + int(self.config.max_retries))
+        notif = None
+        attempts_made = 0
+        attempt_ledger: List[Dict[str, Any]] = []
+        for attempt_idx in range(max_attempts):
+            attempts_made = attempt_idx + 1
+            proc_task_id = f"{child_task_id or task_id}-MODEL-A{attempts_made}"
+            self.governor.acquire_slot(queue_type="model_call")
+            try:
+                notif = self.supervisor.run_supervised(
+                    task_id=proc_task_id,
+                    parent_task_id=task_id,
+                    command=cmd,
+                    cwd=exec_cwd,
+                    env=env_overrides,
+                    wall_timeout_sec=wall_timeout_sec,
+                    idle_timeout_sec=idle_timeout_sec,
+                    max_retries=0,
+                )
+            finally:
+                self.governor.release_slot(queue_type="model_call")
+
+            attempt_ledger.append(
+                {
+                    "attempt": attempts_made,
+                    "proc_task_id": proc_task_id,
+                    "status": notif.final_status,
+                    "exit_code": notif.exit_code,
+                    "timed_out": notif.timed_out or notif.idle_timed_out,
+                    "duration_sec": notif.duration_sec,
+                    "notification_id": notif.notification_id,
+                }
             )
-        finally:
-            self.governor.release_slot(queue_type="model_call")
 
-        if notif.timed_out or notif.idle_timed_out:
-            self.governor.report_timeout_or_quota_pressure()
+            if notif.timed_out or notif.idle_timed_out:
+                self.governor.report_timeout_or_quota_pressure()
 
+            if notif.final_status == "SUCCEEDED" and notif.exit_code == 0:
+                break
+            if attempt_idx + 1 < max_attempts:
+                base_wait = self.config.base_backoff_sec * (2 ** attempt_idx)
+                jitter = random.uniform(0.0, 0.25 * base_wait)
+                time.sleep(base_wait + jitter)
+
+        assert notif is not None
         full_stdout = ""
         try:
             full_stdout = Path(notif.stdout_log_path).read_text(encoding="utf-8", errors="replace").strip()
@@ -214,6 +594,14 @@ class ModelAdapter:
                 except Exception:
                     pass
 
+        response_text = redact_sensitive_text(response_text)
+        if self.config.strict_response_validation and (
+            notif.final_status != "SUCCEEDED" or not response_text.strip()
+        ):
+            raise ModelResponseValidationError(
+                f"Model invocation failed validation for task '{task_id}': status={notif.final_status}, empty={not bool(response_text.strip())}"
+            )
+
         usage_rec = self.token_controller.record_usage(
             task_id=task_id,
             child_task_id=child_task_id,
@@ -227,6 +615,13 @@ class ModelAdapter:
             cwd_used=exec_cwd,
         )
 
+        call_cost = self.config.calculate_cost_usd(
+            usage_rec.input_tokens, usage_rec.output_tokens, usage_rec.cached_tokens
+        )
+        with self._lock:
+            self._cumulative_mission_cost_usd = round(self._cumulative_mission_cost_usd + call_cost, 6)
+            cum_cost = self._cumulative_mission_cost_usd
+
         return {
             "task_id": task_id,
             "agent_id": agent_id,
@@ -235,6 +630,7 @@ class ModelAdapter:
             "exit_code": notif.exit_code,
             "timed_out": notif.timed_out or notif.idle_timed_out,
             "duration_sec": notif.duration_sec,
+            "latency_ms": round(notif.duration_sec * 1000.0, 2),
             "cwd_used": exec_cwd,
             "isolated_cwd_enforced": usage_rec.isolated_cwd_enforced,
             "response_text": response_text,
@@ -244,8 +640,14 @@ class ModelAdapter:
                 "input_tokens": usage_rec.input_tokens,
                 "output_tokens": usage_rec.output_tokens,
                 "thinking_tokens": usage_rec.thinking_tokens,
+                "cached_tokens": usage_rec.cached_tokens,
                 "total_tokens": usage_rec.total_tokens,
             },
+            "cost_usd": call_cost,
+            "cumulative_mission_cost_usd": cum_cost,
+            "attempts": attempts_made,
+            "attempt_ledger": attempt_ledger,
+            "is_mock": False,
             "notification_id": notif.notification_id,
             "stdout_log_path": notif.stdout_log_path,
             "stderr_log_path": notif.stderr_log_path,

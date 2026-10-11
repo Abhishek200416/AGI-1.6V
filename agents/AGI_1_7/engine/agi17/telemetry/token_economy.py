@@ -94,7 +94,7 @@ class AdaptiveTokenController:
         try:
             self.ledger_dir.mkdir(parents=True, exist_ok=True)
         except Exception:
-            self.ledger_dir = Path(r"c:\Users\abhis\Downloads\pt\agents\AGI_1_7\state_fallback\token_ledger")
+            self.ledger_dir = Path(__file__).resolve().parents[3] / "state_fallback" / "token_ledger"
             self.ledger_dir.mkdir(parents=True, exist_ok=True)
 
         self.isolated_benchmark_cwd = Path(isolated_benchmark_cwd)

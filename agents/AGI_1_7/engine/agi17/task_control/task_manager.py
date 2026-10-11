@@ -87,6 +87,7 @@ class DurableTaskManager:
         )
         self.dep_mgr = self.dependencies
         self.inbox = CommandInbox(self.store)
+        self._idempotency_index: Dict[str, str] = {}
 
     def create_task(
         self,
@@ -100,7 +101,27 @@ class DurableTaskManager:
         specialist_role: Optional[str] = None,
         token_budget: int = 12000,
         metadata: Optional[Dict[str, Any]] = None,
+        idempotency_key: Optional[str] = None,
     ) -> Dict[str, Any]:
+        meta = dict(metadata or {})
+        if idempotency_key:
+            meta["idempotency_key"] = idempotency_key
+            existing_tid = self._idempotency_index.get(idempotency_key)
+            if existing_tid:
+                existing_rec = self.store.get_task(existing_tid)
+                if existing_rec:
+                    return existing_rec
+            for t in self.store.list_tasks():
+                if (t.get("metadata") or {}).get("idempotency_key") == idempotency_key:
+                    self._idempotency_index[idempotency_key] = t["task_id"]
+                    return t
+
+        if task_id:
+            existing_by_id = self.store.get_task(task_id)
+            if existing_by_id and idempotency_key:
+                self._idempotency_index[idempotency_key] = task_id
+                return existing_by_id
+
         if parent_task_id:
             parent_rec = self.store.get_task(parent_task_id)
             job_id = parent_rec["job_id"] if parent_rec else parent_task_id
@@ -111,7 +132,7 @@ class DurableTaskManager:
         if depends_on and task_id:
             self.dependencies.validate_no_cycle(job_id, task_id, depends_on)
 
-        return self.store.create_task(
+        created = self.store.create_task(
             title=title,
             description=description,
             job_id=job_id,
@@ -121,8 +142,11 @@ class DurableTaskManager:
             priority=priority,
             depends_on=depends_on,
             token_budget=token_budget,
-            metadata=metadata,
+            metadata=meta,
         )
+        if idempotency_key:
+            self._idempotency_index[idempotency_key] = created["task_id"]
+        return created
 
     def transition(
         self,
@@ -291,7 +315,18 @@ class DurableTaskManager:
                 TaskState.INTERRUPTED,
                 {"reason": "process_not_running_on_reconciliation", "stale_pid": pid},
             )
-            ckpt = self.checkpoints.load_checkpoint(tid)
+            try:
+                ckpt = self.checkpoints.load_checkpoint(tid)
+            except (ValueError, OSError) as exc:
+                actions.append(
+                    {
+                        "task_id": tid,
+                        "action": "MARKED_INTERRUPTED_CORRUPTED_CHECKPOINT",
+                        "error": str(exc),
+                        "stale_pid": pid,
+                    }
+                )
+                continue
             if ckpt and ckpt.get("side_effects_verified_intact", True):
                 self.store.transition_task(
                     tid,

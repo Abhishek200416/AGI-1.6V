@@ -11,7 +11,7 @@
 
 ## 1. Exact Raw Record Reconciliation (189 Clean Questions)
 
-[`BenchmarkAuditor.audit_gpqa_raw_jsonl()`](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_7/engine/agi17/evaluation/benchmark_auditor.py#L59-L170) verified every row of `gpqa_clean_189_task_results.jsonl` against the historical report:
+[`BenchmarkAuditor.audit_gpqa_raw_jsonl()`](file:///<REPO_ROOT>/agents/AGI_1_7/engine/agi17/evaluation/benchmark_auditor.py#L59-L170) verified every row of `gpqa_clean_189_task_results.jsonl` against the historical report:
 
 | Metric | Raw Ledger Value | Calculation / Verification Note |
 |---|---|---|
@@ -52,7 +52,7 @@
 Forensic inspection of the `175` valid rows in `gpqa_clean_189_task_results.jsonl` revealed a bimodal input-token distribution:
 - **14 single-turn isolated items (`0 < input_tokens < 5,000`):** Mean input tokens = **`2,316.7`** (e.g., `rec1zl5LvaatzGhFt` with `2,256` input tokens, `29.4s` latency).
 - **161 workspace/multi-turn items (`input_tokens >= 5,000`):** Mean input tokens = **`45,704.1`** (peaking at `259,986` tokens on `recK7bf122n33a02b` when the CLI agent entered multi-turn tool/workspace exploration loops).
-- **14 timeout items (`latency_ms >= 360,000`):** When 4 concurrent `agy.exe` workers entered multi-turn tool-call loops inside the repository working directory (`c:\Users\abhis\Downloads\pt`), subprocess latency exceeded the static `360s` wall timeout, causing `subprocess.run(..., timeout=360)` to kill the process before JSON output was emitted (`tokens: 0` recorded on disk).
+- **14 timeout items (`latency_ms >= 360,000`):** When 4 concurrent `agy.exe` workers entered multi-turn tool-call loops inside the repository working directory (`<REPO_ROOT>`), subprocess latency exceeded the static `360s` wall timeout, causing `subprocess.run(..., timeout=360)` to kill the process before JSON output was emitted (`tokens: 0` recorded on disk).
 
 ### 2.3 Latency Distribution Across 189 Items
 
@@ -68,7 +68,7 @@ Forensic inspection of the `175` valid rows in `gpqa_clean_189_task_results.json
 
 ## 3. AGI 1.7 Live Isolated-CWD Calibration Canary Verification
 
-To verify AGI 1.7's `ModelAdapter`, `ProcessSupervisor`, `ResourceGovernor`, and `AdaptiveTokenController` without altering or re-scoring the historical GPQA dataset, [`run_benchmark_verification.py`](file:///c:/Users/abhis/Downloads/pt/agents/AGI_1_7/scripts/run_benchmark_verification.py) executed a live non-scored synthetic calibration call (`CANARY-ISO-1791638034`):
+To verify AGI 1.7's `ModelAdapter`, `ProcessSupervisor`, `ResourceGovernor`, and `AdaptiveTokenController` without altering or re-scoring the historical GPQA dataset, [`run_benchmark_verification.py`](file:///<REPO_ROOT>/agents/AGI_1_7/scripts/run_benchmark_verification.py) executed a live non-scored synthetic calibration call (`CANARY-ISO-1791638034`):
 
 - **Model & Effort (Directive 0):** `gemini-3.8-flash-high` (`--effort high`, `--disable-slash-commands`, `--output-format json`)
 - **Enforced Working Directory:** `D:\AGI_Evaluation\AGI_1_7_OMEGA_COMMAND\isolated_cwd` (`isolated_cwd_enforced: true`)

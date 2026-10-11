@@ -127,7 +127,31 @@ def _update_detached_pid_file(pid_file_path: str | None, status: str, final_stat
         pass
 
 
-def main() -> int:
+TERMINAL_OUTCOME_EXIT_CODES: dict[str, int] = {
+    "SUCCEEDED_AND_VERIFIED": 0,
+    "PROFILE_ONLY_OK": 0,
+    "ALREADY_PASSING": 0,
+    "SUCCEEDED_UNVERIFIED": 2,
+    "TIMED_OUT": 3,
+    "CANCELLED": 4,
+    "BUDGET_EXCEEDED": 5,
+    "BLOCKED_BY_POLICY": 6,
+    "FAILED": 1,
+}
+
+
+def compute_cli_exit_code(result: dict) -> int:
+    """Returns 0 strictly for SUCCEEDED_AND_VERIFIED (or PROFILE_ONLY_OK/ALREADY_PASSING), and distinct non-zero codes otherwise."""
+    outcome = str(result.get("terminal_outcome") or "")
+    if outcome in TERMINAL_OUTCOME_EXIT_CODES:
+        return TERMINAL_OUTCOME_EXIT_CODES[outcome]
+    status = str(result.get("status") or "")
+    if status == "ALREADY_PASSING":
+        return 0
+    return 1
+
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="AGI 1.7.0 — OMEGA COMMAND Runtime")
     parser.add_argument("--title", default="AGI 1.7 Mission", help="Mission title")
     parser.add_argument("--prompt", default=None, help="Mission prompt to execute")
@@ -148,6 +172,16 @@ def main() -> int:
         action="store_true",
         help="Inject a deliberate defect after Stage 2 code generation so Stage 3 detects a real unittest failure, escalates to swe_patch_minimizer via ModelAdapter.invoke(), and re-runs tests",
     )
+    parser.add_argument(
+        "--ci-repair-dir",
+        default=None,
+        help="Run the focused Python CI-Repair Agent on the specified workspace directory (reproduces failing tests in disposable sandbox, generates minimal patch, verifies tests, outputs PR payload)",
+    )
+    parser.add_argument(
+        "--apply-approved-patch",
+        action="store_true",
+        help="Explicitly approve writing the verified CI-Repair patch to the target workspace (default stages candidate patch in sandbox only)",
+    )
     parser.add_argument("--save-execution-log", default=None, help="Optional path to save full JSON execution trace")
     parser.add_argument(
         "--detach",
@@ -155,14 +189,14 @@ def main() -> int:
         help="Run in an OS-detached background process that keeps working even after closing Antigravity IDE",
     )
     parser.add_argument("--detached-pid-file", default=None, help=argparse.SUPPRESS)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     storage_root = _resolve_storage_root(args.storage_root)
 
     # Normal CLI runs the complete coding workflow by default whenever a prompt is given
-    # unless --text-only or --profile-only is specified.
+    # unless --text-only or --profile-only or --ci-repair-dir is specified.
     effective_code_dir: str | None = args.code_task_dir
-    if effective_code_dir is None and args.prompt and not args.text_only and not args.profile_only:
+    if effective_code_dir is None and args.prompt and not args.text_only and not args.profile_only and not args.ci_repair_dir:
         effective_code_dir = str(REPO_ROOT / "agents" / "AGI_1_7" / "live_code_mission_workspace")
 
     if args.detach:
@@ -172,10 +206,42 @@ def main() -> int:
 
     startup = adapter.run_startup_reconciliation()
 
+    if args.ci_repair_dir:
+        try:
+            repair_res = adapter.run_ci_repair(
+                workspace_dir=args.ci_repair_dir,
+                module_filename=args.module_filename,
+                issue_description=args.prompt or "Fix failing Python unit tests with minimal diff.",
+                write_patch_to_workspace=bool(args.apply_approved_patch),
+                apply_approved_patch=bool(args.apply_approved_patch),
+            )
+        except Exception as exc:
+            exc_name = type(exc).__name__
+            if "BudgetExceeded" in exc_name:
+                term = "BUDGET_EXCEEDED"
+            elif any(k in exc_name for k in ("Sandbox", "PathTraversal", "UntrustedContent", "HighImpactAction", "Policy")):
+                term = "BLOCKED_BY_POLICY"
+            elif "Timeout" in exc_name:
+                term = "TIMED_OUT"
+            else:
+                term = "FAILED"
+            repair_res = {
+                "status": "REPAIR_FAILED",
+                "terminal_outcome": term,
+                "error": {"exception_type": exc_name, "message": str(exc)},
+            }
+        if args.save_execution_log:
+            out_p = Path(args.save_execution_log)
+            out_p.parent.mkdir(parents=True, exist_ok=True)
+            out_p.write_text(json.dumps(repair_res, indent=2, default=str), encoding="utf-8")
+        print(json.dumps(repair_res, indent=2, default=str), flush=True)
+        return compute_cli_exit_code(repair_res)
+
     if args.profile_only or not args.prompt:
         profile = adapter.profiler.build_full_profile()
         out_payload = {
             "runtime": "AGI 1.7.0 — OMEGA COMMAND",
+            "terminal_outcome": "PROFILE_ONLY_OK",
             "startup": startup,
             "capability_profile_summary": {
                 "logical_cores": profile["cpu_and_compute"]["logical_processors"],
@@ -204,14 +270,15 @@ def main() -> int:
         out_p = Path(args.save_execution_log)
         out_p.parent.mkdir(parents=True, exist_ok=True)
         out_p.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+    exit_code = compute_cli_exit_code(result)
     _update_detached_pid_file(
         args.detached_pid_file,
         "DETACHED_COMPLETED",
-        str(result.get("final_state", "UNKNOWN")),
-        0 if result.get("final_state") == "SUCCEEDED" else 1,
+        str(result.get("terminal_outcome") or result.get("final_state", "UNKNOWN")),
+        exit_code,
     )
     print(json.dumps(result, indent=2, default=str), flush=True)
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":
